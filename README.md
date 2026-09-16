@@ -55,6 +55,8 @@ let libs = doc.field("Libs")
 
 `collect_cflags` 与 `collect_libs` 聚合依赖图中的参数，每个参数保留包名、字段和来源位置。静态链接查询会加入私有依赖与 `Libs.private`。
 
+`Document::json_text` 和 `FlagResult::json_text` 提供紧凑或缩进 JSON，供命令行工具、编辑器与 CI 使用。
+
 项目在公开前已有几天的选题、学习和本地原型探索；2026-09-16 整理为公开仓库，此后的实现与验证通过公开提交持续记录。
 
 ## 兼容范围
