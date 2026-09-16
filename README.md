@@ -8,7 +8,7 @@
 
 首个开发里程碑，尚未发布到 MoonCakes。`local/moonpkgconfig` 仅供本地导入；公开发布前由维护者确认实际命名空间。
 
-已实现：变量与字段解析、注释和续行、顺序变量展开、`pcfiledir` 输入、来源位置、错误恢复、编译/链接参数分词、`Requires` 依赖表达式解析、版本比较及约束判断。
+已实现：变量与字段解析、注释和续行、顺序变量展开、`pcfiledir` 输入、来源位置、错误恢复、必填元数据校验、编译/链接参数分词、`Requires` 依赖表达式解析、版本比较及约束判断。
 
 下一阶段：依赖图与版本比较、静态链接依赖区别、CLI 文件查询、官方工具对照测试。当前没有这些能力，不能替代完整的 `pkg-config`/`pkgconf`。
 
@@ -46,6 +46,8 @@ let libs = doc.field("Libs")
 ```
 
 `Entry` 同时返回 `raw`（原始值）、`value`（展开值）、`location`（文件/行/列）。变量按定义顺序展开，非法条目不会进入查询结果；应先检查 `Document.diagnostics`。
+
+`Document::validate_metadata` 检查 `Name`、`Description` 和 `Version`，与保留错误继续解析的文本层分开，便于编辑器展示多个问题。
 
 `split_flags` 返回参数数组，不启动 shell；`parse_requirements` 返回包名、比较运算符和版本文本。`compare_versions` 和 `Requirement::matches` 可用于检查已安装版本是否满足约束。
 
