@@ -9,6 +9,7 @@
 3. pkg-config Guide：<https://people.freedesktop.org/~dbn/pkg-config-guide.html>。本次访问被站点拒绝，不能作为本次已读取证据。
 4. MoonBit 官方语言及包配置文档：<https://docs.moonbitlang.com/en/latest/>。
 5. MoonBit 标准库（工具链自带）：<https://github.com/moonbitlang/core>，Apache-2.0；本项目使用 API，不复制其实现。
+6. `moonbitlang/x` 0.5.5：<https://github.com/moonbitlang/x>，Apache-2.0；`cmd/inspect` 使用其 `fs` 和 `path` API 读取文件及计算 `pcfiledir`，依赖源码不纳入本仓库。
 
 本项目依据公开格式独立编写，没有移植或复制 pkgconf/pkg-config/MoonNinja/MoonGitAttrs 的实现代码。当前测试与 `.pc` 示例均为本项目自编，不含来源不明的语料。后续若引入外部测试，必须逐项记录出处、版本与许可证。
 

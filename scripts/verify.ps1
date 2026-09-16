@@ -20,6 +20,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
     & "$MoonHome\bin\moon.exe" run cmd/demo
     if ($LASTEXITCODE -ne 0) { throw 'Demo failed.' }
+    & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/imagekit.pc
+    if ($LASTEXITCODE -ne 0) { throw 'File inspector failed.' }
+    & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/imagekit.pc --json
+    if ($LASTEXITCODE -ne 0) { throw 'JSON file inspector failed.' }
 } finally {
     Pop-Location
     $env:MOON_HOME = $oldMoonHome

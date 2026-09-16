@@ -1,6 +1,6 @@
 # 开发说明
 
-核心模块不访问文件系统、不调用 shell，不依赖外部 MoonCakes 包。分层为文档解析、变量展开、参数分词、依赖表达式；后续依赖求值和 CLI 在这些接口上构建。
+核心模块不访问文件系统、不调用 shell。分层为文档解析、变量展开、参数分词、依赖表达式；`cmd/inspect` 使用 `moonbitlang/x/fs` 作为薄文件适配层，不把平台 IO 混入核心接口。
 
 代码以 `moon fmt` 格式化；提交前运行 `moon check --target all --deny-warn`、`moon test --target all --deny-warn` 和 `moon run cmd/demo`。四目标为 wasm、wasm-gc、js、native。验证证据写入 `docs/verification.md`，失败不能记为通过。
 

@@ -9,3 +9,7 @@ license = "MIT"
 description = "Source-aware pkg-config metadata parsing and native dependency inspection in MoonBit"
 
 keywords = [ "pkg-config", "native", "ffi", "build-tools" ]
+
+import {
+  "moonbitlang/x@0.5.5",
+}
