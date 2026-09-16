@@ -4,6 +4,7 @@ fn graph_package(
   version : String,
   requires : String,
   private_requires? : String = "",
+  conflicts? : String = "",
 ) -> Document {
   let text = StringBuilder()
   text.write_string(
@@ -14,6 +15,9 @@ fn graph_package(
   }
   if !private_requires.is_empty() {
     text.write_string("\nRequires.private: " + private_requires)
+  }
+  if !conflicts.is_empty() {
+    text.write_string("\nConflicts: " + conflicts)
   }
   parse(text.to_string(), source=id + ".pc")
 }
@@ -68,4 +72,36 @@ test "resolver keeps independent transitive errors" {
   let result = packages.resolve("app")
   @debug.assert_eq(result.diagnostics.map(d => d.code), ["PC016", "PC015"])
   @debug.assert_eq(result.order, ["app"])
+}
+
+///|
+test "resolver reports a matching conflict between selected packages" {
+  let packages = PackageSet::new()
+  packages.add("left", graph_package("left", "1", "", conflicts="right >= 3"))
+  |> ignore
+  packages.add("right", graph_package("right", "3", "")) |> ignore
+  packages.add("app", graph_package("app", "1", "left, right")) |> ignore
+  let result = packages.resolve("app")
+  @debug.assert_eq(result.diagnostics.map(d => d.code), ["PC018"])
+  @debug.assert_eq(result.diagnostics[0].location.source, "left.pc")
+}
+
+///|
+test "resolver ignores a conflict whose version does not match" {
+  let packages = PackageSet::new()
+  packages.add("left", graph_package("left", "1", "", conflicts="right >= 4"))
+  |> ignore
+  packages.add("right", graph_package("right", "3", "")) |> ignore
+  packages.add("app", graph_package("app", "1", "left, right")) |> ignore
+  @debug.assert_eq(packages.resolve("app").diagnostics, [])
+}
+
+///|
+test "resolver reports malformed conflict expressions at their field" {
+  let packages = PackageSet::new()
+  packages.add("app", graph_package("app", "1", "", conflicts="other >="))
+  |> ignore
+  let result = packages.resolve("app")
+  @debug.assert_eq(result.diagnostics.map(d => d.code), ["PC008"])
+  @debug.assert_eq(result.diagnostics[0].location.source, "app.pc")
 }

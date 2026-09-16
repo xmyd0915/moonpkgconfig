@@ -23,7 +23,57 @@ pub fn PackageSet::resolve(
   resolve_visit(
     self, root, include_private, source, states, order, stack, diagnostics,
   )
+  append_selected_conflicts(self, order, diagnostics)
   { order, diagnostics, }
+}
+
+///|
+fn append_selected_conflicts(
+  packages : PackageSet,
+  order : Array[String],
+  diagnostics : Array[Diagnostic],
+) -> Unit {
+  let selected : Map[String, Bool] = Map([])
+  for id in order {
+    selected[id] = true
+  }
+  for id in order {
+    guard packages.packages.get(id) is Some(pkg) else { continue }
+    guard pkg.document.field("Conflicts") is Some(field) else { continue }
+    match parse_requirements(field.value, source=field.location.source) {
+      Err(problem) =>
+        diagnostics.push(
+          diag(problem.code, problem.message, {
+            source: field.location.source,
+            line: field.location.line,
+            column: field.location.column + problem.location.column - 1,
+          }),
+        )
+      Ok(conflicts) =>
+        for conflict in conflicts {
+          if conflict.name != id && selected.contains(conflict.name) {
+            guard packages.packages.get(conflict.name) is Some(other) else {
+              continue
+            }
+            let version = other.document.field("Version").unwrap().value
+            if conflict.matches(version) {
+              diagnostics.push(
+                diag(
+                  "PC018",
+                  "Package " +
+                  id +
+                  " conflicts with " +
+                  conflict.name +
+                  " " +
+                  version,
+                  field.location,
+                ),
+              )
+            }
+          }
+        }
+    }
+  }
 }
 
 ///|
