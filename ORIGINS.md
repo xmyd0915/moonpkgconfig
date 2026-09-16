@@ -5,9 +5,10 @@
 ## 参考资料
 
 1. pkgconf 项目 `.pc` 格式文档：<https://github.com/pkgconf/pkgconf/blob/main/man/pc.5>。
-2. pkg-config Guide：<https://people.freedesktop.org/~dbn/pkg-config-guide.html>。本次访问被站点拒绝，不能作为本次已读取证据。
-3. MoonBit 官方语言及包配置文档：<https://docs.moonbitlang.com/en/latest/>。
-4. MoonBit 标准库（工具链自带）：<https://github.com/moonbitlang/core>，Apache-2.0；本项目使用 API，不复制其实现。
+2. pkgconf 版本比较接口文档：<https://pkgconf.readthedocs.io/en/latest/libpkgconf-pkg.html>，用于核对比较结果约定和 RPM 风格规则。
+3. pkg-config Guide：<https://people.freedesktop.org/~dbn/pkg-config-guide.html>。本次访问被站点拒绝，不能作为本次已读取证据。
+4. MoonBit 官方语言及包配置文档：<https://docs.moonbitlang.com/en/latest/>。
+5. MoonBit 标准库（工具链自带）：<https://github.com/moonbitlang/core>，Apache-2.0；本项目使用 API，不复制其实现。
 
 本项目依据公开格式独立编写，没有移植或复制 pkgconf/pkg-config/MoonNinja/MoonGitAttrs 的实现代码。当前测试与 `.pc` 示例均为本项目自编，不含来源不明的语料。后续若引入外部测试，必须逐项记录出处、版本与许可证。
 
