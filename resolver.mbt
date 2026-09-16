@@ -20,9 +20,25 @@ pub fn PackageSet::resolve(
   let order : Array[String] = []
   let stack : Array[String] = []
   let diagnostics : Array[Diagnostic] = []
-  resolve_visit(
-    self, root, include_private, source, states, order, stack, diagnostics,
-  )
+  let root_requirement : Requirement = { name: root, op: Any, version: "", }
+  let root_id = match self.packages.get(root) {
+    Some(_) => Some(root)
+    None => self.find_provider(root_requirement).map(pkg => pkg.id)
+  }
+  match root_id {
+    Some(id) =>
+      resolve_visit(
+        self, id, include_private, source, states, order, stack, diagnostics,
+      )
+    None =>
+      diagnostics.push(
+        diag("PC015", "Required package not found: " + root, {
+          source,
+          line: 1,
+          column: 1,
+        }),
+      )
+  }
   append_selected_conflicts(self, order, diagnostics)
   { order, diagnostics, }
 }
@@ -153,13 +169,31 @@ fn visit_requirement_field(
       for requirement in requirements {
         match packages.packages.get(requirement.name) {
           None =>
-            diagnostics.push(
-              diag("PC015", "Required package not found: " + requirement.name, {
-                source: field.location.source,
-                line: field.location.line,
-                column: field.location.column,
-              }),
-            )
+            match packages.find_provider(requirement) {
+              None =>
+                diagnostics.push(
+                  diag(
+                    "PC015",
+                    "Required package not found: " + requirement.name,
+                    {
+                      source: field.location.source,
+                      line: field.location.line,
+                      column: field.location.column,
+                    },
+                  ),
+                )
+              Some(provider) =>
+                resolve_visit(
+                  packages,
+                  provider.id,
+                  include_private,
+                  source,
+                  states,
+                  order,
+                  stack,
+                  diagnostics,
+                )
+            }
           Some(dependency) => {
             let version = dependency.document.field("Version").unwrap().value
             if !requirement.matches(version) {

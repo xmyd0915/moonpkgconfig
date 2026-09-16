@@ -46,3 +46,22 @@ test "package set reports missing and incompatible direct dependencies" {
   @debug.assert_eq(diagnostics.map(d => d.code), ["PC016", "PC015"])
   @debug.assert_eq(diagnostics[0].location.source, "image.pc")
 }
+
+///|
+test "package set accepts matching virtual providers" {
+  let packages = PackageSet::new()
+  packages.add(
+    "fast-codec",
+    parse(
+      "Name: Fast codec\nDescription: test provider\nVersion: 7\nProvides: codec = 3",
+      source="fast-codec.pc",
+    ),
+  )
+  |> ignore
+  let matching = parse_requirements("codec >= 2").unwrap()
+  let too_new = parse_requirements("codec >= 4").unwrap()
+  @debug.assert_eq(packages.check_requirements(matching), [])
+  @debug.assert_eq(packages.check_requirements(too_new).map(d => d.code), [
+    "PC015",
+  ])
+}

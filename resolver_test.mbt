@@ -5,6 +5,7 @@ fn graph_package(
   requires : String,
   private_requires? : String = "",
   conflicts? : String = "",
+  provides? : String = "",
 ) -> Document {
   let text = StringBuilder()
   text.write_string(
@@ -18,6 +19,9 @@ fn graph_package(
   }
   if !conflicts.is_empty() {
     text.write_string("\nConflicts: " + conflicts)
+  }
+  if !provides.is_empty() {
+    text.write_string("\nProvides: " + provides)
   }
   parse(text.to_string(), source=id + ".pc")
 }
@@ -104,4 +108,29 @@ test "resolver reports malformed conflict expressions at their field" {
   let result = packages.resolve("app")
   @debug.assert_eq(result.diagnostics.map(d => d.code), ["PC008"])
   @debug.assert_eq(result.diagnostics[0].location.source, "app.pc")
+}
+
+///|
+test "resolver follows a versioned virtual package provider" {
+  let packages = PackageSet::new()
+  packages.add(
+    "fast-codec",
+    graph_package("fast-codec", "7", "", provides="codec = 3"),
+  )
+  |> ignore
+  packages.add("app", graph_package("app", "1", "codec >= 2")) |> ignore
+  let result = packages.resolve("app")
+  @debug.assert_eq(result.diagnostics, [])
+  @debug.assert_eq(result.order, ["fast-codec", "app"])
+}
+
+///|
+test "resolver can start from an unversioned virtual package name" {
+  let packages = PackageSet::new()
+  packages.add(
+    "fast-codec",
+    graph_package("fast-codec", "7", "", provides="codec = 3"),
+  )
+  |> ignore
+  @debug.assert_eq(packages.resolve("codec").order, ["fast-codec"])
 }

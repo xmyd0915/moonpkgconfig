@@ -10,11 +10,12 @@ pub(all) struct Package {
 /// CLI; the core resolver accepts parsed documents so it works on every target.
 pub(all) struct PackageSet {
   packages : Map[String, Package]
+  package_ids : Array[String]
 }
 
 ///|
 pub fn PackageSet::new() -> PackageSet {
-  { packages: Map([]), }
+  { packages: Map([]), package_ids: [], }
 }
 
 ///|
@@ -49,12 +50,41 @@ pub fn PackageSet::add(
     return diagnostics
   }
   self.packages[id] = { id, document, }
+  self.package_ids.push(id)
   []
 }
 
 ///|
 pub fn PackageSet::get(self : PackageSet, id : String) -> Package? {
   self.packages.get(id)
+}
+
+///|
+/// Find the first package, in insertion order, whose `Provides` field can
+/// satisfy a virtual dependency. Exact package identifiers are handled by the
+/// caller and always take precedence.
+fn PackageSet::find_provider(
+  self : PackageSet,
+  requirement : Requirement,
+) -> Package? {
+  for id in self.package_ids {
+    let pkg = self.packages.get(id).unwrap()
+    guard pkg.document.field("Provides") is Some(field) else { continue }
+    guard parse_requirements(field.value, source=field.location.source)
+      is Ok(provides) else {
+      continue
+    }
+    for provided in provides {
+      if provided.name == requirement.name &&
+        (
+          requirement.op == Any ||
+          (provided.op == Equal && requirement.matches(provided.version))
+        ) {
+        return Some(pkg)
+      }
+    }
+  }
+  None
 }
 
 ///|
@@ -68,13 +98,15 @@ pub fn PackageSet::check_requirements(
   for requirement in requirements {
     match self.packages.get(requirement.name) {
       None =>
-        diagnostics.push(
-          diag("PC015", "Required package not found: " + requirement.name, {
-            source,
-            line: 1,
-            column: 1,
-          }),
-        )
+        if self.find_provider(requirement) is None {
+          diagnostics.push(
+            diag("PC015", "Required package not found: " + requirement.name, {
+              source,
+              line: 1,
+              column: 1,
+            }),
+          )
+        }
       Some(pkg) => {
         let version = pkg.document.field("Version").unwrap().value
         if !requirement.matches(version) {
