@@ -10,7 +10,7 @@
 
 已实现：变量与字段解析、注释和续行、顺序变量展开、`pcfiledir` 输入、来源位置、错误恢复、必填元数据校验、编译/链接参数分词、`Requires` 依赖表达式解析、版本比较及约束判断。
 
-下一阶段：传递依赖图、静态链接依赖区别、CLI 文件查询、官方工具对照测试。当前没有这些能力，不能替代完整的 `pkg-config`/`pkgconf`。
+下一阶段：编译/链接参数聚合、CLI 文件查询、官方工具对照测试。当前没有这些能力，不能替代完整的 `pkg-config`/`pkgconf`。
 
 ## 快速运行
 
@@ -51,7 +51,7 @@ let libs = doc.field("Libs")
 
 `split_flags` 返回参数数组，不启动 shell；`parse_requirements` 返回包名、比较运算符和版本文本。`compare_versions` 和 `Requirement::matches` 可用于检查已安装版本是否满足约束。
 
-`PackageSet` 接收已解析文档并检查直接依赖，报告重复包、缺失包和版本不满足；文件搜索与传递依赖解析留给后续层。
+`PackageSet` 接收已解析文档并检查直接依赖，报告重复包、缺失包和版本不满足。`PackageSet::resolve` 生成依赖优先的传递顺序，按需包含 `Requires.private`，并诊断循环依赖。
 
 ## 兼容范围
 
