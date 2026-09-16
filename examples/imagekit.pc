@@ -1,0 +1,13 @@
+# Self-authored example. The referenced packages are illustrative.
+prefix=/opt/example
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: imagekit
+Description: Example C image library
+Version: 1.2.0
+Requires: codec >= 2.0
+Requires.private: compression >= 1.0
+Libs: -L${libdir} -limagekit
+Libs.private: -lm
+Cflags: -I${includedir} -DIMAGEKIT=1

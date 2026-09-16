@@ -1,0 +1,6 @@
+import {
+  "local/moonpkgconfig" @pc,
+  "moonbitlang/core/debug",
+}
+
+pkgtype(kind: "executable")
