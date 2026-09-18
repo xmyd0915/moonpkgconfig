@@ -1,0 +1,10 @@
+prefix=/opt/example
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: codec
+Description: Example codec library
+Version: 2.4.0
+Requires: compression >= 1.0
+Libs: -L${libdir} -lcodec
+Cflags: -I${includedir}/codec

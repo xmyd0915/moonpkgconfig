@@ -14,7 +14,7 @@ moon test --target all --deny-warn
 ## 2. 检查正常文件
 
 ```sh
-moon run --target native cmd/inspect examples/imagekit.pc
+moon run --target native cmd/inspect examples/valid/imagekit.pc
 ```
 
 输出包含包名、版本、依赖、编译和链接参数，并标明原文件行号；最后一行为 `Diagnostics: none`，进程退出码为 `0`。
@@ -22,7 +22,7 @@ moon run --target native cmd/inspect examples/imagekit.pc
 ## 3. 检查错误文件
 
 ```sh
-moon run --target native cmd/inspect examples/broken.pc
+moon run --target native cmd/inspect examples/invalid/broken.pc
 ```
 
 该样例有未定义变量、无分隔符文本、空名称、缺失描述和带空白的版本。命令会一次报告这五项问题，进程退出码为 `1`。
@@ -30,10 +30,20 @@ moon run --target native cmd/inspect examples/broken.pc
 ## 4. 输出 JSON
 
 ```sh
-moon run --target native cmd/inspect examples/imagekit.pc --json
+moon run --target native cmd/inspect examples/valid/imagekit.pc --json
 ```
 
 JSON 保留每个变量和字段的原始值、展开值及来源位置，也包含诊断数组。它可供其他命令行工具、编辑器或 CI 继续处理。
+
+## 5. 查询依赖图参数
+
+```sh
+moon run --target native cmd/query examples/valid imagekit --cflags --explain
+moon run --target native cmd/query examples/valid imagekit --libs
+moon run --target native cmd/query examples/valid imagekit --libs --static
+```
+
+目录中包含 `imagekit -> codec -> compression` 三个包。第一条命令还会显示每个参数来自哪个包、字段和源码行；后两条分别展示动态和静态链接结果。
 
 ## 退出码
 

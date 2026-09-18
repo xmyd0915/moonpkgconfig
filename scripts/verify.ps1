@@ -20,12 +20,18 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
     & "$MoonHome\bin\moon.exe" run cmd/demo
     if ($LASTEXITCODE -ne 0) { throw 'Demo failed.' }
-    & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/imagekit.pc
+    & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/valid/imagekit.pc
     if ($LASTEXITCODE -ne 0) { throw 'File inspector failed.' }
-    & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/imagekit.pc --json
+    & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/valid/imagekit.pc --json
     if ($LASTEXITCODE -ne 0) { throw 'JSON file inspector failed.' }
-    & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/broken.pc
+    & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/invalid/broken.pc
     if ($LASTEXITCODE -ne 1) { throw 'Invalid file did not return diagnostic exit code 1.' }
+    $cflags = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --cflags | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $cflags -ne '-I/opt/example/include/compression -I/opt/example/include/codec -I/opt/example/include -DIMAGEKIT=1') { throw 'Cflags query failed.' }
+    $libs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --libs | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $libs -ne '-L/opt/example/lib -limagekit -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression') { throw 'Libs query failed.' }
+    $staticLibs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --libs --static | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $staticLibs -ne '-L/opt/example/lib -limagekit -lm -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression -lz') { throw 'Static libs query failed.' }
 } finally {
     Pop-Location
     $env:MOON_HOME = $oldMoonHome

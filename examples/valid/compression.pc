@@ -1,0 +1,10 @@
+prefix=/opt/example
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: compression
+Description: Example compression library
+Version: 1.1.0
+Libs: -L${libdir} -lcompression
+Libs.private: -lz
+Cflags: -I${includedir}/compression

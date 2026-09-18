@@ -1,4 +1,4 @@
-# Self-authored example. The referenced packages are illustrative.
+# A small, self-contained graph used by demos and tests.
 prefix=/opt/example
 libdir=${prefix}/lib
 includedir=${prefix}/include

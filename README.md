@@ -12,7 +12,7 @@
 
 已实现：变量与字段解析、来源位置、错误恢复、元数据校验、版本约束、传递和私有依赖、循环与冲突诊断、虚拟包提供者、编译/链接参数聚合、JSON 输出及单文件检查命令。
 
-下一阶段：多文件查询、官方工具对照测试和兼容策略细化。当前仍不能替代完整的 `pkg-config`/`pkgconf`。
+下一阶段：扩大真实文件样本、增加参数兼容策略并完善发布准备。当前仍不能替代完整的 `pkg-config`/`pkgconf`。
 
 ## 快速运行
 
@@ -22,9 +22,12 @@
 moon check --target all
 moon test --target all
 moon run cmd/demo
-moon run --target native cmd/inspect examples/imagekit.pc
-moon run --target native cmd/inspect examples/imagekit.pc --json
-moon run --target native cmd/inspect examples/broken.pc
+moon run --target native cmd/inspect examples/valid/imagekit.pc
+moon run --target native cmd/inspect examples/valid/imagekit.pc --json
+moon run --target native cmd/inspect examples/invalid/broken.pc
+moon run --target native cmd/query examples/valid imagekit --cflags --explain
+moon run --target native cmd/query examples/valid imagekit --libs
+moon run --target native cmd/query examples/valid imagekit --libs --static
 ```
 
 演示输出示例：
@@ -43,6 +46,8 @@ Windows 当前工作区可运行 `./scripts/verify.ps1`。它只为本次进程�
 GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检查、四目标类型检查与测试，并运行正常和错误文件演示。工作流只需要仓库只读权限。
 
 `cmd/inspect` 读取一个 UTF-8 `.pc` 文件，默认列出常用字段、来源和诊断；加 `--json` 输出完整解析结果。检查通过时退出码为 `0`，发现解析或必填元数据问题时为 `1`，用法或文件读取错误时为 `2`。文件访问使用 MoonBit 官方 `moonbitlang/x`，解析核心仍不直接接触文件系统。
+
+`cmd/query` 从显式目录加载其中的 `.pc` 文件，解析指定根包的依赖图，并通过 `--cflags`、`--libs` 或 `--libs --static` 输出聚合参数。`--explain` 会逐项显示包、字段和源码位置，`--json` 提供结构化结果。它不会隐式读取系统搜索路径或环境变量。
 
 ## 库接口
 
@@ -77,4 +82,4 @@ let libs = doc.field("Libs")
 - 仅解析文本，不查找系统包、不修改构建配置、不运行编译器或安装依赖。
 - 尚不实现 sysroot 重写、Windows 自动重定位、系统路径过滤、完整片段去重或全部 pkgconf 3 扩展。
 
-可复制的演示步骤见 [docs/demo.md](docs/demo.md)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。
+可复制的演示步骤见 [docs/demo.md](docs/demo.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。
