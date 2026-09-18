@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        shell: bash
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Show toolchain version
+        run: moon version --all
+
+      - name: Download dependencies
+        run: moon update
+
+      - name: Check formatting
+        shell: bash
+        run: |
+          moon fmt
+          git diff --exit-code
+
+      - name: Type-check all targets
+        run: moon check --target all --deny-warn
+
+      - name: Test all targets
+        run: moon test --target all --deny-warn
+
+      - name: Run valid file demo
+        run: moon run --target native cmd/inspect examples/imagekit.pc
+
+      - name: Verify diagnostic exit code
+        shell: bash
+        run: |
+          set +e
+          moon run --target native cmd/inspect examples/broken.pc
+          status=$?
+          set -e
+          test "$status" -eq 1

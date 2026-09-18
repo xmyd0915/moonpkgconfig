@@ -1,5 +1,7 @@
 # MoonPkgConfig
 
+[![CI](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml/badge.svg)](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml)
+
 用 MoonBit 读取、检查和解释 C 库的 `pkg-config` 元数据（`.pc` 文件）。
 
 面向原生 FFI 和构建工具开发者：查看编译参数从哪个字段与变量产生，定位未定义变量、重复字段和错误依赖表达式。核心库为纯 MoonBit，读取与求值不调用外部 `pkg-config`。
@@ -37,6 +39,8 @@ Requires.private: compression >= 1.0 [imagekit.pc:8]
 ```
 
 Windows 当前工作区可运行 `./scripts/verify.ps1`。它只为本次进程设置便携工具链环境；也可通过 `-MoonHome` 指定其他安装位置。
+
+GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检查、四目标类型检查与测试，并运行正常和错误文件演示。工作流只需要仓库只读权限。
 
 `cmd/inspect` 读取一个 UTF-8 `.pc` 文件，默认列出常用字段、来源和诊断；加 `--json` 输出完整解析结果。检查通过时退出码为 `0`，发现解析或必填元数据问题时为 `1`，用法或文件读取错误时为 `2`。文件访问使用 MoonBit 官方 `moonbitlang/x`，解析核心仍不直接接触文件系统。
 
