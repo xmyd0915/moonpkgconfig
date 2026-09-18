@@ -1,0 +1,5 @@
+prefix=/opt/broken
+Name:
+Version: 1 2
+Cflags: -I${missing}/include
+this line has no separator

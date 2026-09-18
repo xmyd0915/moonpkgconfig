@@ -6,11 +6,11 @@
 
 ## 当前状态
 
-首个开发里程碑，尚未发布到 MoonCakes。`local/moonpkgconfig` 仅供本地导入；公开发布前由维护者确认实际命名空间。
+开发中，尚未发布到 MoonCakes。`local/moonpkgconfig` 仅供本地导入；公开发布前由维护者确认实际命名空间。
 
-已实现：变量与字段解析、注释和续行、顺序变量展开、`pcfiledir` 输入、来源位置、错误恢复、必填元数据校验、编译/链接参数分词、`Requires` 依赖表达式解析、版本比较及约束判断。
+已实现：变量与字段解析、来源位置、错误恢复、元数据校验、版本约束、传递和私有依赖、循环与冲突诊断、虚拟包提供者、编译/链接参数聚合、JSON 输出及单文件检查命令。
 
-下一阶段：CLI 文件查询、官方工具对照测试和兼容策略细化。当前仍不能替代完整的 `pkg-config`/`pkgconf`。
+下一阶段：多文件查询、官方工具对照测试和兼容策略细化。当前仍不能替代完整的 `pkg-config`/`pkgconf`。
 
 ## 快速运行
 
@@ -22,6 +22,7 @@ moon test --target all
 moon run cmd/demo
 moon run --target native cmd/inspect examples/imagekit.pc
 moon run --target native cmd/inspect examples/imagekit.pc --json
+moon run --target native cmd/inspect examples/broken.pc
 ```
 
 演示输出示例：
@@ -37,7 +38,7 @@ Requires.private: compression >= 1.0 [imagekit.pc:8]
 
 Windows 当前工作区可运行 `./scripts/verify.ps1`。它只为本次进程设置便携工具链环境；也可通过 `-MoonHome` 指定其他安装位置。
 
-`cmd/inspect` 是首个文件入口：读取一个 UTF-8 `.pc` 文件，默认列出常用字段、来源和诊断；加 `--json` 输出完整解析结果。文件访问使用 MoonBit 官方 `moonbitlang/x`，解析核心仍不直接接触文件系统。
+`cmd/inspect` 读取一个 UTF-8 `.pc` 文件，默认列出常用字段、来源和诊断；加 `--json` 输出完整解析结果。检查通过时退出码为 `0`，发现解析或必填元数据问题时为 `1`，用法或文件读取错误时为 `2`。文件访问使用 MoonBit 官方 `moonbitlang/x`，解析核心仍不直接接触文件系统。
 
 ## 库接口
 
@@ -70,6 +71,6 @@ let libs = doc.field("Libs")
 - 重复字段、重复变量、覆盖 `pcfiledir`、未定义引用采用严格错误诊断；不同于某些宽松实现。
 - 来源行是逻辑行起始的物理行；列为合并续行并处理注释后的 Unicode 字符列。续行中间的精确物理跨度还未实现。
 - 仅解析文本，不查找系统包、不修改构建配置、不运行编译器或安装依赖。
-- 尚不实现 sysroot 重写、Windows 自动重定位、系统路径过滤、完整片段去重、版本比较或 pkgconf 3 扩展。
+- 尚不实现 sysroot 重写、Windows 自动重定位、系统路径过滤、完整片段去重或全部 pkgconf 3 扩展。
 
-来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。
+可复制的演示步骤见 [docs/demo.md](docs/demo.md)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。

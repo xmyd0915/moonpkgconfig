@@ -1,6 +1,6 @@
 # 验证记录
 
-日期：2026-09-16；平台：Windows x64。
+最近验证：2026-09-18；平台：Windows x64。
 
 工具链：交接所列 MoonBit 官方便携安装，`moon 0.1.20260915 (2e1a46d 2026-09-15)`。
 
@@ -14,6 +14,7 @@
 | `moon run cmd/demo` | 成功，输出六项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/imagekit.pc --json` | 成功，输出完整条目与空诊断数组 |
+| `moon run --target native cmd/inspect examples/broken.pc` | 按预期报告五项问题并返回退出码 1 |
 
 46 个逻辑测试在四个目标各运行一次，不将它们宣传为 184 个独立测试。覆盖顺序变量展开、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、包元数据校验、直接与传递依赖检查、私有依赖、虚拟包提供者、循环和包冲突诊断、参数聚合与来源、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
 

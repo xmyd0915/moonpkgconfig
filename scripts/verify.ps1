@@ -24,6 +24,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'File inspector failed.' }
     & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/imagekit.pc --json
     if ($LASTEXITCODE -ne 0) { throw 'JSON file inspector failed.' }
+    & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/broken.pc
+    if ($LASTEXITCODE -ne 1) { throw 'Invalid file did not return diagnostic exit code 1.' }
 } finally {
     Pop-Location
     $env:MOON_HOME = $oldMoonHome
