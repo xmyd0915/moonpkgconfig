@@ -10,7 +10,7 @@
 
 开发中，尚未发布到 MoonCakes。`local/moonpkgconfig` 仅供本地导入；公开发布前由维护者确认实际命名空间。
 
-已实现：变量与字段解析、来源位置、错误恢复、元数据校验、版本约束、传递和私有依赖、循环与冲突诊断、虚拟包提供者、编译/链接参数聚合、JSON 输出及单文件检查命令。
+已实现：变量与字段解析、来源位置、错误恢复、元数据校验、版本约束、传递和私有依赖、循环与冲突诊断、虚拟包提供者、编译/链接参数聚合、JSON 输出、单文件检查及整目录检查命令。
 
 下一阶段：扩大真实文件样本、增加参数兼容策略并完善发布准备。当前仍不能替代完整的 `pkg-config`/`pkgconf`。
 
@@ -25,6 +25,8 @@ moon run cmd/demo
 moon run --target native cmd/inspect examples/valid/imagekit.pc
 moon run --target native cmd/inspect examples/valid/imagekit.pc --json
 moon run --target native cmd/inspect examples/invalid/broken.pc
+moon run --target native cmd/check examples/valid
+moon run --target native cmd/check examples/invalid
 moon run --target native cmd/query examples/valid imagekit --cflags --explain
 moon run --target native cmd/query examples/valid imagekit --libs
 moon run --target native cmd/query examples/valid imagekit --libs --static
@@ -49,6 +51,8 @@ GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检
 
 `cmd/query` 从显式目录加载其中的 `.pc` 文件，解析指定根包的依赖图，并通过 `--cflags`、`--libs` 或 `--libs --static` 输出聚合参数。`--explain` 会逐项显示包、字段和源码位置，`--json` 提供结构化结果。它不会隐式读取系统搜索路径或环境变量。
 
+`cmd/check` 检查显式目录里的全部 `.pc` 文件，不要求先知道根包名。它会汇总文本解析、必填元数据、公开和私有依赖、版本、依赖环及冲突诊断；正常目录返回 `0`，发现问题返回 `1`，目录读取或调用错误返回 `2`。
+
 ## 库接口
 
 ```moonbit
@@ -66,6 +70,8 @@ let libs = doc.field("Libs")
 `split_flags` 返回参数数组，不启动 shell；`parse_requirements` 返回包名、比较运算符和版本文本。`compare_versions` 和 `Requirement::matches` 可用于检查已安装版本是否满足约束。
 
 `PackageSet` 接收已解析文档并检查直接依赖，报告重复包、缺失包和版本不满足。`PackageSet::resolve` 生成依赖优先的传递顺序，按需包含 `Requires.private`，并诊断循环依赖及带版本条件的 `Conflicts`。找不到同名包时，可按加入顺序选择 `Provides` 中无版本或精确版本匹配的虚拟包提供者；范围形式的 `Provides` 仍留待后续兼容工作。
+
+`PackageSet::check_all` 把集合中的每个包作为根节点检查，并默认包含私有依赖；重复出现的同一诊断只报告一次，适合 CI 或目录级检查。
 
 `collect_cflags` 与 `collect_libs` 聚合依赖图中的参数，每个参数保留包名、字段和来源位置。静态链接查询会加入私有依赖与 `Libs.private`。
 

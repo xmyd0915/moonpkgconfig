@@ -9,7 +9,7 @@ moon check --target all --deny-warn
 moon test --target all --deny-warn
 ```
 
-预期四个目标均通过。目前每个目标运行 46 个逻辑测试。
+预期四个目标均通过。目前每个目标运行 47 个逻辑测试。
 
 ## 2. 检查正常文件
 
@@ -45,12 +45,21 @@ moon run --target native cmd/query examples/valid imagekit --libs --static
 
 目录中包含 `imagekit -> codec -> compression` 三个包。第一条命令还会显示每个参数来自哪个包、字段和源码行；后两条分别展示动态和静态链接结果。
 
+## 6. 一次检查整个目录
+
+```sh
+moon run --target native cmd/check examples/valid
+moon run --target native cmd/check examples/invalid
+```
+
+第一条命令应显示 `Checked 3 packages from 3 .pc files; 0 diagnostics.` 并返回 `0`。第二条会同时报告文件语法问题、未定义变量、公开依赖缺失和私有依赖缺失，最后显示 `4 diagnostics` 并返回 `1`。
+
 ## 退出码
 
 | 退出码 | 含义 |
 | --- | --- |
-| `0` | 文件读取成功且没有诊断 |
-| `1` | 文件读取成功，但解析或必填元数据检查发现问题 |
-| `2` | 参数用法错误或文件无法读取 |
+| `0` | 输入读取成功且没有诊断 |
+| `1` | 输入读取成功，但解析、元数据或依赖检查发现问题 |
+| `2` | 参数用法错误或输入无法读取 |
 
-当前文件入口一次处理一个 UTF-8 `.pc` 文件，不搜索系统 pkg-config 目录。完整兼容边界见仓库 README。
+所有命令都只读取明确给出的 UTF-8 文件或目录，不搜索系统 pkg-config 目录。完整兼容边界见仓库 README。

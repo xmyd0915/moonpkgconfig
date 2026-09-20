@@ -21,34 +21,6 @@ fn print_diagnostics(diagnostics : Array[@pc.Diagnostic]) -> Unit {
 }
 
 ///|
-fn load_packages(
-  directory : String,
-  diagnostics : Array[@pc.Diagnostic],
-) -> @pc.PackageSet raise @fs.IOError {
-  let packages = @pc.PackageSet::new()
-  let names = @fs.read_dir(directory).to_owned()
-  names.sort()
-  for name in names {
-    if @path.Path(name).extname() != ".pc" {
-      continue
-    }
-    let path = @path.Path(directory).join(@path.Path(name)).to_string()
-    let content = @fs.read_file_to_string(path)
-    let document = @pc.parse(content, source=path, pcfiledir=directory)
-    for problem in document.diagnostics {
-      diagnostics.push(problem)
-    }
-    if document.diagnostics.is_empty() {
-      let id = name[0:name.length() - 3].to_owned()
-      for problem in packages.add(id, document, source=path) {
-        diagnostics.push(problem)
-      }
-    }
-  }
-  packages
-}
-
-///|
 fn print_flags(result : @pc.FlagResult, explain : Bool) -> Unit {
   println(result.flags.map(flag => flag.value).join(" "))
   if explain {
@@ -112,15 +84,14 @@ fn main {
   let directory = positionals[0]
   let root = positionals[1]
   try {
-    let loading_diagnostics : Array[@pc.Diagnostic] = []
-    let packages = load_packages(directory, loading_diagnostics)
-    if !loading_diagnostics.is_empty() {
-      print_diagnostics(loading_diagnostics)
+    let loaded = @loader.load_directory(directory)
+    if !loaded.diagnostics.is_empty() {
+      print_diagnostics(loaded.diagnostics)
       @sys.exit(1)
     }
     let result = match mode.unwrap() {
-      Cflags => packages.collect_cflags(root)
-      Libs => packages.collect_libs(root, static_linking~)
+      Cflags => loaded.packages.collect_cflags(root)
+      Libs => loaded.packages.collect_libs(root, static_linking~)
     }
     if json {
       println(result.json_text(pretty=true))

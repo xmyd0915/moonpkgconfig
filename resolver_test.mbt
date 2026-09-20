@@ -134,3 +134,21 @@ test "resolver can start from an unversioned virtual package name" {
   |> ignore
   @debug.assert_eq(packages.resolve("codec").order, ["fast-codec"])
 }
+
+///|
+test "directory check includes private dependencies and removes repeats" {
+  let packages = PackageSet::new()
+  packages.add("shared", graph_package("shared", "1", "missing")) |> ignore
+  packages.add("left", graph_package("left", "1", "shared")) |> ignore
+  packages.add("right", graph_package("right", "1", "shared")) |> ignore
+  packages.add(
+    "app",
+    graph_package("app", "1", "left, right", private_requires="private-missing"),
+  )
+  |> ignore
+  let diagnostics = packages.check_all()
+  @debug.assert_eq(diagnostics.map(d => d.code), ["PC015", "PC015"])
+  @debug.assert_eq(diagnostics.map(d => d.message), [
+    "Required package not found: missing", "Required package not found: private-missing",
+  ])
+}

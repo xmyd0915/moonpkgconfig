@@ -44,6 +44,26 @@ pub fn PackageSet::resolve(
 }
 
 ///|
+/// Check every package as a possible root and return each distinct diagnostic
+/// once. Private dependencies participate by default because a directory check
+/// should also catch problems that only affect static linking.
+pub fn PackageSet::check_all(
+  self : PackageSet,
+  include_private? : Bool = true,
+) -> Array[Diagnostic] {
+  let diagnostics : Array[Diagnostic] = []
+  for id in self.package_ids {
+    let result = self.resolve(id, include_private~, source=id)
+    for problem in result.diagnostics {
+      if !diagnostics.any(existing => existing == problem) {
+        diagnostics.push(problem)
+      }
+    }
+  }
+  diagnostics
+}
+
+///|
 fn append_selected_conflicts(
   packages : PackageSet,
   order : Array[String],

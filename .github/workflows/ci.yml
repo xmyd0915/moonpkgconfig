@@ -59,3 +59,16 @@ jobs:
           test "$(moon run --target native cmd/query examples/valid imagekit --cflags)" = "-I/opt/example/include/compression -I/opt/example/include/codec -I/opt/example/include -DIMAGEKIT=1"
           test "$(moon run --target native cmd/query examples/valid imagekit --libs)" = "-L/opt/example/lib -limagekit -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression"
           test "$(moon run --target native cmd/query examples/valid imagekit --libs --static)" = "-L/opt/example/lib -limagekit -lm -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression -lz"
+
+      - name: Check package directories
+        shell: bash
+        run: |
+          test "$(moon run --target native cmd/check examples/valid)" = "Checked 3 packages from 3 .pc files; 0 diagnostics."
+          set +e
+          output="$(moon run --target native cmd/check examples/invalid)"
+          status=$?
+          set -e
+          test "$status" -eq 1
+          grep -q "package-that-is-not-here" <<< "$output"
+          grep -q "private-helper" <<< "$output"
+          grep -q "4 diagnostics." <<< "$output"

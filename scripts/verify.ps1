@@ -32,6 +32,10 @@ try {
     if ($LASTEXITCODE -ne 0 -or $libs -ne '-L/opt/example/lib -limagekit -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression') { throw 'Libs query failed.' }
     $staticLibs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --libs --static | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $staticLibs -ne '-L/opt/example/lib -limagekit -lm -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression -lz') { throw 'Static libs query failed.' }
+    $validDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/valid | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $validDirectory -ne 'Checked 3 packages from 3 .pc files; 0 diagnostics.') { throw 'Valid directory check failed.' }
+    $invalidDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/invalid | Out-String).Trim()
+    if ($LASTEXITCODE -ne 1 -or $invalidDirectory -notmatch 'package-that-is-not-here' -or $invalidDirectory -notmatch 'private-helper' -or $invalidDirectory -notmatch '4 diagnostics\.') { throw 'Invalid directory check failed.' }
 } finally {
     Pop-Location
     $env:MOON_HOME = $oldMoonHome

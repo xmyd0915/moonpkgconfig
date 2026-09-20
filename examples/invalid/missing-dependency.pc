@@ -1,0 +1,9 @@
+prefix=/opt/example
+
+Name: missing-demo
+Description: Valid metadata with dependencies that cannot be resolved
+Version: 1.0
+Requires: package-that-is-not-here >= 2
+Requires.private: private-helper
+Libs: -L${prefix}/lib -lmissing-demo
+Cflags: -I${prefix}/include
