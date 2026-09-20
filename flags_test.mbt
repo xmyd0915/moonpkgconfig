@@ -87,3 +87,32 @@ test "flag tokenization errors retain the field source" {
   @debug.assert_eq(result.diagnostics[0].location.source, "bad.pc")
   @debug.assert_eq(result.flags, [])
 }
+
+///|
+test "search path deduplication keeps other repeated flags and first origin" {
+  let packages = PackageSet::new()
+  packages.add(
+    "dependency",
+    flag_package(
+      "dependency", "", "-I/shared -I /split -DVALUE=1", "-L/shared -L /split -lrepeat",
+    ),
+  )
+  |> ignore
+  packages.add(
+    "app",
+    flag_package(
+      "app", "dependency", "-I/shared -I /split -DVALUE=1", "-L/shared -L /split -lrepeat",
+    ),
+  )
+  |> ignore
+  let cflags = packages.collect_cflags("app").deduplicate_search_paths()
+  @debug.assert_eq(cflags.flags.map(f => f.value), [
+    "-I/shared", "-I", "/split", "-DVALUE=1", "-DVALUE=1",
+  ])
+  @debug.assert_eq(cflags.flags[0].package_id, "dependency")
+  let libs = packages.collect_libs("app").deduplicate_search_paths()
+  @debug.assert_eq(libs.flags.map(f => f.value), [
+    "-L/shared", "-L", "/split", "-lrepeat", "-lrepeat",
+  ])
+  @debug.assert_eq(libs.flags[0].package_id, "app")
+}

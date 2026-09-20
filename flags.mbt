@@ -14,6 +14,44 @@ pub(all) struct FlagResult {
 } derive(Eq, @debug.Debug)
 
 ///|
+/// Return a copy with repeated compiler and linker search paths removed.
+///
+/// Both attached (`-I/path`, `-L/path`) and split (`-I /path`, `-L /path`)
+/// forms are recognized. Other flags, including repeated libraries, are kept
+/// because their order and repetition can affect linking.
+pub fn FlagResult::deduplicate_search_paths(self : FlagResult) -> FlagResult {
+  let flags : Array[ResolvedFlag] = []
+  let seen : Map[String, Bool] = Map([])
+  let mut i = 0
+  while i < self.flags.length() {
+    let flag = self.flags[i]
+    if (flag.value == "-I" || flag.value == "-L") && i + 1 < self.flags.length() {
+      let next = self.flags[i + 1]
+      let key = flag.value + "\n" + next.value
+      if !seen.contains(key) {
+        seen[key] = true
+        flags.push(flag)
+        flags.push(next)
+      }
+      i = i + 2
+    } else {
+      let is_search_path = (
+          flag.value.has_prefix("-I") || flag.value.has_prefix("-L")
+        ) &&
+        flag.value.length() > 2
+      if !is_search_path || !seen.contains(flag.value) {
+        if is_search_path {
+          seen[flag.value] = true
+        }
+        flags.push(flag)
+      }
+      i = i + 1
+    }
+  }
+  { flags, diagnostics: self.diagnostics.copy(), }
+}
+
+///|
 /// Collect public compiler flags in dependency-first order.
 pub fn PackageSet::collect_cflags(
   self : PackageSet,

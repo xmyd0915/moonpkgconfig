@@ -10,17 +10,18 @@
 | --- | --- |
 | `moon fmt` | 成功 |
 | `moon check --target all --deny-warn` | 四目标成功，无警告 |
-| `moon test --target all --deny-warn` | wasm 47/47，wasm-gc 47/47，JS 47/47，native 47/47 |
+| `moon test --target all --deny-warn` | wasm 48/48，wasm-gc 48/48，JS 48/48，native 48/48 |
 | `moon run cmd/demo` | 成功，输出六项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc --json` | 成功，输出完整条目与空诊断数组 |
 | `moon run --target native cmd/inspect examples/invalid/broken.pc` | 按预期报告五项问题并返回退出码 1 |
 | `cmd/query` 三种查询 | Cflags、动态 Libs、静态 Libs 均成功并通过精确输出断言 |
+| `cmd/query --dedupe-paths` | 重复 `-L` 被稳定去除，其他参数顺序不变，并通过精确输出断言 |
 | `cmd/check examples/valid` | 成功，检查 3 个包、0 项诊断，退出码 0 |
 | `cmd/check examples/invalid` | 报告解析及公开/私有依赖问题，共 4 项诊断，退出码 1 |
 | GitHub Actions CI | Ubuntu 全新环境成功，运行记录 [35305828387](https://github.com/xmyd0915/moonpkgconfig/actions/runs/35305828387) |
 
-47 个逻辑测试在四个目标各运行一次，不将它们宣传为 188 个独立测试。覆盖顺序变量展开、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、包元数据校验、直接与传递依赖检查、全包检查去重、私有依赖、虚拟包提供者、循环和包冲突诊断、参数聚合与来源、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
+48 个逻辑测试在四个目标各运行一次，不将它们宣传为 192 个独立测试。覆盖顺序变量展开、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、包元数据校验、直接与传递依赖检查、全包检查去重、私有依赖、虚拟包提供者、循环和包冲突诊断、参数聚合与来源、搜索路径去重、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
 
 当前证据仅证明所覆盖子集。目录查询只读取调用者明确指定的位置，尚未实现系统搜索路径和 sysroot 处理；pkgconf 对照目前也只覆盖仓库中的自编样例。
 

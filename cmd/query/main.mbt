@@ -7,7 +7,7 @@ enum QueryMode {
 ///|
 fn print_usage() -> Unit {
   println(
-    "Usage: moon run cmd/query <directory> <package> (--cflags | --libs) [--static] [--json] [--explain]",
+    "Usage: moon run cmd/query <directory> <package> (--cflags | --libs) [--static] [--dedupe-paths] [--json] [--explain]",
   )
 }
 
@@ -41,6 +41,7 @@ fn main {
   let mut static_linking = false
   let mut json = false
   let mut explain = false
+  let mut dedupe_paths = false
   let mut invalid = false
   let mut help = false
   for i = 1; i < args.length(); i = i + 1 {
@@ -60,6 +61,7 @@ fn main {
       "--static" => static_linking = true
       "--json" => json = true
       "--explain" => explain = true
+      "--dedupe-paths" => dedupe_paths = true
       "--help" | "-h" => help = true
       option =>
         if option.has_prefix("-") {
@@ -89,9 +91,14 @@ fn main {
       print_diagnostics(loaded.diagnostics)
       @sys.exit(1)
     }
-    let result = match mode.unwrap() {
+    let collected = match mode.unwrap() {
       Cflags => loaded.packages.collect_cflags(root)
       Libs => loaded.packages.collect_libs(root, static_linking~)
+    }
+    let result = if dedupe_paths {
+      collected.deduplicate_search_paths()
+    } else {
+      collected
     }
     if json {
       println(result.json_text(pretty=true))

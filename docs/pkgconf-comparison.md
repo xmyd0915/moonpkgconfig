@@ -41,13 +41,19 @@ MoonPkgConfig 查询结果：
 
 --libs --static
 -L/opt/example/lib -limagekit -lm -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression -lz
+
+--libs --dedupe-paths
+-L/opt/example/lib -limagekit -lcodec -lcompression
+
+--libs --static --dedupe-paths
+-L/opt/example/lib -limagekit -lm -lcodec -lcompression -lz
 ```
 
 ## 结论与差异
 
 - 两边识别到相同的根包版本、编译参数集合、动态链接库集合和静态私有库集合。
-- MoonPkgConfig 的链接参数保留每个包提供的重复 `-L`，便于解释来源；pkgconf 会合并重复搜索路径。
+- MoonPkgConfig 默认保留每个包提供的重复 `-L`，便于解释来源；显式加入 `--dedupe-paths` 后，本样例的动态和静态链接输出与 pkgconf 一致。
 - MoonPkgConfig 当前以依赖优先顺序输出 Cflags；pkgconf 3.0.7 在该样例中以根包优先顺序输出。
 - `examples/invalid/broken.pc` 会被两边拒绝。MoonPkgConfig 额外把未定义变量和空 `Name` 作为严格诊断；pkgconf 会裁剪带空白的版本，并报告缺失 `Description` 等问题。
 
-这些差异是当前兼容边界，不把本次结果表述为完整兼容。后续会扩大真实 `.pc` 文件样本，并决定参数去重和顺序是否提供兼容模式。
+这些差异是当前兼容边界，不把本次结果表述为完整兼容。搜索路径去重只处理连接式或分离式 `-I`/`-L`，不会删除重复库或其他可能影响链接语义的参数。后续仍需扩大真实 `.pc` 文件样本，并继续核对参数顺序。

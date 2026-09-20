@@ -40,10 +40,11 @@ JSON 保留每个变量和字段的原始值、展开值及来源位置，也包
 ```sh
 moon run --target native cmd/query examples/valid imagekit --cflags --explain
 moon run --target native cmd/query examples/valid imagekit --libs
+moon run --target native cmd/query examples/valid imagekit --libs --dedupe-paths
 moon run --target native cmd/query examples/valid imagekit --libs --static
 ```
 
-目录中包含 `imagekit -> codec -> compression` 三个包。第一条命令还会显示每个参数来自哪个包、字段和源码行；后两条分别展示动态和静态链接结果。
+目录中包含 `imagekit -> codec -> compression` 三个包。第一条命令还会显示每个参数来自哪个包、字段和源码行；第三条只去除重复的 `-L` 搜索路径，结果与对照使用的 pkgconf 动态链接输出一致；最后一条展示静态链接结果。
 
 ## 6. 一次检查整个目录
 
