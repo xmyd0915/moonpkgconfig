@@ -57,3 +57,9 @@ MoonPkgConfig 查询结果：
 - `examples/invalid/broken.pc` 会被两边拒绝。MoonPkgConfig 额外把未定义变量和空 `Name` 作为严格诊断；pkgconf 会裁剪带空白的版本，并报告缺失 `Description` 等问题。
 
 这些差异是当前兼容边界，不把本次结果表述为完整兼容。搜索路径去重只处理连接式或分离式 `-I`/`-L`，不会删除重复库或其他可能影响链接语义的参数。后续仍需扩大真实 `.pc` 文件样本，并继续核对参数顺序。
+
+## 上游测试样本
+
+仓库另包含10个未经修改的pkgconf 3.0.7官方测试文件，固定到提交 `0c9e506b64124d8727b68d8af0ed73739e66e2ba`。它们在Windows本地验证和Ubuntu CI中通过整目录检查，覆盖变量空白、续行、CRLF、无末尾换行、反斜杠、引号、美元转义和分离式参数等输入。
+
+样本清单、原始路径与ISC许可证见 [`testdata/pkgconf-3.0.7`](../testdata/pkgconf-3.0.7)。这是选定语料的兼容证据，不等同于完整pkgconf一致性。

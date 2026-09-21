@@ -55,6 +55,14 @@ moon run --target native cmd/check examples/invalid
 
 第一条命令应显示 `Checked 3 packages from 3 .pc files; 0 diagnostics.` 并返回 `0`。第二条会同时报告文件语法问题、未定义变量、公开依赖缺失和私有依赖缺失，最后显示 `4 diagnostics` 并返回 `1`。
 
+## 7. 检查固定的上游样本
+
+```sh
+moon run --target native cmd/check testdata/pkgconf-3.0.7
+```
+
+预期显示 `Checked 10 packages from 10 .pc files; 0 diagnostics.`。这些文件未经修改地取自官方pkgconf 3.0.7测试套件，具体来源、提交和许可证记录在同目录README中。
+
 ## 退出码
 
 | 退出码 | 含义 |

@@ -65,6 +65,7 @@ jobs:
         shell: bash
         run: |
           test "$(moon run --target native cmd/check examples/valid)" = "Checked 3 packages from 3 .pc files; 0 diagnostics."
+          test "$(moon run --target native cmd/check testdata/pkgconf-3.0.7)" = "Checked 10 packages from 10 .pc files; 0 diagnostics."
           set +e
           output="$(moon run --target native cmd/check examples/invalid)"
           status=$?

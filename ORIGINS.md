@@ -11,7 +11,9 @@
 5. MoonBit 标准库（工具链自带）：<https://github.com/moonbitlang/core>，Apache-2.0；本项目使用 API，不复制其实现。
 6. `moonbitlang/x` 0.5.5：<https://github.com/moonbitlang/x>，Apache-2.0；`cmd/inspect` 使用其 `fs` 和 `path` API 读取文件及计算 `pcfiledir`，依赖源码不纳入本仓库。
 
-本项目依据公开格式独立编写，没有移植或复制 pkgconf/pkg-config/MoonNinja/MoonGitAttrs 的实现代码。当前测试与 `.pc` 示例均为本项目自编，不含来源不明的语料。后续若引入外部测试，必须逐项记录出处、版本与许可证。
+本项目依据公开格式独立编写，没有移植或复制 pkgconf/pkg-config/MoonNinja/MoonGitAttrs 的实现代码。功能单元测试与 `examples` 中的 `.pc` 示例均为本项目自编。
+
+`testdata/pkgconf-3.0.7` 中的10个兼容样本未经修改地复制自pkgconf官方测试套件标签 `pkgconf-3.0.7`（提交 `0c9e506b64124d8727b68d8af0ed73739e66e2ba`），并随附上游ISC许可证。文件清单与原始路径见该目录README。
 
 开发过程中使用了 AI 辅助；项目方向、功能取舍、验证与发布由维护者负责。维护者理解实现、核对结果并维护真实的开发记录。
 
