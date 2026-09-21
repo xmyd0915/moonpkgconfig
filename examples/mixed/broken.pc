@@ -1,0 +1,5 @@
+prefix=${missing}
+Name: broken
+Description: Invalid package used to test query isolation
+Version: 1.0
+Cflags: -I${prefix}

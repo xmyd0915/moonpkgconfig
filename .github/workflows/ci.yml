@@ -63,6 +63,13 @@ jobs:
           test "$(moon run --target native cmd/query testdata/pkgconf-3.0.7 fragment-quoting --cflags)" = "-fPIC -I/test/include/foo '-DQUOTED=\"/test/share/doc\"'"
           test "$(moon run --target native cmd/query examples/order root --cflags)" = "-I/root -I/left -I/common"
           test "$(moon run --target native cmd/query examples/order root --libs --static)" = "-lroot -lroot-private -lleft -lright -lcommon"
+          test "$(moon run --target native cmd/query examples/mixed good --cflags)" = "-I/good"
+          set +e
+          broken_output="$(moon run --target native cmd/query examples/mixed broken --cflags)"
+          broken_status=$?
+          set -e
+          test "$broken_status" -eq 1
+          grep -q "PC004" <<< "$broken_output"
 
       - name: Check package directories
         shell: bash

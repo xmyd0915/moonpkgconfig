@@ -87,8 +87,9 @@ fn main {
   let root = positionals[1]
   try {
     let loaded = @loader.load_directory(directory)
-    if !loaded.diagnostics.is_empty() {
-      print_diagnostics(loaded.diagnostics)
+    let root_diagnostics = loaded.diagnostics_for(root)
+    if !root_diagnostics.is_empty() {
+      print_diagnostics(root_diagnostics)
       @sys.exit(1)
     }
     let collected = match mode.unwrap() {

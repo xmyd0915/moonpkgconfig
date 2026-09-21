@@ -40,6 +40,10 @@ try {
     if ($LASTEXITCODE -ne 0 -or $orderedCflags -ne '-I/root -I/left -I/common') { throw 'Cflags dependency order failed.' }
     $orderedStaticLibs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/order root --libs --static | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $orderedStaticLibs -ne '-lroot -lroot-private -lleft -lright -lcommon') { throw 'Static library dependency order failed.' }
+    $isolatedQuery = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/mixed good --cflags | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $isolatedQuery -ne '-I/good') { throw 'Unrelated invalid file blocked a valid query.' }
+    $brokenQuery = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/mixed broken --cflags | Out-String).Trim()
+    if ($LASTEXITCODE -ne 1 -or $brokenQuery -notmatch 'PC004') { throw 'Invalid root package diagnostics were not returned.' }
     $validDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/valid | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $validDirectory -ne 'Checked 3 packages from 3 .pc files; 0 diagnostics.') { throw 'Valid directory check failed.' }
     $invalidDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/invalid | Out-String).Trim()

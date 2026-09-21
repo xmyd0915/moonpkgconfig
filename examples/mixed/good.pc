@@ -1,0 +1,5 @@
+Name: good
+Description: Valid package next to an unrelated invalid file
+Version: 1.0
+Cflags: -I/good
+Libs: -lgood
