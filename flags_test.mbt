@@ -6,7 +6,7 @@ fn flag_package(
   libs : String,
   private_requires? : String = "",
   private_libs? : String = "",
-) -> Document {
+) -> @moonpkgconfig.Document {
   let text = StringBuilder()
   text.write_string("Name: " + id + "\nDescription: flag fixture\nVersion: 1")
   if !requires.is_empty() {
@@ -24,12 +24,12 @@ fn flag_package(
   if !cflags.is_empty() {
     text.write_string("\nCflags: " + cflags)
   }
-  parse(text.to_string(), source=id + ".pc")
+  @moonpkgconfig.parse(text.to_string(), source=id + ".pc")
 }
 
 ///|
 test "compiler flags keep dependency order and origin" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("codec", flag_package("codec", "", "-I/codec", "-lcodec"))
   |> ignore
   packages.add("app", flag_package("app", "codec", "-I/app -DAPP=1", "-lapp"))
@@ -45,7 +45,7 @@ test "compiler flags keep dependency order and origin" {
 
 ///|
 test "linker flags put dependants before dependencies" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("codec", flag_package("codec", "", "", "-lcodec")) |> ignore
   packages.add("app", flag_package("app", "codec", "", "-lapp")) |> ignore
   @debug.assert_eq(packages.collect_libs("app").flags.map(f => f.value), [
@@ -55,7 +55,7 @@ test "linker flags put dependants before dependencies" {
 
 ///|
 test "static linker flags include private edges and fields" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("helper", flag_package("helper", "", "", "-lhelper")) |> ignore
   packages.add(
     "app",
@@ -80,7 +80,7 @@ test "static linker flags include private edges and fields" {
 
 ///|
 test "flag tokenization errors retain the field source" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("bad", flag_package("bad", "", "'unfinished", "")) |> ignore
   let result = packages.collect_cflags("bad")
   @debug.assert_eq(result.diagnostics.map(d => d.code), ["PC006"])
@@ -90,7 +90,7 @@ test "flag tokenization errors retain the field source" {
 
 ///|
 test "search path deduplication keeps other repeated flags and first origin" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add(
     "dependency",
     flag_package(

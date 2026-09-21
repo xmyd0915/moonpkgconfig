@@ -1,6 +1,6 @@
 ///|
 test "variable expansion retains original and source" {
-  let doc = parse(
+  let doc = @moonpkgconfig.parse(
     "prefix=/opt/sdk\nlibdir=${prefix}/lib\nLibs: -L${libdir} -lcodec\n",
     source="codec.pc",
   )
@@ -13,7 +13,7 @@ test "variable expansion retains original and source" {
 
 ///|
 test "pcfiledir is supplied explicitly by caller" {
-  let doc = parse(
+  let doc = @moonpkgconfig.parse(
     "prefix=${pcfiledir}/..\nName: 测试库",
     pcfiledir="/sdk/lib/pkgconfig",
   )
@@ -26,7 +26,7 @@ test "pcfiledir is supplied explicitly by caller" {
 
 ///|
 test "forward reference is rejected and parsing recovers" {
-  let doc = parse("bad=${later}\nlater=ok\nName: works")
+  let doc = @moonpkgconfig.parse("bad=${later}\nlater=ok\nName: works")
   @debug.assert_eq(doc.diagnostics.length(), 1)
   @debug.assert_eq(doc.diagnostics[0].code, "PC004")
   @debug.assert_eq(doc.diagnostics[0].location.column, 5)
@@ -36,13 +36,13 @@ test "forward reference is rejected and parsing recovers" {
 
 ///|
 test "self reference fails without recursion" {
-  let doc = parse("a=${a}")
+  let doc = @moonpkgconfig.parse("a=${a}")
   @debug.assert_eq(doc.diagnostics[0].code, "PC004")
 }
 
 ///|
 test "literal dollar reference is not recursively substituted" {
-  let doc = parse("literal=$${missing}\nName: ${literal}")
+  let doc = @moonpkgconfig.parse("literal=$${missing}\nName: ${literal}")
   @debug.assert_eq(doc.diagnostics, [])
   @debug.assert_eq(doc.field("Name").unwrap().value, "${missing}")
 }
@@ -50,19 +50,19 @@ test "literal dollar reference is not recursively substituted" {
 ///|
 test "duplicate variables fields and builtins are rejected" {
   for input in ["a=one\na=two", "Name: one\nName: two", "pcfiledir=/wrong"] {
-    let doc = parse(input)
+    let doc = @moonpkgconfig.parse(input)
     @debug.assert_eq(doc.diagnostics.length(), 1)
     @debug.assert_eq(doc.diagnostics[0].code, "PC005")
   }
   @debug.assert_eq(
-    parse("Name: one\nName: two").field("Name").unwrap().value,
+    @moonpkgconfig.parse("Name: one\nName: two").field("Name").unwrap().value,
     "one",
   )
 }
 
 ///|
 test "comments CRLF BOM empty lines and unterminated final line" {
-  let doc = parse(
+  let doc = @moonpkgconfig.parse(
     "\u{FEFF}# heading\r\n\r\n  Name : hello # comment\r\nVersion: 1.0",
   )
   @debug.assert_eq(doc.diagnostics, [])
@@ -75,10 +75,12 @@ test "comments CRLF BOM empty lines and unterminated final line" {
 ///|
 test "continuations support LF and CRLF" {
   for eol in ["\n", "\r\n"] {
-    let doc = parse("Libs: -la \\" + eol + " -lb" + eol + "Name: demo")
+    let doc = @moonpkgconfig.parse(
+      "Libs: -la \\" + eol + " -lb" + eol + "Name: demo",
+    )
     @debug.assert_eq(doc.diagnostics, [])
     @debug.assert_eq(
-      split_flags(doc.field("Libs").unwrap().value),
+      @moonpkgconfig.split_flags(doc.field("Libs").unwrap().value),
       Ok(["-la", "-lb"]),
     )
     @debug.assert_eq(doc.field("Name").unwrap().location.line, 3)
@@ -88,25 +90,29 @@ test "continuations support LF and CRLF" {
 ///|
 test "escaped hash is literal and paired slashes do not escape comment" {
   @debug.assert_eq(
-    parse("Name: a\\#b # comment").field("Name").unwrap().value,
+    @moonpkgconfig.parse("Name: a\\#b # comment").field("Name").unwrap().value,
     "a#b",
   )
   @debug.assert_eq(
-    parse("Name: a\\\\#comment").field("Name").unwrap().value,
+    @moonpkgconfig.parse("Name: a\\\\#comment").field("Name").unwrap().value,
     "a\\\\",
   )
 }
 
 ///|
 test "syntax diagnostics and whitespace in keys" {
-  let doc = parse("not an assignment\nbad key=one\nName: ${unclosed")
+  let doc = @moonpkgconfig.parse(
+    "not an assignment\nbad key=one\nName: ${unclosed",
+  )
   @debug.assert_eq(doc.diagnostics.map(d => d.code), ["PC001", "PC002", "PC003"])
   @debug.assert_eq(doc.entries, [])
 }
 
 ///|
 test "value punctuation and empty values are preserved" {
-  let doc = parse("url=https://example.invalid/a=b\nURL: ${url}\nLibs:\nempty=")
+  let doc = @moonpkgconfig.parse(
+    "url=https://example.invalid/a=b\nURL: ${url}\nLibs:\nempty=",
+  )
   @debug.assert_eq(doc.diagnostics, [])
   @debug.assert_eq(
     doc.field("URL").unwrap().value,
@@ -118,7 +124,7 @@ test "value punctuation and empty values are preserved" {
 
 ///|
 test "variable and property namespaces are separate and case sensitive" {
-  let doc = parse("Name=lower\nName: ${Name}\nname: other")
+  let doc = @moonpkgconfig.parse("Name=lower\nName: ${Name}\nname: other")
   @debug.assert_eq(doc.diagnostics, [])
   @debug.assert_eq(doc.field("Name").unwrap().value, "lower")
   @debug.assert_eq(doc.field("name").unwrap().value, "other")
@@ -127,7 +133,9 @@ test "variable and property namespaces are separate and case sensitive" {
 ///|
 test "flags preserve quoted spaces empty args and concatenation" {
   @debug.assert_eq(
-    split_flags("-I'/opt/sdk dir/include' -DNAME=\"a b\" '' pre\"mid\"post"),
+    @moonpkgconfig.split_flags(
+      "-I'/opt/sdk dir/include' -DNAME=\"a b\" '' pre\"mid\"post",
+    ),
     Ok(["-I/opt/sdk dir/include", "-DNAME=a b", "", "premidpost"]),
   )
 }
@@ -135,15 +143,15 @@ test "flags preserve quoted spaces empty args and concatenation" {
 ///|
 test "flags handle escaped spaces quotes and single quoted backslashes" {
   @debug.assert_eq(
-    split_flags("-I/opt/a\\ b \\\"quoted\\\" 'a\\b' \"a\\qb\""),
+    @moonpkgconfig.split_flags("-I/opt/a\\ b \\\"quoted\\\" 'a\\b' \"a\\qb\""),
     Ok(["-I/opt/a b", "\"quoted\"", "a\\b", "a\\qb"]),
   )
 }
 
 ///|
-test "flags do not execute or expand shell text" {
+test "flags do not execute or @moonpkgconfig.expand shell text" {
   @debug.assert_eq(
-    split_flags("$(touch marker) `cmd` $HOME *.c"),
+    @moonpkgconfig.split_flags("$(touch marker) `cmd` $HOME *.c"),
     Ok(["$(touch", "marker)", "`cmd`", "$HOME", "*.c"]),
   )
 }
@@ -151,7 +159,7 @@ test "flags do not execute or expand shell text" {
 ///|
 test "malformed flags return diagnostics" {
   for (input, code) in [("'unfinished", "PC006"), ("trailing\\", "PC007")] {
-    match split_flags(input) {
+    match @moonpkgconfig.split_flags(input) {
       Err(d) => @debug.assert_eq(d.code, code)
       Ok(_) => fail("expected invalid flags")
     }
@@ -160,7 +168,9 @@ test "malformed flags return diagnostics" {
 
 ///|
 test "dependency list supports all version operators and separators" {
-  let actual = parse_requirements("a >= 1, b<=2 c=3 d!=4, e>5 f<6 g")
+  let actual = @moonpkgconfig.parse_requirements(
+    "a >= 1, b<=2 c=3 d!=4, e>5 f<6 g",
+  )
   @debug.assert_eq(
     actual,
     Ok([
@@ -178,7 +188,7 @@ test "dependency list supports all version operators and separators" {
 ///|
 test "dependency list diagnoses malformed operators and missing versions" {
   for input in ["foo >=", "foo == 1", ">= 1", "foo >, bar", "foo >= >2"] {
-    match parse_requirements(input) {
+    match @moonpkgconfig.parse_requirements(input) {
       Err(d) => @debug.assert_eq(d.code, "PC008")
       Ok(_) => fail("expected invalid requirement: " + input)
     }
@@ -187,16 +197,16 @@ test "dependency list diagnoses malformed operators and missing versions" {
 
 ///|
 test "empty document flags and requirements are valid" {
-  @debug.assert_eq(parse("# just a comment").entries, [])
-  @debug.assert_eq(split_flags(" \t"), Ok([]))
-  @debug.assert_eq(parse_requirements(" , \t"), Ok([]))
+  @debug.assert_eq(@moonpkgconfig.parse("# just a comment").entries, [])
+  @debug.assert_eq(@moonpkgconfig.split_flags(" \t"), Ok([]))
+  @debug.assert_eq(@moonpkgconfig.parse_requirements(" , \t"), Ok([]))
 }
 
 ///|
 test "expansion enforces output limit before appending oversized variable" {
   let variables : Map[String, String] = { "huge": "x".repeat(1048577) }
   match
-    expand("${huge}", variables, location={
+    @moonpkgconfig.expand("${huge}", variables, location={
       source: "limit.pc",
       line: 2,
       column: 4,

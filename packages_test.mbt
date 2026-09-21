@@ -1,6 +1,6 @@
 ///|
-fn test_package(name : String, version : String) -> Document {
-  parse(
+fn test_package(name : String, version : String) -> @moonpkgconfig.Document {
+  @moonpkgconfig.parse(
     "Name: " + name + "\nDescription: test package\nVersion: " + version,
     source=name + ".pc",
   )
@@ -8,7 +8,7 @@ fn test_package(name : String, version : String) -> Document {
 
 ///|
 test "package set stores validated documents" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   @debug.assert_eq(packages.add("codec", test_package("Codec", "2.1")), [])
   @debug.assert_eq(
     packages.get("codec").unwrap().document.field("Version").unwrap().value,
@@ -18,13 +18,15 @@ test "package set stores validated documents" {
 
 ///|
 test "package set rejects invalid identifiers metadata and duplicates" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   @debug.assert_eq(
     packages.add("bad id", test_package("Bad", "1")).map(d => d.code),
     ["PC013"],
   )
   @debug.assert_eq(
-    packages.add("missing", parse("Name: Missing")).map(d => d.code),
+    packages
+    .add("missing", @moonpkgconfig.parse("Name: Missing"))
+    .map(d => d.code),
     ["PC010", "PC010"],
   )
   @debug.assert_eq(packages.add("codec", test_package("Codec", "2.1")), [])
@@ -36,10 +38,10 @@ test "package set rejects invalid identifiers metadata and duplicates" {
 
 ///|
 test "package set reports missing and incompatible direct dependencies" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("codec", test_package("Codec", "2.1")) |> ignore
   packages.add("compression", test_package("Compression", "1.0")) |> ignore
-  let requirements = parse_requirements(
+  let requirements = @moonpkgconfig.parse_requirements(
     "codec >= 2.0, compression > 1.0, image-format",
   ).unwrap()
   let diagnostics = packages.check_requirements(requirements, source="image.pc")
@@ -49,17 +51,17 @@ test "package set reports missing and incompatible direct dependencies" {
 
 ///|
 test "package set accepts matching virtual providers" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add(
     "fast-codec",
-    parse(
+    @moonpkgconfig.parse(
       "Name: Fast codec\nDescription: test provider\nVersion: 7\nProvides: codec = 3",
       source="fast-codec.pc",
     ),
   )
   |> ignore
-  let matching = parse_requirements("codec >= 2").unwrap()
-  let too_new = parse_requirements("codec >= 4").unwrap()
+  let matching = @moonpkgconfig.parse_requirements("codec >= 2").unwrap()
+  let too_new = @moonpkgconfig.parse_requirements("codec >= 4").unwrap()
   @debug.assert_eq(packages.check_requirements(matching), [])
   @debug.assert_eq(packages.check_requirements(too_new).map(d => d.code), [
     "PC015",

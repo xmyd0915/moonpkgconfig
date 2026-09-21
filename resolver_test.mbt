@@ -6,7 +6,7 @@ fn graph_package(
   private_requires? : String = "",
   conflicts? : String = "",
   provides? : String = "",
-) -> Document {
+) -> @moonpkgconfig.Document {
   let text = StringBuilder()
   text.write_string(
     "Name: " + id + "\nDescription: graph fixture\nVersion: " + version,
@@ -23,12 +23,12 @@ fn graph_package(
   if !provides.is_empty() {
     text.write_string("\nProvides: " + provides)
   }
-  parse(text.to_string(), source=id + ".pc")
+  @moonpkgconfig.parse(text.to_string(), source=id + ".pc")
 }
 
 ///|
 test "resolver returns dependencies before their dependants" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("compression", graph_package("compression", "1", "")) |> ignore
   packages.add("codec", graph_package("codec", "2", "compression >= 1"))
   |> ignore
@@ -40,7 +40,7 @@ test "resolver returns dependencies before their dependants" {
 
 ///|
 test "private dependencies are opt in" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("static-helper", graph_package("static-helper", "1", ""))
   |> ignore
   packages.add(
@@ -56,7 +56,7 @@ test "private dependencies are opt in" {
 
 ///|
 test "resolver reports cycles without recursing forever" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("a", graph_package("a", "1", "b")) |> ignore
   packages.add("b", graph_package("b", "1", "c")) |> ignore
   packages.add("c", graph_package("c", "1", "a")) |> ignore
@@ -70,7 +70,7 @@ test "resolver reports cycles without recursing forever" {
 
 ///|
 test "resolver keeps independent transitive errors" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("old", graph_package("old", "1", "")) |> ignore
   packages.add("app", graph_package("app", "1", "old >= 2, missing")) |> ignore
   let result = packages.resolve("app")
@@ -80,7 +80,7 @@ test "resolver keeps independent transitive errors" {
 
 ///|
 test "resolver reports a matching conflict between selected packages" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("left", graph_package("left", "1", "", conflicts="right >= 3"))
   |> ignore
   packages.add("right", graph_package("right", "3", "")) |> ignore
@@ -92,7 +92,7 @@ test "resolver reports a matching conflict between selected packages" {
 
 ///|
 test "resolver ignores a conflict whose version does not match" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("left", graph_package("left", "1", "", conflicts="right >= 4"))
   |> ignore
   packages.add("right", graph_package("right", "3", "")) |> ignore
@@ -102,7 +102,7 @@ test "resolver ignores a conflict whose version does not match" {
 
 ///|
 test "resolver reports malformed conflict expressions at their field" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("app", graph_package("app", "1", "", conflicts="other >="))
   |> ignore
   let result = packages.resolve("app")
@@ -112,7 +112,7 @@ test "resolver reports malformed conflict expressions at their field" {
 
 ///|
 test "resolver follows a versioned virtual package provider" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add(
     "fast-codec",
     graph_package("fast-codec", "7", "", provides="codec = 3"),
@@ -126,7 +126,7 @@ test "resolver follows a versioned virtual package provider" {
 
 ///|
 test "resolver can start from an unversioned virtual package name" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add(
     "fast-codec",
     graph_package("fast-codec", "7", "", provides="codec = 3"),
@@ -137,7 +137,7 @@ test "resolver can start from an unversioned virtual package name" {
 
 ///|
 test "directory check includes private dependencies and removes repeats" {
-  let packages = PackageSet::new()
+  let packages = @moonpkgconfig.PackageSet::new()
   packages.add("shared", graph_package("shared", "1", "missing")) |> ignore
   packages.add("left", graph_package("left", "1", "shared")) |> ignore
   packages.add("right", graph_package("right", "1", "shared")) |> ignore

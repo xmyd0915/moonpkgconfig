@@ -1,6 +1,9 @@
 ///|
 test "document JSON keeps raw expanded and source values" {
-  let doc = parse("prefix=/opt/sdk\nLibs: -L${prefix}/lib", source="codec.pc")
+  let doc = @moonpkgconfig.parse(
+    "prefix=/opt/sdk\nLibs: -L${prefix}/lib",
+    source="codec.pc",
+  )
   guard doc.as_json() is Object(root) else { fail("expected JSON object") }
   guard root.get("entries") is Some(Array(entries)) else {
     fail("expected entries array")
@@ -17,7 +20,7 @@ test "document JSON keeps raw expanded and source values" {
 
 ///|
 test "diagnostics are available in compact and pretty JSON" {
-  let doc = parse("Name: ${missing}", source="broken.pc")
+  let doc = @moonpkgconfig.parse("Name: ${missing}", source="broken.pc")
   let compact = doc.json_text()
   let pretty = doc.json_text(pretty=true)
   assert_true(compact.contains("\"code\":\"PC004\""))
@@ -27,7 +30,7 @@ test "diagnostics are available in compact and pretty JSON" {
 
 ///|
 test "flag JSON includes package field and location" {
-  let result : FlagResult = {
+  let result : @moonpkgconfig.FlagResult = {
     flags: [
       {
         value: "-lcodec",
