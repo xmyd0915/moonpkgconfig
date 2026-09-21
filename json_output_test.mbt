@@ -16,6 +16,10 @@ test "document JSON keeps raw expanded and source values" {
   }
   @debug.assert_eq(location.get("source"), Some(Json("codec.pc")))
   @debug.assert_eq(location.get("line"), Some(Json(2)))
+  guard field.get("value_location") is Some(Object(value_location)) else {
+    fail("expected value location object")
+  }
+  @debug.assert_eq(value_location.get("column"), Some(Json(7)))
 }
 
 ///|

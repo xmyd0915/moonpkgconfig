@@ -9,6 +9,11 @@ test "variable expansion retains original and source" {
   @debug.assert_eq(field.value, "-L/opt/sdk/lib -lcodec")
   @debug.assert_eq(field.raw, "-L${libdir} -lcodec")
   @debug.assert_eq(field.location, { source: "codec.pc", line: 3, column: 1, })
+  @debug.assert_eq(field.value_location, {
+    source: "codec.pc",
+    line: 3,
+    column: 7,
+  })
 }
 
 ///|

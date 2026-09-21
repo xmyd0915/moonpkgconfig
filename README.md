@@ -66,7 +66,7 @@ let doc = @pc.parse(
 let libs = doc.field("Libs")
 ```
 
-`Entry` 同时返回 `raw`（原始值）、`value`（展开值）、`location`（文件/行/列）。变量按定义顺序展开，非法条目不会进入查询结果；应先检查 `Document.diagnostics`。
+`Entry` 同时返回 `raw`（原始值）、`value`（展开值）、`location`（字段或变量名的文件/行/列）和 `value_location`（值的起始位置）。变量按定义顺序展开，非法条目不会进入查询结果；应先检查 `Document.diagnostics`。
 
 `Document::validate_metadata` 检查 `Name`、`Description` 和 `Version`，与保留错误继续解析的文本层分开，便于编辑器展示多个问题。
 
@@ -78,7 +78,7 @@ let libs = doc.field("Libs")
 
 `collect_cflags` 与 `collect_libs` 聚合依赖图中的参数，每个参数保留包名、字段和来源位置。静态链接查询会加入私有依赖与 `Libs.private`。`FlagResult::shell_text` 提供可复制到 POSIX shell 的文本表示；直接集成时应使用 `flags` 数组，避免再次解析展示文本。
 
-`FlagResult::deduplicate_search_paths` 可选择性去除重复的连接式或分离式 `-I`/`-L` 参数，并保留首次出现项的来源。它不会去重 `-l`、宏定义或其他参数。
+`FlagResult::deduplicate_search_paths` 可选择性去除重复的连接式或分离式 `-I`/`-L` 参数，两种写法会按同一路径比较并保留首次出现项的原始形式和来源。分离式参数只与同一包、同一字段中的下一项配对，避免跨来源误判。它不会去重 `-l`、宏定义或其他参数。
 
 `Document::json_text` 和 `FlagResult::json_text` 提供紧凑或缩进 JSON，供命令行工具、编辑器与 CI 使用。
 

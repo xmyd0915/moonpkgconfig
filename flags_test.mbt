@@ -81,10 +81,16 @@ test "static linker flags include private edges and fields" {
 ///|
 test "flag tokenization errors retain the field source" {
   let packages = @moonpkgconfig.PackageSet::new()
-  packages.add("bad", flag_package("bad", "", "'unfinished", "")) |> ignore
+  let bad = @moonpkgconfig.parse(
+    "Name: bad\nDescription: bad flags\nVersion: 1\n  Cflags: 'unfinished",
+    source="bad.pc",
+  )
+  packages.add("bad", bad) |> ignore
   let result = packages.collect_cflags("bad")
   @debug.assert_eq(result.diagnostics.map(d => d.code), ["PC006"])
   @debug.assert_eq(result.diagnostics[0].location.source, "bad.pc")
+  @debug.assert_eq(result.diagnostics[0].location.line, 4)
+  @debug.assert_eq(result.diagnostics[0].location.column, 22)
   @debug.assert_eq(result.flags, [])
 }
 
@@ -94,27 +100,46 @@ test "search path deduplication keeps other repeated flags and first origin" {
   packages.add(
     "dependency",
     flag_package(
-      "dependency", "", "-I/shared -I /split -DVALUE=1", "-L/shared -L /split -lrepeat",
+      "dependency", "", "-I/shared -I /split -I/mixed -DVALUE=1", "-L/shared -L /split -L/mixed -lrepeat",
     ),
   )
   |> ignore
   packages.add(
     "app",
     flag_package(
-      "app", "dependency", "-I/shared -I /split -DVALUE=1", "-L/shared -L /split -lrepeat",
+      "app", "dependency", "-I/shared -I /split -I /mixed -DVALUE=1", "-L/shared -L /split -L /mixed -lrepeat",
     ),
   )
   |> ignore
   let cflags = packages.collect_cflags("app").deduplicate_search_paths()
   @debug.assert_eq(cflags.flags.map(f => f.value), [
-    "-I/shared", "-I", "/split", "-DVALUE=1", "-DVALUE=1",
+    "-I/shared", "-I", "/split", "-I", "/mixed", "-DVALUE=1", "-DVALUE=1",
   ])
   @debug.assert_eq(cflags.flags[0].package_id, "app")
   let libs = packages.collect_libs("app").deduplicate_search_paths()
   @debug.assert_eq(libs.flags.map(f => f.value), [
-    "-L/shared", "-L", "/split", "-lrepeat", "-lrepeat",
+    "-L/shared", "-L", "/split", "-L", "/mixed", "-lrepeat", "-lrepeat",
   ])
   @debug.assert_eq(libs.flags[0].package_id, "app")
+}
+
+///|
+test "search path operands never cross package or field boundaries" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  packages.add(
+    "dependency",
+    flag_package("dependency", "", "/dependency-first", "-ldependency"),
+  )
+  |> ignore
+  packages.add("app", flag_package("app", "dependency", "-I", "-lapp"))
+  |> ignore
+  let result = packages.collect_cflags("app").deduplicate_search_paths()
+  @debug.assert_eq(result.flags.map(flag => flag.value), [
+    "-I", "/dependency-first",
+  ])
+  @debug.assert_eq(result.flags.map(flag => flag.package_id), [
+    "app", "dependency",
+  ])
 }
 
 ///|

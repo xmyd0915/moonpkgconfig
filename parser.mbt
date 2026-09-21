@@ -192,7 +192,7 @@ fn parse_line(
   match expand(raw, variables, location=value_location) {
     Err(d) => diagnostics.push(d)
     Ok(value) => {
-      entries.push({ kind, name, raw, value, location, })
+      entries.push({ kind, name, raw, value, location, value_location, })
       match kind {
         Variable => variables[name] = value
         Field => fields[name] = true

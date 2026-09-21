@@ -69,7 +69,10 @@ pub fn FlagResult::deduplicate_search_paths(self : FlagResult) -> FlagResult {
   let mut i = 0
   while i < self.flags.length() {
     let flag = self.flags[i]
-    if (flag.value == "-I" || flag.value == "-L") && i + 1 < self.flags.length() {
+    let split_search_path = (flag.value == "-I" || flag.value == "-L") &&
+      i + 1 < self.flags.length() &&
+      same_flag_origin(flag, self.flags[i + 1])
+    if split_search_path {
       let next = self.flags[i + 1]
       let key = flag.value + "\n" + next.value
       if !seen.contains(key) {
@@ -83,9 +86,14 @@ pub fn FlagResult::deduplicate_search_paths(self : FlagResult) -> FlagResult {
           flag.value.has_prefix("-I") || flag.value.has_prefix("-L")
         ) &&
         flag.value.length() > 2
-      if !is_search_path || !seen.contains(flag.value) {
+      let key = if is_search_path {
+        flag.value[0:2].to_owned() + "\n" + flag.value[2:].to_owned()
+      } else {
+        flag.value
+      }
+      if !is_search_path || !seen.contains(key) {
         if is_search_path {
-          seen[flag.value] = true
+          seen[key] = true
         }
         flags.push(flag)
       }
@@ -93,6 +101,13 @@ pub fn FlagResult::deduplicate_search_paths(self : FlagResult) -> FlagResult {
     }
   }
   { flags, diagnostics: self.diagnostics.copy(), }
+}
+
+///|
+fn same_flag_origin(left : ResolvedFlag, right : ResolvedFlag) -> Bool {
+  left.package_id == right.package_id &&
+  left.field == right.field &&
+  left.location == right.location
 }
 
 ///|
@@ -219,9 +234,9 @@ fn append_flag_field(
     Err(problem) =>
       diagnostics.push(
         diag(problem.code, problem.message, {
-          source: entry.location.source,
-          line: entry.location.line,
-          column: entry.location.column + problem.location.column - 1,
+          source: entry.value_location.source,
+          line: entry.value_location.line,
+          column: entry.value_location.column + problem.location.column - 1,
         }),
       )
   }

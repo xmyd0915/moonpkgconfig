@@ -28,6 +28,7 @@ pub(all) struct Entry {
   raw : String
   value : String
   location : Location
+  value_location : Location
 } derive(Eq, @debug.Debug)
 
 ///|

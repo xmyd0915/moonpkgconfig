@@ -16,6 +16,7 @@ pub fn Document::as_json(self : Document) -> Json {
         "raw": Json(entry.raw),
         "value": Json(entry.value),
         "location": location_json(entry.location),
+        "value_location": location_json(entry.value_location),
       }),
     )
   }
