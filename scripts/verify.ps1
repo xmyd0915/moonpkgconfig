@@ -52,6 +52,16 @@ try {
     if ($LASTEXITCODE -ne 0 -or $firstSearchPath -ne '-I/first -I/helper') { throw 'Ordered search path did not keep the first package and load a later dependency.' }
     $reversedSearchPath = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/search/second demo --path examples/search/first --cflags | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $reversedSearchPath -ne '-I/second') { throw 'Reversed search path did not change package precedence.' }
+    $moduleVersion = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --modversion | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $moduleVersion -ne '1.2.0') { throw 'Module version query failed.' }
+    & "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --exists
+    if ($LASTEXITCODE -ne 0) { throw 'Existing package query failed.' }
+    & "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --atleast-version=1.1
+    if ($LASTEXITCODE -ne 0) { throw 'Minimum version query failed.' }
+    & "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --exact-version=1.2.0
+    if ($LASTEXITCODE -ne 0) { throw 'Exact version query failed.' }
+    & "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --max-version=1.1
+    if ($LASTEXITCODE -ne 1) { throw 'Maximum version mismatch did not return exit code 1.' }
     $validDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/valid | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $validDirectory -ne 'Checked 3 packages from 3 .pc files; 0 diagnostics.') { throw 'Valid directory check failed.' }
     $invalidDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/invalid | Out-String).Trim()

@@ -2,12 +2,20 @@
 enum QueryMode {
   Cflags
   Libs
+  ModVersion
+  Exists
+  AtLeastVersion(String)
+  ExactVersion(String)
+  MaxVersion(String)
 } derive(Eq)
 
 ///|
 fn print_usage() -> Unit {
   println(
-    "Usage: moon run cmd/query <directory> <package> (--cflags | --libs) [--path <directory>]... [--static] [--dedupe-paths] [--json] [--explain]",
+    "Usage: moon run cmd/query <directory> <package> <mode> [--path <directory>]... [options]",
+  )
+  println(
+    "Modes: --cflags, --libs, --modversion, --exists, --atleast-version=<version>, --exact-version=<version>, --max-version=<version>",
   )
 }
 
@@ -60,6 +68,18 @@ fn main {
         } else {
           mode = Some(Libs)
         }
+      "--modversion" =>
+        if mode is Some(_) {
+          invalid = true
+        } else {
+          mode = Some(ModVersion)
+        }
+      "--exists" =>
+        if mode is Some(_) {
+          invalid = true
+        } else {
+          mode = Some(Exists)
+        }
       "--static" => static_linking = true
       "--json" => json = true
       "--explain" => explain = true
@@ -73,7 +93,28 @@ fn main {
         }
       "--help" | "-h" => help = true
       option =>
-        if option.has_prefix("-") {
+        if option.has_prefix("--atleast-version=") {
+          let version = option[18:].to_owned()
+          if mode is Some(_) || version.is_empty() {
+            invalid = true
+          } else {
+            mode = Some(AtLeastVersion(version))
+          }
+        } else if option.has_prefix("--exact-version=") {
+          let version = option[16:].to_owned()
+          if mode is Some(_) || version.is_empty() {
+            invalid = true
+          } else {
+            mode = Some(ExactVersion(version))
+          }
+        } else if option.has_prefix("--max-version=") {
+          let version = option[14:].to_owned()
+          if mode is Some(_) || version.is_empty() {
+            invalid = true
+          } else {
+            mode = Some(MaxVersion(version))
+          }
+        } else if option.has_prefix("-") {
           invalid = true
         } else {
           positionals.push(option)
@@ -89,8 +130,13 @@ fn main {
     print_usage()
     @sys.exit(2)
   }
-  if static_linking && mode == Some(Cflags) {
+  let flag_mode = mode == Some(Cflags) || mode == Some(Libs)
+  if static_linking && mode != Some(Libs) {
     println("--static is only valid with --libs")
+    @sys.exit(2)
+  }
+  if !flag_mode && (dedupe_paths || json || explain) {
+    println("--dedupe-paths, --json and --explain require --cflags or --libs")
     @sys.exit(2)
   }
   let directory = positionals[0]
@@ -111,22 +157,58 @@ fn main {
       }
       @sys.exit(1)
     }
-    let collected = match mode.unwrap() {
-      Cflags => loaded.packages.collect_cflags(root)
-      Libs => loaded.packages.collect_libs(root, static_linking~)
-    }
-    let result = if dedupe_paths {
-      collected.deduplicate_search_paths()
-    } else {
-      collected
-    }
-    if json {
-      println(result.json_text(pretty=true))
-    } else {
-      print_flags(result, explain)
-    }
-    if !result.diagnostics.is_empty() {
-      @sys.exit(1)
+    match mode.unwrap() {
+      Cflags | Libs as flag_query => {
+        let collected = match flag_query {
+          Cflags => loaded.packages.collect_cflags(root)
+          Libs => loaded.packages.collect_libs(root, static_linking~)
+          _ => abort("unreachable query mode")
+        }
+        let result = if dedupe_paths {
+          collected.deduplicate_search_paths()
+        } else {
+          collected
+        }
+        if json {
+          println(result.json_text(pretty=true))
+        } else {
+          print_flags(result, explain)
+        }
+        if !result.diagnostics.is_empty() {
+          @sys.exit(1)
+        }
+      }
+      ModVersion
+      | Exists
+      | AtLeastVersion(_)
+      | ExactVersion(_)
+      | MaxVersion(_) as metadata_query => {
+        let resolution = loaded.packages.resolve(root)
+        if !resolution.diagnostics.is_empty() {
+          print_diagnostics(resolution.diagnostics)
+          @sys.exit(1)
+        }
+        let selected_id = resolution.order[resolution.order.length() - 1]
+        let selected = loaded.packages.get(selected_id).unwrap()
+        let version = selected.document.field("Version").unwrap().value
+        match metadata_query {
+          ModVersion => println(version)
+          Exists => ()
+          AtLeastVersion(required) =>
+            if @pc.compare_versions(version, required) < 0 {
+              @sys.exit(1)
+            }
+          ExactVersion(required) =>
+            if @pc.compare_versions(version, required) != 0 {
+              @sys.exit(1)
+            }
+          MaxVersion(required) =>
+            if @pc.compare_versions(version, required) > 0 {
+              @sys.exit(1)
+            }
+          _ => abort("unreachable metadata query mode")
+        }
+      }
     }
   } catch {
     @fs.IOError(message) => {
