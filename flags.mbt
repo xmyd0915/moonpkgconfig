@@ -96,7 +96,7 @@ pub fn FlagResult::deduplicate_search_paths(self : FlagResult) -> FlagResult {
 }
 
 ///|
-/// Collect public compiler flags in dependency-first order.
+/// Collect public compiler flags in dependant-first order.
 pub fn PackageSet::collect_cflags(
   self : PackageSet,
   root : String,
@@ -104,7 +104,7 @@ pub fn PackageSet::collect_cflags(
   let resolution = self.resolve(root)
   let flags : Array[ResolvedFlag] = []
   let diagnostics = resolution.diagnostics.copy()
-  for id in resolution.order {
+  for id in self.flag_order(root, false) {
     append_flag_field(self, id, "Cflags", flags, diagnostics)
   }
   { flags, diagnostics, }
@@ -121,16 +121,79 @@ pub fn PackageSet::collect_libs(
   let resolution = self.resolve(root, include_private=static_linking)
   let flags : Array[ResolvedFlag] = []
   let diagnostics = resolution.diagnostics.copy()
-  let mut i = resolution.order.length() - 1
-  while i >= 0 {
-    let id = resolution.order[i]
+  for id in self.flag_order(root, static_linking) {
     append_flag_field(self, id, "Libs", flags, diagnostics)
     if static_linking {
       append_flag_field(self, id, "Libs.private", flags, diagnostics)
     }
-    i = i - 1
   }
   { flags, diagnostics, }
+}
+
+///|
+// pkgconf emits the requested package first, then walks dependencies in their
+// declaration order. A separate traversal is used because `Resolution.order`
+// is intentionally dependency-first for build planning.
+fn PackageSet::flag_order(
+  self : PackageSet,
+  root : String,
+  include_private : Bool,
+) -> Array[String] {
+  let order : Array[String] = []
+  let seen : Map[String, Bool] = Map([])
+  let root_requirement : Requirement = { name: root, op: Any, version: "", }
+  let root_id = match self.packages.get(root) {
+    Some(_) => Some(root)
+    None => self.find_provider(root_requirement).map(pkg => pkg.id)
+  }
+  if root_id is Some(id) {
+    seen[id] = true
+    order.push(id)
+    let mut index = 0
+    while index < order.length() {
+      let pkg = self.packages.get(order[index]).unwrap()
+      append_flag_requirements(self, pkg, "Requires", seen, order)
+      if include_private {
+        append_flag_requirements(self, pkg, "Requires.private", seen, order)
+      }
+      index = index + 1
+    }
+  }
+  order
+}
+
+///|
+fn append_flag_requirements(
+  packages : PackageSet,
+  pkg : Package,
+  field_name : String,
+  seen : Map[String, Bool],
+  order : Array[String],
+) -> Unit {
+  guard pkg.document.field(field_name) is Some(field) else { return }
+  guard parse_requirements(field.value, source=field.location.source)
+    is Ok(requirements) else {
+    return
+  }
+  for requirement in requirements {
+    let dependency_id = match packages.packages.get(requirement.name) {
+      Some(dependency) => {
+        let version = dependency.document.field("Version").unwrap().value
+        if requirement.matches(version) {
+          Some(requirement.name)
+        } else {
+          None
+        }
+      }
+      None => packages.find_provider(requirement).map(provider => provider.id)
+    }
+    if dependency_id is Some(id) {
+      if !seen.contains(id) {
+        seen[id] = true
+        order.push(id)
+      }
+    }
+  }
 }
 
 ///|

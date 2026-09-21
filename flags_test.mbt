@@ -28,7 +28,7 @@ fn flag_package(
 }
 
 ///|
-test "compiler flags keep dependency order and origin" {
+test "compiler flags put dependants before dependencies" {
   let packages = @moonpkgconfig.PackageSet::new()
   packages.add("codec", flag_package("codec", "", "-I/codec", "-lcodec"))
   |> ignore
@@ -37,10 +37,10 @@ test "compiler flags keep dependency order and origin" {
   let result = packages.collect_cflags("app")
   @debug.assert_eq(result.diagnostics, [])
   @debug.assert_eq(result.flags.map(f => f.value), [
-    "-I/codec", "-I/app", "-DAPP=1",
+    "-I/app", "-DAPP=1", "-I/codec",
   ])
-  @debug.assert_eq(result.flags.map(f => f.package_id), ["codec", "app", "app"])
-  @debug.assert_eq(result.flags[0].location.source, "codec.pc")
+  @debug.assert_eq(result.flags.map(f => f.package_id), ["app", "app", "codec"])
+  @debug.assert_eq(result.flags[0].location.source, "app.pc")
 }
 
 ///|
@@ -109,12 +109,31 @@ test "search path deduplication keeps other repeated flags and first origin" {
   @debug.assert_eq(cflags.flags.map(f => f.value), [
     "-I/shared", "-I", "/split", "-DVALUE=1", "-DVALUE=1",
   ])
-  @debug.assert_eq(cflags.flags[0].package_id, "dependency")
+  @debug.assert_eq(cflags.flags[0].package_id, "app")
   let libs = packages.collect_libs("app").deduplicate_search_paths()
   @debug.assert_eq(libs.flags.map(f => f.value), [
     "-L/shared", "-L", "/split", "-lrepeat", "-lrepeat",
   ])
   @debug.assert_eq(libs.flags[0].package_id, "app")
+}
+
+///|
+test "flag order keeps declared siblings stable in a diamond graph" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  packages.add("common", flag_package("common", "", "-I/common", "-lcommon"))
+  |> ignore
+  packages.add("left", flag_package("left", "common", "-I/left", "-lleft"))
+  |> ignore
+  packages.add("right", flag_package("right", "common", "-I/right", "-lright"))
+  |> ignore
+  packages.add("root", flag_package("root", "left, right", "-I/root", "-lroot"))
+  |> ignore
+  @debug.assert_eq(packages.collect_cflags("root").flags.map(f => f.value), [
+    "-I/root", "-I/left", "-I/right", "-I/common",
+  ])
+  @debug.assert_eq(packages.collect_libs("root").flags.map(f => f.value), [
+    "-lroot", "-lleft", "-lright", "-lcommon",
+  ])
 }
 
 ///|

@@ -1,0 +1,6 @@
+Name: left
+Description: Left side of the order diamond
+Version: 1
+Requires: common
+Cflags: -I/left
+Libs: -lleft

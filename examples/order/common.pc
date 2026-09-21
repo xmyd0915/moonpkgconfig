@@ -1,0 +1,5 @@
+Name: common
+Description: Shared dependency in the order diamond
+Version: 1
+Cflags: -I/common
+Libs: -lcommon

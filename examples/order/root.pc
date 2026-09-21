@@ -1,0 +1,8 @@
+Name: root
+Description: Flag order root
+Version: 1
+Requires: left
+Requires.private: right
+Cflags: -I/root
+Libs: -lroot
+Libs.private: -lroot-private

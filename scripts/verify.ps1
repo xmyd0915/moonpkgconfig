@@ -27,7 +27,7 @@ try {
     & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/invalid/broken.pc
     if ($LASTEXITCODE -ne 1) { throw 'Invalid file did not return diagnostic exit code 1.' }
     $cflags = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --cflags | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0 -or $cflags -ne '-I/opt/example/include/compression -I/opt/example/include/codec -I/opt/example/include -DIMAGEKIT=1') { throw 'Cflags query failed.' }
+    if ($LASTEXITCODE -ne 0 -or $cflags -ne '-I/opt/example/include -DIMAGEKIT=1 -I/opt/example/include/codec -I/opt/example/include/compression') { throw 'Cflags query failed.' }
     $libs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --libs | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $libs -ne '-L/opt/example/lib -limagekit -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression') { throw 'Libs query failed.' }
     $staticLibs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --libs --static | Out-String).Trim()
@@ -36,6 +36,10 @@ try {
     if ($LASTEXITCODE -ne 0 -or $deduplicatedLibs -ne '-L/opt/example/lib -limagekit -lcodec -lcompression') { throw 'Search path deduplication failed.' }
     $quotedFlags = (& "$MoonHome\bin\moon.exe" run --target native cmd/query testdata/pkgconf-3.0.7 fragment-quoting --cflags | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $quotedFlags -ne '-fPIC -I/test/include/foo ''-DQUOTED="/test/share/doc"''') { throw 'Quoted flag rendering failed.' }
+    $orderedCflags = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/order root --cflags | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $orderedCflags -ne '-I/root -I/left -I/common') { throw 'Cflags dependency order failed.' }
+    $orderedStaticLibs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/order root --libs --static | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $orderedStaticLibs -ne '-lroot -lroot-private -lleft -lright -lcommon') { throw 'Static library dependency order failed.' }
     $validDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/valid | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $validDirectory -ne 'Checked 3 packages from 3 .pc files; 0 diagnostics.') { throw 'Valid directory check failed.' }
     $invalidDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/invalid | Out-String).Trim()

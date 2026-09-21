@@ -34,7 +34,7 @@ MoonPkgConfig 查询结果：
 
 ```text
 --cflags
--I/opt/example/include/compression -I/opt/example/include/codec -I/opt/example/include -DIMAGEKIT=1
+-I/opt/example/include -DIMAGEKIT=1 -I/opt/example/include/codec -I/opt/example/include/compression
 
 --libs
 -L/opt/example/lib -limagekit -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression
@@ -51,10 +51,11 @@ MoonPkgConfig 查询结果：
 
 ## 结论与差异
 
-- 两边识别到相同的根包版本、编译参数集合、动态链接库集合和静态私有库集合。
+- 两边识别到相同的根包版本，并以相同顺序输出编译参数、动态链接库和静态私有库。
 - MoonPkgConfig 默认保留每个包提供的重复 `-L`，便于解释来源；显式加入 `--dedupe-paths` 后，本样例的动态和静态链接输出与 pkgconf 一致。
-- MoonPkgConfig 当前以依赖优先顺序输出 Cflags；pkgconf 3.0.7 在该样例中以根包优先顺序输出。
 - `examples/invalid/broken.pc` 会被两边拒绝。MoonPkgConfig 额外把未定义变量和空 `Name` 作为严格诊断；pkgconf 会裁剪带空白的版本，并报告缺失 `Description` 等问题。
+
+`examples/order` 是一个带共享传递依赖的菱形图，根包同时具有公开和私有依赖。普通 Cflags 查询只遍历公开边，两边顺序均为 `root -> left -> common`；静态 Libs 会加入私有边，两边顺序均为 `root -> root-private -> left -> right -> common`。该断言同时在本地验证和CI中运行。
 
 这些差异是当前兼容边界，不把本次结果表述为完整兼容。搜索路径去重只处理连接式或分离式 `-I`/`-L`，不会删除重复库或其他可能影响链接语义的参数。后续仍需扩大真实 `.pc` 文件样本，并继续核对参数顺序。
 

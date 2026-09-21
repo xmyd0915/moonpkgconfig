@@ -1,0 +1,6 @@
+Name: right
+Description: Right side of the order diamond
+Version: 1
+Requires: common
+Cflags: -I/right
+Libs: -lright
