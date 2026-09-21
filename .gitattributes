@@ -1,1 +1,3 @@
 * text=auto eol=lf
+/testdata/pkgconf-3.0.7/*.pc -text
+/testdata/pkgconf-3.0.7/LICENSE.pkgconf -text
