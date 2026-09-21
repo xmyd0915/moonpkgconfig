@@ -78,6 +78,8 @@ jobs:
           test "$(printf '%s' "$broken_json" | head -c 1)" = "{"
           grep -q '"flags": \[\]' <<< "$broken_json"
           grep -q '"code": "PC004"' <<< "$broken_json"
+          test "$(moon run --target native cmd/query examples/search/first demo --path examples/search/second --cflags)" = "-I/first -I/helper"
+          test "$(moon run --target native cmd/query examples/search/second demo --path examples/search/first --cflags)" = "-I/second"
 
       - name: Check package directories
         shell: bash

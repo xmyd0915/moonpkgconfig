@@ -48,6 +48,10 @@ try {
     if ($LASTEXITCODE -ne 1) { throw 'Invalid root JSON query did not return exit code 1.' }
     $brokenJson = $brokenJsonText | ConvertFrom-Json
     if ($null -eq $brokenJson.flags -or $brokenJson.flags.Count -ne 0 -or $brokenJson.diagnostics[0].code -ne 'PC004') { throw 'Invalid root JSON query did not preserve the result schema.' }
+    $firstSearchPath = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/search/first demo --path examples/search/second --cflags | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $firstSearchPath -ne '-I/first -I/helper') { throw 'Ordered search path did not keep the first package and load a later dependency.' }
+    $reversedSearchPath = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/search/second demo --path examples/search/first --cflags | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $reversedSearchPath -ne '-I/second') { throw 'Reversed search path did not change package precedence.' }
     $validDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/valid | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $validDirectory -ne 'Checked 3 packages from 3 .pc files; 0 diagnostics.') { throw 'Valid directory check failed.' }
     $invalidDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/invalid | Out-String).Trim()

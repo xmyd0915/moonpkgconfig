@@ -1,0 +1,5 @@
+Name: helper
+Description: Dependency supplied by a later search path
+Version: 1.0
+Cflags: -I/helper
+Libs: -lhelper

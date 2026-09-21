@@ -1,0 +1,6 @@
+Name: demo
+Description: First search path wins for duplicate package ids
+Version: 1.0
+Requires: helper
+Cflags: -I/first
+Libs: -lfirst

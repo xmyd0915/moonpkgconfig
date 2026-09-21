@@ -7,7 +7,7 @@ enum QueryMode {
 ///|
 fn print_usage() -> Unit {
   println(
-    "Usage: moon run cmd/query <directory> <package> (--cflags | --libs) [--static] [--dedupe-paths] [--json] [--explain]",
+    "Usage: moon run cmd/query <directory> <package> (--cflags | --libs) [--path <directory>]... [--static] [--dedupe-paths] [--json] [--explain]",
   )
 }
 
@@ -37,6 +37,7 @@ fn print_flags(result : @pc.FlagResult, explain : Bool) -> Unit {
 fn main {
   let args = @env.args()
   let positionals : Array[String] = []
+  let extra_paths : Array[String] = []
   let mut mode : QueryMode? = None
   let mut static_linking = false
   let mut json = false
@@ -44,7 +45,8 @@ fn main {
   let mut dedupe_paths = false
   let mut invalid = false
   let mut help = false
-  for i = 1; i < args.length(); i = i + 1 {
+  let mut i = 1
+  while i < args.length() {
     match args[i] {
       "--cflags" =>
         if mode is Some(_) {
@@ -62,6 +64,13 @@ fn main {
       "--json" => json = true
       "--explain" => explain = true
       "--dedupe-paths" => dedupe_paths = true
+      "--path" =>
+        if i + 1 >= args.length() || args[i + 1].has_prefix("-") {
+          invalid = true
+        } else {
+          extra_paths.push(args[i + 1])
+          i = i + 1
+        }
       "--help" | "-h" => help = true
       option =>
         if option.has_prefix("-") {
@@ -70,6 +79,7 @@ fn main {
           positionals.push(option)
         }
     }
+    i = i + 1
   }
   if help {
     print_usage()
@@ -85,8 +95,9 @@ fn main {
   }
   let directory = positionals[0]
   let root = positionals[1]
+  let directories = [directory, ..extra_paths]
   try {
-    let loaded = @loader.load_directory(directory)
+    let loaded = @loader.load_directories(directories)
     let root_diagnostics = loaded.diagnostics_for(root)
     if !root_diagnostics.is_empty() {
       if json {
