@@ -70,6 +70,14 @@ jobs:
           set -e
           test "$broken_status" -eq 1
           grep -q "PC004" <<< "$broken_output"
+          set +e
+          broken_json="$(moon run --target native cmd/query examples/mixed broken --cflags --json)"
+          broken_json_status=$?
+          set -e
+          test "$broken_json_status" -eq 1
+          test "$(printf '%s' "$broken_json" | head -c 1)" = "{"
+          grep -q '"flags": \[\]' <<< "$broken_json"
+          grep -q '"code": "PC004"' <<< "$broken_json"
 
       - name: Check package directories
         shell: bash

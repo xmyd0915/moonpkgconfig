@@ -20,6 +20,7 @@
 | `cmd/query` 参数引用 | 官方 `fragment-quoting.pc` 中含字面引号的宏参数按 POSIX shell 规则输出，并通过精确断言 |
 | `cmd/query` 参数顺序 | 菱形依赖及公开/私有依赖的 Cflags、静态 Libs 顺序与 pkgconf 3.0.7 一致 |
 | `cmd/query` 查询隔离 | 同目录存在无关损坏文件时正常包仍可查询；直接查询损坏包会返回其原始诊断和退出码 1 |
+| `cmd/query --json` 失败结果 | 损坏目标包仍输出可解析的 `flags`、`diagnostics` 对象，诊断为 `PC004`，退出码 1 |
 | `cmd/check examples/valid` | 成功，检查 3 个包、0 项诊断，退出码 0 |
 | `cmd/check examples/invalid` | 报告解析及公开/私有依赖问题，共 4 项诊断，退出码 1 |
 | `cmd/check testdata/pkgconf-3.0.7` | 10个未经修改的官方pkgconf 3.0.7样本全部通过，退出码 0 |

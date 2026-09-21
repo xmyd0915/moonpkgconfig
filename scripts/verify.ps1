@@ -44,6 +44,10 @@ try {
     if ($LASTEXITCODE -ne 0 -or $isolatedQuery -ne '-I/good') { throw 'Unrelated invalid file blocked a valid query.' }
     $brokenQuery = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/mixed broken --cflags | Out-String).Trim()
     if ($LASTEXITCODE -ne 1 -or $brokenQuery -notmatch 'PC004') { throw 'Invalid root package diagnostics were not returned.' }
+    $brokenJsonText = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/mixed broken --cflags --json | Out-String).Trim()
+    if ($LASTEXITCODE -ne 1) { throw 'Invalid root JSON query did not return exit code 1.' }
+    $brokenJson = $brokenJsonText | ConvertFrom-Json
+    if ($null -eq $brokenJson.flags -or $brokenJson.flags.Count -ne 0 -or $brokenJson.diagnostics[0].code -ne 'PC004') { throw 'Invalid root JSON query did not preserve the result schema.' }
     $validDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/valid | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $validDirectory -ne 'Checked 3 packages from 3 .pc files; 0 diagnostics.') { throw 'Valid directory check failed.' }
     $invalidDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/invalid | Out-String).Trim()

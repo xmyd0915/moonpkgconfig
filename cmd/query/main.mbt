@@ -89,7 +89,15 @@ fn main {
     let loaded = @loader.load_directory(directory)
     let root_diagnostics = loaded.diagnostics_for(root)
     if !root_diagnostics.is_empty() {
-      print_diagnostics(root_diagnostics)
+      if json {
+        let failed : @pc.FlagResult = {
+          flags: [],
+          diagnostics: root_diagnostics,
+        }
+        println(failed.json_text(pretty=true))
+      } else {
+        print_diagnostics(root_diagnostics)
+      }
       @sys.exit(1)
     }
     let collected = match mode.unwrap() {
