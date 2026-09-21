@@ -22,7 +22,7 @@ fn print_diagnostics(diagnostics : Array[@pc.Diagnostic]) -> Unit {
 
 ///|
 fn print_flags(result : @pc.FlagResult, explain : Bool) -> Unit {
-  println(result.flags.map(flag => flag.value).join(" "))
+  println(result.shell_text())
   if explain {
     for flag in result.flags {
       println(

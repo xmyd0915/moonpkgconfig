@@ -14,6 +14,50 @@ pub(all) struct FlagResult {
 } derive(Eq, @debug.Debug)
 
 ///|
+/// Render collected arguments as one POSIX shell command fragment.
+///
+/// The underlying `flags` array remains the portable, lossless interface.
+/// This text form is intended for copying into sh-compatible shells.
+pub fn FlagResult::shell_text(self : FlagResult) -> String {
+  self.flags.map(flag => shell_quote(flag.value)).join(" ")
+}
+
+///|
+fn shell_quote(value : String) -> String {
+  if !value.is_empty() && value.iter().all(shell_safe_char) {
+    return value
+  }
+  let output = StringBuilder()
+  output.write_char('\'')
+  for char in value {
+    if char == '\'' {
+      output.write_string("'\\''")
+    } else {
+      output.write_char(char)
+    }
+  }
+  output.write_char('\'')
+  output.to_string()
+}
+
+///|
+fn shell_safe_char(char : Char) -> Bool {
+  (char >= 'a' && char <= 'z') ||
+  (char >= 'A' && char <= 'Z') ||
+  (char >= '0' && char <= '9') ||
+  char == '_' ||
+  char == '@' ||
+  char == '%' ||
+  char == '+' ||
+  char == '=' ||
+  char == ':' ||
+  char == ',' ||
+  char == '.' ||
+  char == '/' ||
+  char == '-'
+}
+
+///|
 /// Return a copy with repeated compiler and linker search paths removed.
 ///
 /// Both attached (`-I/path`, `-L/path`) and split (`-I /path`, `-L /path`)

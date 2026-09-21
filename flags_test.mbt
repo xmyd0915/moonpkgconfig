@@ -116,3 +116,32 @@ test "search path deduplication keeps other repeated flags and first origin" {
   ])
   @debug.assert_eq(libs.flags[0].package_id, "app")
 }
+
+///|
+test "shell output preserves argument boundaries and literal characters" {
+  let location : @moonpkgconfig.Location = {
+    source: "quoted.pc",
+    line: 1,
+    column: 1,
+  }
+  let result : @moonpkgconfig.FlagResult = {
+    flags: [
+      {
+        value: "-I/opt/sdk dir/include",
+        package_id: "quoted",
+        field: "Cflags",
+        location,
+      },
+      { value: "-DNAME=a b", package_id: "quoted", field: "Cflags", location, },
+      { value: "", package_id: "quoted", field: "Cflags", location, },
+      { value: "plain", package_id: "quoted", field: "Cflags", location, },
+      { value: "a'b", package_id: "quoted", field: "Cflags", location, },
+      { value: "$HOME", package_id: "quoted", field: "Cflags", location, },
+    ],
+    diagnostics: [],
+  }
+  @debug.assert_eq(
+    result.shell_text(),
+    "'-I/opt/sdk dir/include' '-DNAME=a b' '' plain 'a'\\''b' '$HOME'",
+  )
+}
