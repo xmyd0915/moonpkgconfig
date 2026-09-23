@@ -2,21 +2,52 @@
 
 [![CI](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml/badge.svg)](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml)
 
-用 MoonBit 读取、检查和解释 C 库的 `pkg-config` 元数据（`.pc` 文件）。
+用 MoonBit 实现的、保留源码位置的 `pkg-config` 元数据引擎。它不只读取 `.pc` 文件，还能解析依赖图、计算编译与链接参数，并解释每个参数来自哪个包、字段和源码行。
 
-面向原生 FFI 和构建工具开发者：查看编译参数从哪个字段与变量产生，定位未定义变量、重复字段和错误依赖表达式。核心库为纯 MoonBit，读取与求值不调用外部 `pkg-config`。
+MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库为纯 MoonBit；解析与求值不启动 shell，也不调用外部 `pkg-config`。
 
-## 当前状态
+## 项目亮点
 
-开发中，尚未发布到 MoonCakes。`local/moonpkgconfig` 仅供本地导入；公开发布前由维护者确认实际命名空间。
+| 能力 | 实际用途 |
+| --- | --- |
+| 可解释的参数查询 | `--explain` 把每个 Cflags/Libs 参数追溯到包、字段、文件与行号 |
+| 依赖图检查 | 诊断缺失依赖、版本不满足、循环、冲突和公开/私有依赖问题 |
+| 稳定集成接口 | 提供结构化 JSON、明确退出码和不丢参数边界的输出 |
+| MoonBit 多目标核心 | 同一组逻辑测试覆盖 wasm、wasm-gc、JavaScript 和 native |
 
-已实现：变量与字段解析、来源位置、错误恢复、元数据校验、版本约束、传递和私有依赖、循环与冲突诊断、虚拟包提供者、编译/链接参数聚合、JSON 输出、单文件检查及整目录检查命令。
+## 验证快照
 
-下一阶段：扩大真实文件样本、增加参数兼容策略并完善发布准备。当前仍不能替代完整的 `pkg-config`/`pkgconf`。
+| 证据 | 当前结果 |
+| --- | --- |
+| 自动化测试 | 52 个逻辑测试 × 4 个目标，全部通过 |
+| 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言 |
+| 上游兼容语料 | 10 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
+| 独立对照 | 参数顺序、版本条件、变量查询/覆盖等行为与 pkgconf 3.0.7 对照 |
 
-## 快速运行
+详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
 
-需要 MoonBit 工具链。本地开发版本为 `moon 0.1.20260915`。
+## 一分钟体验
+
+需要 MoonBit 工具链：
+
+```sh
+moon update
+moon run --target native cmd/query examples/valid imagekit --cflags --explain
+moon run --target native cmd/check examples/invalid
+moon test --target all --deny-warn
+```
+
+第一条查询会输出可直接使用的参数，并紧接着给出来源：
+
+```text
+-I/opt/example/include -DIMAGEKIT=1 -I/opt/example/include/codec -I/opt/example/include/compression
+  -I/opt/example/include <- imagekit:Cflags [examples/valid/imagekit.pc:13]
+  -DIMAGEKIT=1 <- imagekit:Cflags [examples/valid/imagekit.pc:13]
+  -I/opt/example/include/codec <- codec:Cflags [examples/valid/codec.pc:10]
+  -I/opt/example/include/compression <- compression:Cflags [examples/valid/compression.pc:10]
+```
+
+## 更多运行方式
 
 ```sh
 moon check --target all
@@ -33,6 +64,8 @@ moon run --target native cmd/query examples/valid imagekit --libs --dedupe-paths
 moon run --target native cmd/query examples/valid imagekit --libs --static
 moon run --target native cmd/query examples/search/first demo --path examples/search/second --cflags
 moon run --target native cmd/query examples/valid imagekit --modversion
+moon run --target native cmd/query examples/valid imagekit --variable=prefix
+moon run --target native cmd/query examples/valid imagekit --cflags --define-variable=prefix=/custom
 moon run --target native cmd/query examples/valid imagekit --exists
 moon run --target native cmd/query examples/valid imagekit --atleast-version=1.1
 ```
@@ -56,7 +89,7 @@ GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检
 
 `cmd/inspect` 读取一个 UTF-8 `.pc` 文件，默认列出常用字段、来源和诊断；加 `--json` 输出完整解析结果。检查通过时退出码为 `0`，发现解析或必填元数据问题时为 `1`，用法或文件读取错误时为 `2`。文件访问使用 MoonBit 官方 `moonbitlang/x`，解析核心仍不直接接触文件系统。
 
-`cmd/query` 从显式目录加载其中的 `.pc` 文件，解析指定根包的依赖图，并通过 `--cflags`、`--libs` 或 `--libs --static` 输出聚合参数。`--modversion` 输出版本，`--exists` 只用退出码表示包及其依赖是否可用；`--atleast-version=...`、`--exact-version=...` 和 `--max-version=...` 执行版本条件检查。可重复使用 `--path <directory>` 追加搜索目录；目录按命令行顺序查找，同名包由第一个目录中的文件确定，后续目录仍可补足其他依赖。普通文本输出按 POSIX shell 规则引用每个参数，含空格、引号、美元符或空参数时仍保留原有参数边界；跨平台程序应使用 `--json` 读取参数数组。JSON 模式在成功和诊断失败时都返回相同的 `flags`、`diagnostics` 对象结构，调用者再根据退出码区分结果。目录中的无关坏文件不会阻止正常包查询，目标包自身或所需依赖有问题时仍返回诊断。`--dedupe-paths` 会稳定地去除重复 `-I`/`-L` 搜索路径，但保留重复库和其他可能影响链接语义的参数；`--explain` 会逐项显示包、字段和源码位置。它不会隐式读取系统环境变量。
+`cmd/query` 从显式目录加载其中的 `.pc` 文件，解析指定根包的依赖图，并通过 `--cflags`、`--libs` 或 `--libs --static` 输出聚合参数。`--modversion` 输出版本，`--variable=...` 读取变量，`--define-variable=...` 为查询覆盖变量；`--exists` 只用退出码表示包及其依赖是否可用，版本条件选项执行对应检查。可重复使用 `--path <directory>` 追加搜索目录；目录按命令行顺序查找，同名包由第一个目录中的文件确定，后续目录仍可补足其他依赖。普通文本输出按 POSIX shell 规则引用每个参数，含空格、引号、美元符或空参数时仍保留原有参数边界；跨平台程序应使用 `--json` 读取参数数组。JSON 模式在成功和诊断失败时都返回相同的 `flags`、`diagnostics` 对象结构，调用者再根据退出码区分结果。目录中的无关坏文件不会阻止正常包查询，目标包自身或所需依赖有问题时仍返回诊断。`--dedupe-paths` 会稳定地去除重复 `-I`/`-L` 搜索路径，但保留重复库和其他可能影响链接语义的参数；`--explain` 会逐项显示包、字段和源码位置。它不会隐式读取系统环境变量。
 
 `cmd/check` 检查显式目录里的全部 `.pc` 文件，不要求先知道根包名。它会汇总文本解析、必填元数据、公开和私有依赖、版本、依赖环及冲突诊断；正常目录返回 `0`，发现问题返回 `1`，目录读取或调用错误返回 `2`。
 

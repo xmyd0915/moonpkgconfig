@@ -1,6 +1,6 @@
 # 验证记录
 
-最近验证：2026-09-18；平台：Windows x64。
+最近验证：2026-09-23；平台：Windows x64。
 
 工具链：交接所列 MoonBit 官方便携安装，`moon 0.1.20260915 (2e1a46d 2026-09-15)`。
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | `moon fmt` | 成功 |
 | `moon check --target all --deny-warn` | 四目标成功，无警告 |
-| `moon test --target all --deny-warn` | wasm 51/51，wasm-gc 51/51，JS 51/51，native 51/51 |
+| `moon test --target all --deny-warn` | wasm 52/52，wasm-gc 52/52，JS 52/52，native 52/52 |
 | `moon run cmd/demo` | 成功，输出六项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc --json` | 成功，输出完整条目与空诊断数组 |
@@ -23,12 +23,13 @@
 | `cmd/query --json` 失败结果 | 损坏目标包仍输出可解析的 `flags`、`diagnostics` 对象，诊断为 `PC004`，退出码 1 |
 | `cmd/query --path` | 首目录中的同名包获胜，后续目录可补足依赖；反转目录顺序会按预期改变选中版本 |
 | `cmd/query` 元数据模式 | 版本输出、存在性、最低/最高/精确版本条件的输出及退出码与 pkgconf 3.0.7 对照一致 |
+| `cmd/query` 变量模式 | 变量读取、调用方覆盖及覆盖后的依赖参数展开与 pkgconf 3.0.7 对照一致 |
 | `cmd/check examples/valid` | 成功，检查 3 个包、0 项诊断，退出码 0 |
 | `cmd/check examples/invalid` | 报告解析及公开/私有依赖问题，共 4 项诊断，退出码 1 |
 | `cmd/check testdata/pkgconf-3.0.7` | 10个未经修改的官方pkgconf 3.0.7样本全部通过，退出码 0 |
-| GitHub Actions CI | Ubuntu 全新环境成功，运行记录 [35305828387](https://github.com/xmyd0915/moonpkgconfig/actions/runs/35305828387) |
+| GitHub Actions CI | Ubuntu 全新环境成功，运行记录 [35807697549](https://github.com/xmyd0915/moonpkgconfig/actions/runs/35807697549) |
 
-51 个逻辑测试在四个目标各运行一次，不将它们宣传为 204 个独立测试。覆盖顺序变量展开、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重、私有依赖、虚拟包提供者、循环和包冲突诊断、参数聚合与来源、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
+52 个逻辑测试在四个目标各运行一次，不将它们宣传为 208 个独立测试。覆盖顺序变量展开、调用方变量覆盖、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重、私有依赖、虚拟包提供者、循环和包冲突诊断、参数聚合与来源、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
 
 当前证据仅证明所覆盖子集。目录查询只读取调用者明确指定的位置，尚未实现系统搜索路径和 sysroot 处理；参数结果对照使用自编依赖图，上游语料验证使用10个固定的pkgconf官方测试文件。
 
