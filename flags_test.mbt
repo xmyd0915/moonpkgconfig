@@ -162,6 +162,40 @@ test "flag order keeps declared siblings stable in a diamond graph" {
 }
 
 ///|
+test "dependency paths use the shortest valid public or private route" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  packages.add("common", flag_package("common", "", "", "-lcommon")) |> ignore
+  packages.add("left", flag_package("left", "common", "", "-lleft")) |> ignore
+  packages.add("right", flag_package("right", "common", "", "-lright"))
+  |> ignore
+  packages.add(
+    "root",
+    flag_package(
+      "root",
+      "left, right",
+      "",
+      "-lroot",
+      private_requires="private-helper",
+    ),
+  )
+  |> ignore
+  packages.add(
+    "private-helper",
+    flag_package("private-helper", "", "", "-lprivate"),
+  )
+  |> ignore
+  @debug.assert_eq(packages.dependency_path("root", "root"), ["root"])
+  @debug.assert_eq(packages.dependency_path("root", "common"), [
+    "root", "left", "common",
+  ])
+  @debug.assert_eq(packages.dependency_path("root", "private-helper"), [])
+  @debug.assert_eq(
+    packages.dependency_path("root", "private-helper", include_private=true),
+    ["root", "private-helper"],
+  )
+}
+
+///|
 test "shell output preserves argument boundaries and literal characters" {
   let location : @moonpkgconfig.Location = {
     source: "quoted.pc",

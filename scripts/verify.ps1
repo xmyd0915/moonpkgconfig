@@ -28,6 +28,8 @@ try {
     if ($LASTEXITCODE -ne 1) { throw 'Invalid file did not return diagnostic exit code 1.' }
     $cflags = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --cflags | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $cflags -ne '-I/opt/example/include -DIMAGEKIT=1 -I/opt/example/include/codec -I/opt/example/include/compression') { throw 'Cflags query failed.' }
+    $explainedCflags = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --cflags --explain | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $explainedCflags -notmatch 'via imagekit -> codec -> compression') { throw 'Cflags dependency path explanation failed.' }
     $libs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --libs | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $libs -ne '-L/opt/example/lib -limagekit -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression') { throw 'Libs query failed.' }
     $staticLibs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --libs --static | Out-String).Trim()

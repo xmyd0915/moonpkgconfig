@@ -10,7 +10,7 @@
 | --- | --- |
 | `moon fmt` | 成功 |
 | `moon check --target all --deny-warn` | 四目标成功，无警告 |
-| `moon test --target all --deny-warn` | wasm 52/52，wasm-gc 52/52，JS 52/52，native 52/52 |
+| `moon test --target all --deny-warn` | wasm 53/53，wasm-gc 53/53，JS 53/53，native 53/53 |
 | `moon run cmd/demo` | 成功，输出六项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc --json` | 成功，输出完整条目与空诊断数组 |
@@ -19,6 +19,7 @@
 | `cmd/query --dedupe-paths` | 连接式与分离式重复搜索路径按同一路径稳定去除；孤立选项不会跨包或字段绑定下一参数 |
 | `cmd/query` 参数引用 | 官方 `fragment-quoting.pc` 中含字面引号的宏参数按 POSIX shell 规则输出，并通过精确断言 |
 | `cmd/query` 参数顺序 | 菱形依赖及公开/私有依赖的 Cflags、静态 Libs 顺序与 pkgconf 3.0.7 一致 |
+| `cmd/query --explain` | 每个参数显示包、字段、源码位置及从根包出发的最短公开/私有依赖路径 |
 | `cmd/query` 查询隔离 | 同目录存在无关损坏文件时正常包仍可查询；直接查询损坏包会返回其原始诊断和退出码 1 |
 | `cmd/query --json` 失败结果 | 损坏目标包仍输出可解析的 `flags`、`diagnostics` 对象，诊断为 `PC004`，退出码 1 |
 | `cmd/query --path` | 首目录中的同名包获胜，后续目录可补足依赖；反转目录顺序会按预期改变选中版本 |
@@ -29,7 +30,7 @@
 | `cmd/check testdata/pkgconf-3.0.7` | 10个未经修改的官方pkgconf 3.0.7样本全部通过，退出码 0 |
 | GitHub Actions CI | Ubuntu 全新环境成功，运行记录 [35807697549](https://github.com/xmyd0915/moonpkgconfig/actions/runs/35807697549) |
 
-52 个逻辑测试在四个目标各运行一次，不将它们宣传为 208 个独立测试。覆盖顺序变量展开、调用方变量覆盖、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重、私有依赖、虚拟包提供者、循环和包冲突诊断、参数聚合与来源、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
+53 个逻辑测试在四个目标各运行一次，不将它们宣传为 212 个独立测试。覆盖顺序变量展开、调用方变量覆盖、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重、最短公开/私有依赖路径、私有依赖、虚拟包提供者、循环和包冲突诊断、参数聚合与来源、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
 
 当前证据仅证明所覆盖子集。目录查询只读取调用者明确指定的位置，尚未实现系统搜索路径和 sysroot 处理；参数结果对照使用自编依赖图，上游语料验证使用10个固定的pkgconf官方测试文件。
 

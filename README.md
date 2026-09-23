@@ -6,11 +6,13 @@
 
 MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库为纯 MoonBit；解析与求值不启动 shell，也不调用外部 `pkg-config`。
 
+这个选题来自维护者较多的 C++ 开发实践：接入原生库时，最终参数通常能查到，但参数为什么出现、经过哪条依赖路径以及错误应回到哪里修改并不直观。MoonPkgConfig 尝试把这层过程变成可检查的数据。
+
 ## 项目亮点
 
 | 能力 | 实际用途 |
 | --- | --- |
-| 可解释的参数查询 | `--explain` 把每个 Cflags/Libs 参数追溯到包、字段、文件与行号 |
+| 可解释的参数查询 | `--explain` 把每个 Cflags/Libs 参数追溯到依赖路径、包、字段、文件与行号 |
 | 依赖图检查 | 诊断缺失依赖、版本不满足、循环、冲突和公开/私有依赖问题 |
 | 稳定集成接口 | 提供结构化 JSON、明确退出码和不丢参数边界的输出 |
 | MoonBit 多目标核心 | 同一组逻辑测试覆盖 wasm、wasm-gc、JavaScript 和 native |
@@ -19,7 +21,7 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 | 证据 | 当前结果 |
 | --- | --- |
-| 自动化测试 | 52 个逻辑测试 × 4 个目标，全部通过 |
+| 自动化测试 | 53 个逻辑测试 × 4 个目标，全部通过 |
 | 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言 |
 | 上游兼容语料 | 10 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
 | 独立对照 | 参数顺序、版本条件、变量查询/覆盖等行为与 pkgconf 3.0.7 对照 |
@@ -41,10 +43,10 @@ moon test --target all --deny-warn
 
 ```text
 -I/opt/example/include -DIMAGEKIT=1 -I/opt/example/include/codec -I/opt/example/include/compression
-  -I/opt/example/include <- imagekit:Cflags [examples/valid/imagekit.pc:13]
-  -DIMAGEKIT=1 <- imagekit:Cflags [examples/valid/imagekit.pc:13]
-  -I/opt/example/include/codec <- codec:Cflags [examples/valid/codec.pc:10]
-  -I/opt/example/include/compression <- compression:Cflags [examples/valid/compression.pc:10]
+  -I/opt/example/include <- imagekit:Cflags [examples/valid/imagekit.pc:13; via imagekit]
+  -DIMAGEKIT=1 <- imagekit:Cflags [examples/valid/imagekit.pc:13; via imagekit]
+  -I/opt/example/include/codec <- codec:Cflags [examples/valid/codec.pc:10; via imagekit -> codec]
+  -I/opt/example/include/compression <- compression:Cflags [examples/valid/compression.pc:10; via imagekit -> codec -> compression]
 ```
 
 ## 更多运行方式
@@ -89,7 +91,7 @@ GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检
 
 `cmd/inspect` 读取一个 UTF-8 `.pc` 文件，默认列出常用字段、来源和诊断；加 `--json` 输出完整解析结果。检查通过时退出码为 `0`，发现解析或必填元数据问题时为 `1`，用法或文件读取错误时为 `2`。文件访问使用 MoonBit 官方 `moonbitlang/x`，解析核心仍不直接接触文件系统。
 
-`cmd/query` 从显式目录加载其中的 `.pc` 文件，解析指定根包的依赖图，并通过 `--cflags`、`--libs` 或 `--libs --static` 输出聚合参数。`--modversion` 输出版本，`--variable=...` 读取变量，`--define-variable=...` 为查询覆盖变量；`--exists` 只用退出码表示包及其依赖是否可用，版本条件选项执行对应检查。可重复使用 `--path <directory>` 追加搜索目录；目录按命令行顺序查找，同名包由第一个目录中的文件确定，后续目录仍可补足其他依赖。普通文本输出按 POSIX shell 规则引用每个参数，含空格、引号、美元符或空参数时仍保留原有参数边界；跨平台程序应使用 `--json` 读取参数数组。JSON 模式在成功和诊断失败时都返回相同的 `flags`、`diagnostics` 对象结构，调用者再根据退出码区分结果。目录中的无关坏文件不会阻止正常包查询，目标包自身或所需依赖有问题时仍返回诊断。`--dedupe-paths` 会稳定地去除重复 `-I`/`-L` 搜索路径，但保留重复库和其他可能影响链接语义的参数；`--explain` 会逐项显示包、字段和源码位置。它不会隐式读取系统环境变量。
+`cmd/query` 从显式目录加载其中的 `.pc` 文件，解析指定根包的依赖图，并通过 `--cflags`、`--libs` 或 `--libs --static` 输出聚合参数。`--modversion` 输出版本，`--variable=...` 读取变量，`--define-variable=...` 为查询覆盖变量；`--exists` 只用退出码表示包及其依赖是否可用，版本条件选项执行对应检查。可重复使用 `--path <directory>` 追加搜索目录；目录按命令行顺序查找，同名包由第一个目录中的文件确定，后续目录仍可补足其他依赖。普通文本输出按 POSIX shell 规则引用每个参数，含空格、引号、美元符或空参数时仍保留原有参数边界；跨平台程序应使用 `--json` 读取参数数组。JSON 模式在成功和诊断失败时都返回相同的 `flags`、`diagnostics` 对象结构，调用者再根据退出码区分结果。目录中的无关坏文件不会阻止正常包查询，目标包自身或所需依赖有问题时仍返回诊断。`--dedupe-paths` 会稳定地去除重复 `-I`/`-L` 搜索路径，但保留重复库和其他可能影响链接语义的参数；`--explain` 会逐项显示最短依赖路径、包、字段和源码位置。它不会隐式读取系统环境变量。
 
 `cmd/check` 检查显式目录里的全部 `.pc` 文件，不要求先知道根包名。它会汇总文本解析、必填元数据、公开和私有依赖、版本、依赖环及冲突诊断；正常目录返回 `0`，发现问题返回 `1`，目录读取或调用错误返回 `2`。
 

@@ -57,6 +57,7 @@ jobs:
         shell: bash
         run: |
           test "$(moon run --target native cmd/query examples/valid imagekit --cflags)" = "-I/opt/example/include -DIMAGEKIT=1 -I/opt/example/include/codec -I/opt/example/include/compression"
+          moon run --target native cmd/query examples/valid imagekit --cflags --explain | grep -q "via imagekit -> codec -> compression"
           test "$(moon run --target native cmd/query examples/valid imagekit --libs)" = "-L/opt/example/lib -limagekit -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression"
           test "$(moon run --target native cmd/query examples/valid imagekit --libs --static)" = "-L/opt/example/lib -limagekit -lm -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression -lz"
           test "$(moon run --target native cmd/query examples/valid imagekit --libs --dedupe-paths)" = "-L/opt/example/lib -limagekit -lcodec -lcompression"

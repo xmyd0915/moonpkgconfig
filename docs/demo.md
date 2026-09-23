@@ -9,7 +9,7 @@ moon check --target all --deny-warn
 moon test --target all --deny-warn
 ```
 
-预期四个目标均通过。目前每个目标运行 47 个逻辑测试。
+预期四个目标均通过。目前每个目标运行 53 个逻辑测试。
 
 ## 2. 检查正常文件
 

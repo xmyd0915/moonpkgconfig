@@ -46,12 +46,28 @@ fn print_diagnostics(diagnostics : Array[@pc.Diagnostic]) -> Unit {
 }
 
 ///|
-fn print_flags(result : @pc.FlagResult, explain : Bool) -> Unit {
+fn print_flags(
+  result : @pc.FlagResult,
+  explain : Bool,
+  packages : @pc.PackageSet,
+  root : String,
+  include_private : Bool,
+) -> Unit {
   println(result.shell_text())
   if explain {
     for flag in result.flags {
+      let path = packages.dependency_path(
+        root,
+        flag.package_id,
+        include_private~,
+      )
+      let path_text = if path.is_empty() {
+        flag.package_id
+      } else {
+        path.join(" -> ")
+      }
       println(
-        "  \{flag.value} <- \{flag.package_id}:\{flag.field} [\{flag.location.source}:\{flag.location.line}]",
+        "  \{flag.value} <- \{flag.package_id}:\{flag.field} [\{flag.location.source}:\{flag.location.line}; via \{path_text}]",
       )
     }
   }
@@ -211,7 +227,7 @@ fn main {
         if json {
           println(result.json_text(pretty=true))
         } else {
-          print_flags(result, explain)
+          print_flags(result, explain, loaded.packages, root, static_linking)
         }
         if !result.diagnostics.is_empty() {
           @sys.exit(1)
