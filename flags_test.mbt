@@ -79,6 +79,24 @@ test "static linker flags include private edges and fields" {
 }
 
 ///|
+test "compiler flags include private dependency headers" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  packages.add("helper", flag_package("helper", "", "-I/helper", "-lhelper"))
+  |> ignore
+  packages.add(
+    "app",
+    flag_package("app", "", "-I/app", "-lapp", private_requires="helper"),
+  )
+  |> ignore
+  @debug.assert_eq(packages.collect_cflags("app").flags.map(f => f.value), [
+    "-I/app", "-I/helper",
+  ])
+  @debug.assert_eq(packages.collect_libs("app").flags.map(f => f.value), [
+    "-lapp",
+  ])
+}
+
+///|
 test "flag tokenization errors retain the field source" {
   let packages = @moonpkgconfig.PackageSet::new()
   let bad = @moonpkgconfig.parse(

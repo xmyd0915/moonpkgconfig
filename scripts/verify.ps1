@@ -29,7 +29,7 @@ try {
     $cflags = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --cflags | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $cflags -ne '-I/opt/example/include -DIMAGEKIT=1 -I/opt/example/include/codec -I/opt/example/include/compression') { throw 'Cflags query failed.' }
     $explainedCflags = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --cflags --explain | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0 -or $explainedCflags -notmatch 'via imagekit -> codec -> compression') { throw 'Cflags dependency path explanation failed.' }
+    if ($LASTEXITCODE -ne 0 -or $explainedCflags -notmatch 'via imagekit -> compression') { throw 'Cflags dependency path explanation failed.' }
     $libs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --libs | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $libs -ne '-L/opt/example/lib -limagekit -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression') { throw 'Libs query failed.' }
     $staticLibs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --libs --static | Out-String).Trim()
@@ -39,7 +39,7 @@ try {
     $quotedFlags = (& "$MoonHome\bin\moon.exe" run --target native cmd/query testdata/pkgconf-3.0.7 fragment-quoting --cflags | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $quotedFlags -ne '-fPIC -I/test/include/foo ''-DQUOTED="/test/share/doc"''') { throw 'Quoted flag rendering failed.' }
     $orderedCflags = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/order root --cflags | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0 -or $orderedCflags -ne '-I/root -I/left -I/common') { throw 'Cflags dependency order failed.' }
+    if ($LASTEXITCODE -ne 0 -or $orderedCflags -ne '-I/root -I/left -I/right -I/common') { throw 'Cflags dependency order failed.' }
     $orderedStaticLibs = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/order root --libs --static | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $orderedStaticLibs -ne '-lroot -lroot-private -lleft -lright -lcommon') { throw 'Static library dependency order failed.' }
     $isolatedQuery = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/mixed good --cflags | Out-String).Trim()
@@ -78,6 +78,8 @@ try {
     if ($LASTEXITCODE -ne 0 -or $upstreamDirectory -ne 'Checked 10 packages from 10 .pc files; 0 diagnostics.') { throw 'Upstream pkgconf corpus check failed.' }
     & "$PSScriptRoot\verify-native-example.ps1"
     if ($LASTEXITCODE -ne 0) { throw 'Native C/C++ integration failed.' }
+    & "$PSScriptRoot\compare-pkgconf.ps1"
+    if ($LASTEXITCODE -ne 0) { throw 'pkgconf differential checks failed.' }
 } finally {
     Pop-Location
     $env:MOON_HOME = $oldMoonHome

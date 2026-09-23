@@ -55,7 +55,7 @@ MoonPkgConfig 查询结果：
 - MoonPkgConfig 默认保留每个包提供的重复 `-L`，便于解释来源；显式加入 `--dedupe-paths` 后，本样例的动态和静态链接输出与 pkgconf 一致。
 - `examples/invalid/broken.pc` 会被两边拒绝。MoonPkgConfig 额外把未定义变量和空 `Name` 作为严格诊断；pkgconf 会裁剪带空白的版本，并报告缺失 `Description` 等问题。
 
-`examples/order` 是一个带共享传递依赖的菱形图，根包同时具有公开和私有依赖。普通 Cflags 查询只遍历公开边，两边顺序均为 `root -> left -> common`；静态 Libs 会加入私有边，两边顺序均为 `root -> root-private -> left -> right -> common`。该断言同时在本地验证和CI中运行。
+`examples/order` 是一个带共享传递依赖的菱形图，根包同时具有公开和私有依赖。Cflags 查询会包含公开和私有依赖的编译参数，两边顺序均为 `root -> left -> right -> common`；动态 Libs 只使用公开边，静态 Libs 会加入私有边，两边静态顺序均为 `root -> root-private -> left -> right -> common`。这些断言同时在本地验证和CI中运行。
 
 对 `imagekit` 执行 `--modversion`、`--exists`、最低版本1.1、精确版本1.2.0和最高版本1.1查询时，两边分别得到版本1.2.0以及退出码0、0、0、1；这些退出码也进入持续验证。
 

@@ -21,10 +21,10 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 | 证据 | 当前结果 |
 | --- | --- |
-| 自动化测试 | 53 个逻辑测试 × 4 个目标，全部通过 |
+| 自动化测试 | 54 个逻辑测试 × 4 个目标，全部通过 |
 | 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言 |
 | 上游兼容语料 | 10 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
-| 独立对照 | 参数顺序、版本条件、变量查询/覆盖等行为与 pkgconf 3.0.7 对照 |
+| 自动差分对照 | CI 对 12 项参数、顺序、变量和退出码行为逐项比较 MoonPkgConfig 与 pkgconf |
 | 原生闭环 | 使用查询得到的 Cflags/Libs 编译 C 静态库和 C++ 调用程序，并运行核对结果 |
 
 详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
@@ -39,6 +39,7 @@ moon run --target native cmd/query examples/valid imagekit --cflags --explain
 moon run --target native cmd/check examples/invalid
 moon test --target all --deny-warn
 sh scripts/verify-native-example.sh
+sh scripts/compare-pkgconf.sh
 ```
 
 第一条查询会输出可直接使用的参数，并紧接着给出来源：
@@ -48,7 +49,7 @@ sh scripts/verify-native-example.sh
   -I/opt/example/include <- imagekit:Cflags [examples/valid/imagekit.pc:13; via imagekit]
   -DIMAGEKIT=1 <- imagekit:Cflags [examples/valid/imagekit.pc:13; via imagekit]
   -I/opt/example/include/codec <- codec:Cflags [examples/valid/codec.pc:10; via imagekit -> codec]
-  -I/opt/example/include/compression <- compression:Cflags [examples/valid/compression.pc:10; via imagekit -> codec -> compression]
+  -I/opt/example/include/compression <- compression:Cflags [examples/valid/compression.pc:10; via imagekit -> compression]
 ```
 
 ## 更多运行方式
@@ -88,6 +89,8 @@ Requires.private: compression >= 1.0 [imagekit.pc:8]
 Windows 当前工作区可运行 `./scripts/verify.ps1`。它只为本次进程设置便携工具链环境；也可通过 `-MoonHome` 指定其他安装位置。
 
 `scripts/verify-native-example.sh`（Windows 可用对应的 `.ps1`）先编译一个小型 C 静态库，再让 MoonPkgConfig 从 `moonpkg-demo.pc` 算出编译和链接参数，最后构建并运行 C++ 调用程序。这个闭环需要系统提供 C/C++ 编译器和 `ar`。
+
+`scripts/compare-pkgconf.sh`（Windows 同样有 `.ps1`）把相同样本分别交给 MoonPkgConfig 和 pkgconf，比较 Cflags、动态/静态 Libs、依赖顺序、版本、变量覆盖及版本条件退出码。CI 每次提交都会重新执行，不依赖人工抄录结果。
 
 GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检查、四目标类型检查与测试，并运行正常和错误文件演示。工作流只需要仓库只读权限。
 

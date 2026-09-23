@@ -9,7 +9,7 @@ moon check --target all --deny-warn
 moon test --target all --deny-warn
 ```
 
-预期四个目标均通过。目前每个目标运行 53 个逻辑测试。
+预期四个目标均通过。目前每个目标运行 54 个逻辑测试。
 
 ## 2. 检查正常文件
 
@@ -78,6 +78,16 @@ Windows PowerShell：
 ```
 
 脚本会编译 `examples/native` 中的 C 静态库，然后使用 MoonPkgConfig 查询出的 Cflags 和 Libs 构建 C++ 调用程序。成功时程序实际运行并显示 `MoonPkgConfig native demo: 42`，脚本最后显示 `Native C/C++ integration: passed`。
+
+## 9. 自动对照 pkgconf
+
+安装 pkgconf 后运行：
+
+```sh
+sh scripts/compare-pkgconf.sh
+```
+
+Windows 可以运行 `./scripts/compare-pkgconf.ps1`；仓库的本地验证默认使用已校验的 pkgconf 3.0.7。脚本会比较12项输出和退出码，全部一致时显示参考工具版本和通过数量。
 
 ## 退出码
 

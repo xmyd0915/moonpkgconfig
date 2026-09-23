@@ -227,7 +227,13 @@ fn main {
         if json {
           println(result.json_text(pretty=true))
         } else {
-          print_flags(result, explain, loaded.packages, root, static_linking)
+          print_flags(
+            result,
+            explain,
+            loaded.packages,
+            root,
+            flag_query == Cflags || static_linking,
+          )
         }
         if !result.diagnostics.is_empty() {
           @sys.exit(1)

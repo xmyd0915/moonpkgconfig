@@ -116,10 +116,12 @@ pub fn PackageSet::collect_cflags(
   self : PackageSet,
   root : String,
 ) -> FlagResult {
-  let resolution = self.resolve(root)
+  // Private dependencies still contribute headers and compile definitions.
+  // Their linker flags are restricted to static linking in collect_libs.
+  let resolution = self.resolve(root, include_private=true)
   let flags : Array[ResolvedFlag] = []
   let diagnostics = resolution.diagnostics.copy()
-  for id in self.flag_order(root, false) {
+  for id in self.flag_order(root, true) {
     append_flag_field(self, id, "Cflags", flags, diagnostics)
   }
   { flags, diagnostics, }

@@ -57,12 +57,12 @@ jobs:
         shell: bash
         run: |
           test "$(moon run --target native cmd/query examples/valid imagekit --cflags)" = "-I/opt/example/include -DIMAGEKIT=1 -I/opt/example/include/codec -I/opt/example/include/compression"
-          moon run --target native cmd/query examples/valid imagekit --cflags --explain | grep -q "via imagekit -> codec -> compression"
+          moon run --target native cmd/query examples/valid imagekit --cflags --explain | grep -q "via imagekit -> compression"
           test "$(moon run --target native cmd/query examples/valid imagekit --libs)" = "-L/opt/example/lib -limagekit -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression"
           test "$(moon run --target native cmd/query examples/valid imagekit --libs --static)" = "-L/opt/example/lib -limagekit -lm -L/opt/example/lib -lcodec -L/opt/example/lib -lcompression -lz"
           test "$(moon run --target native cmd/query examples/valid imagekit --libs --dedupe-paths)" = "-L/opt/example/lib -limagekit -lcodec -lcompression"
           test "$(moon run --target native cmd/query testdata/pkgconf-3.0.7 fragment-quoting --cflags)" = "-fPIC -I/test/include/foo '-DQUOTED=\"/test/share/doc\"'"
-          test "$(moon run --target native cmd/query examples/order root --cflags)" = "-I/root -I/left -I/common"
+          test "$(moon run --target native cmd/query examples/order root --cflags)" = "-I/root -I/left -I/right -I/common"
           test "$(moon run --target native cmd/query examples/order root --libs --static)" = "-lroot -lroot-private -lleft -lright -lcommon"
           test "$(moon run --target native cmd/query examples/mixed good --cflags)" = "-I/good"
           set +e
@@ -110,3 +110,15 @@ jobs:
 
       - name: Build and run native C/C++ example
         run: sh scripts/verify-native-example.sh
+
+      - name: Install pkgconf reference when needed
+        shell: bash
+        run: |
+          if ! command -v pkgconf >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y pkgconf
+          fi
+          pkgconf --version
+
+      - name: Compare supported queries with pkgconf
+        run: sh scripts/compare-pkgconf.sh
