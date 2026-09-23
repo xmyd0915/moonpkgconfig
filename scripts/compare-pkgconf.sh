@@ -21,6 +21,9 @@ assert_equal() {
     echo "$label differs" >&2
     echo "pkgconf:      $expected" >&2
     echo "MoonPkgConfig: $actual" >&2
+    if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+      echo "::error title=pkgconf differential::$label differs; pkgconf=$expected; MoonPkgConfig=$actual"
+    fi
     exit 1
   fi
 }
@@ -68,6 +71,9 @@ compare_status() {
   set -e
   if [ "$moon_status" -ne "$reference_status" ]; then
     echo "$label exit status differs: pkgconf=$reference_status MoonPkgConfig=$moon_status" >&2
+    if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+      echo "::error title=pkgconf differential::$label exit status differs; pkgconf=$reference_status; MoonPkgConfig=$moon_status"
+    fi
     exit 1
   fi
 }
