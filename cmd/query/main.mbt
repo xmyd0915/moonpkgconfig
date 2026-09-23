@@ -2,6 +2,7 @@
 enum QueryMode {
   Cflags
   Libs
+  Variable(String)
   ModVersion
   Exists
   AtLeastVersion(String)
@@ -15,8 +16,24 @@ fn print_usage() -> Unit {
     "Usage: moon run cmd/query <directory> <package> <mode> [--path <directory>]... [options]",
   )
   println(
-    "Modes: --cflags, --libs, --modversion, --exists, --atleast-version=<version>, --exact-version=<version>, --max-version=<version>",
+    "Modes: --cflags, --libs, --variable=<name>, --modversion, --exists, --atleast-version=<version>, --exact-version=<version>, --max-version=<version>",
   )
+  println("Options: --define-variable=<name>=<value>, --path <directory>")
+}
+
+///|
+fn valid_variable_name(name : String) -> Bool {
+  !name.is_empty() &&
+  name
+  .iter()
+  .all(c => {
+    (c >= 'a' && c <= 'z') ||
+    (c >= 'A' && c <= 'Z') ||
+    (c >= '0' && c <= '9') ||
+    c == '_' ||
+    c == '.' ||
+    c == '-'
+  })
 }
 
 ///|
@@ -46,6 +63,7 @@ fn main {
   let args = @env.args()
   let positionals : Array[String] = []
   let extra_paths : Array[String] = []
+  let overrides : Map[String, String] = Map([])
   let mut mode : QueryMode? = None
   let mut static_linking = false
   let mut json = false
@@ -114,6 +132,27 @@ fn main {
           } else {
             mode = Some(MaxVersion(version))
           }
+        } else if option.has_prefix("--variable=") {
+          let name = option[11:].to_owned()
+          if mode is Some(_) || !valid_variable_name(name) {
+            invalid = true
+          } else {
+            mode = Some(Variable(name))
+          }
+        } else if option.has_prefix("--define-variable=") {
+          let definition = option[18:].to_owned()
+          match definition.find("=") {
+            Some(split) => {
+              let name = definition[:split].to_owned()
+              let value = definition[split + 1:].to_owned()
+              if !valid_variable_name(name) || name == "pcfiledir" {
+                invalid = true
+              } else {
+                overrides[name] = value
+              }
+            }
+            None => invalid = true
+          }
         } else if option.has_prefix("-") {
           invalid = true
         } else {
@@ -143,7 +182,7 @@ fn main {
   let root = positionals[1]
   let directories = [directory, ..extra_paths]
   try {
-    let loaded = @loader.load_directories(directories)
+    let loaded = @loader.load_directories(directories, overrides~)
     let root_diagnostics = loaded.diagnostics_for(root)
     if !root_diagnostics.is_empty() {
       if json {
@@ -179,6 +218,7 @@ fn main {
         }
       }
       ModVersion
+      | Variable(_)
       | Exists
       | AtLeastVersion(_)
       | ExactVersion(_)
@@ -193,6 +233,14 @@ fn main {
         let version = selected.document.field("Version").unwrap().value
         match metadata_query {
           ModVersion => println(version)
+          Variable(name) =>
+            match selected.document.variable(name) {
+              Some(entry) => println(entry.value)
+              None => {
+                println("Variable not found: {name}")
+                @sys.exit(1)
+              }
+            }
           Exists => ()
           AtLeastVersion(required) =>
             if @pc.compare_versions(version, required) < 0 {

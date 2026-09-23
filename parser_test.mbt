@@ -30,6 +30,20 @@ test "pcfiledir is supplied explicitly by caller" {
 }
 
 ///|
+test "caller overrides participate in ordered variable expansion" {
+  let doc = @moonpkgconfig.parse(
+    "libdir=${prefix}/lib\nprefix=/usr\nLibs: -L${libdir}",
+    source="override.pc",
+    overrides={ "prefix": "/opt/sdk" },
+  )
+  @debug.assert_eq(doc.diagnostics, [])
+  @debug.assert_eq(doc.variable("prefix").unwrap().raw, "/usr")
+  @debug.assert_eq(doc.variable("prefix").unwrap().value, "/opt/sdk")
+  @debug.assert_eq(doc.variable("libdir").unwrap().value, "/opt/sdk/lib")
+  @debug.assert_eq(doc.field("Libs").unwrap().value, "-L/opt/sdk/lib")
+}
+
+///|
 test "forward reference is rejected and parsing recovers" {
   let doc = @moonpkgconfig.parse("bad=${later}\nlater=ok\nName: works")
   @debug.assert_eq(doc.diagnostics.length(), 1)

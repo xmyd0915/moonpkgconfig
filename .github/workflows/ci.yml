@@ -81,6 +81,9 @@ jobs:
           test "$(moon run --target native cmd/query examples/search/first demo --path examples/search/second --cflags)" = "-I/first -I/helper"
           test "$(moon run --target native cmd/query examples/search/second demo --path examples/search/first --cflags)" = "-I/second"
           test "$(moon run --target native cmd/query examples/valid imagekit --modversion)" = "1.2.0"
+          test "$(moon run --target native cmd/query examples/valid imagekit --variable=prefix)" = "/opt/example"
+          test "$(moon run --target native cmd/query examples/valid imagekit --variable=prefix --define-variable=prefix=/custom)" = "/custom"
+          test "$(moon run --target native cmd/query examples/valid imagekit --cflags --define-variable=prefix=/custom)" = "-I/custom/include -DIMAGEKIT=1 -I/custom/include/codec -I/custom/include/compression"
           moon run --target native cmd/query examples/valid imagekit --exists
           moon run --target native cmd/query examples/valid imagekit --atleast-version=1.1
           moon run --target native cmd/query examples/valid imagekit --exact-version=1.2.0

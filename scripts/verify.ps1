@@ -54,6 +54,12 @@ try {
     if ($LASTEXITCODE -ne 0 -or $reversedSearchPath -ne '-I/second') { throw 'Reversed search path did not change package precedence.' }
     $moduleVersion = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --modversion | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $moduleVersion -ne '1.2.0') { throw 'Module version query failed.' }
+    $prefix = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --variable=prefix | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $prefix -ne '/opt/example') { throw 'Variable query failed.' }
+    $overriddenPrefix = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --variable=prefix --define-variable=prefix=/custom | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $overriddenPrefix -ne '/custom') { throw 'Variable override query failed.' }
+    $overriddenCflags = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --cflags --define-variable=prefix=/custom | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $overriddenCflags -ne '-I/custom/include -DIMAGEKIT=1 -I/custom/include/codec -I/custom/include/compression') { throw 'Variable override did not affect dependent flags.' }
     & "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --exists
     if ($LASTEXITCODE -ne 0) { throw 'Existing package query failed.' }
     & "$MoonHome\bin\moon.exe" run --target native cmd/query examples/valid imagekit --atleast-version=1.1

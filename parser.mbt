@@ -75,10 +75,17 @@ pub fn parse(
   content : String,
   source? : String = "input.pc",
   pcfiledir? : String = ".",
+  overrides? : Map[String, String] = Map([]),
 ) -> Document {
   let entries : Array[Entry] = []
   let diagnostics : Array[Diagnostic] = []
   let variables : Map[String, String] = { "pcfiledir": pcfiledir }
+  for name, value in overrides {
+    if name != "pcfiledir" {
+      variables[name] = value
+    }
+  }
+  let defined_variables : Map[String, Bool] = Map([])
   let fields : Map[String, Bool] = Map([])
   let chars = content.to_array()
   let line = StringBuilder()
@@ -117,6 +124,8 @@ pub fn parse(
         source,
         start_line,
         variables,
+        overrides,
+        defined_variables,
         fields,
         entries,
         diagnostics,
@@ -134,6 +143,8 @@ pub fn parse(
     source,
     start_line,
     variables,
+    overrides,
+    defined_variables,
     fields,
     entries,
     diagnostics,
@@ -147,6 +158,8 @@ fn parse_line(
   source : String,
   line_number : Int,
   variables : Map[String, String],
+  overrides : Map[String, String],
+  defined_variables : Map[String, Bool],
   fields : Map[String, Bool],
   entries : Array[Entry],
   diagnostics : Array[Diagnostic],
@@ -176,7 +189,10 @@ fn parse_line(
     return
   }
   let kind = if chars[split] == '=' { Variable } else { Field }
-  if (kind == Variable && variables.contains(name)) ||
+  if (
+      kind == Variable &&
+      (name == "pcfiledir" || defined_variables.contains(name))
+    ) ||
     (kind == Field && fields.contains(name)) {
     diagnostics.push(
       diag("PC005", "Duplicate or reserved definition: " + name, location),
@@ -191,10 +207,17 @@ fn parse_line(
   let value_location = { ..location, column: value_start + 1, }
   match expand(raw, variables, location=value_location) {
     Err(d) => diagnostics.push(d)
-    Ok(value) => {
+    Ok(expanded_value) => {
+      let value = match kind {
+        Variable => overrides.get(name).unwrap_or(expanded_value)
+        Field => expanded_value
+      }
       entries.push({ kind, name, raw, value, location, value_location, })
       match kind {
-        Variable => variables[name] = value
+        Variable => {
+          variables[name] = value
+          defined_variables[name] = true
+        }
         Field => fields[name] = true
       }
     }

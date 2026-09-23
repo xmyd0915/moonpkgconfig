@@ -23,8 +23,11 @@ pub fn DirectoryLoad::diagnostics_for(
 ///|
 /// Read every `.pc` file in one explicit directory. Package identifiers come
 /// from filenames, matching the way pkg-config modules are normally named.
-pub fn load_directory(directory : String) -> DirectoryLoad raise @fs.IOError {
-  load_directories([directory])
+pub fn load_directory(
+  directory : String,
+  overrides? : Map[String, String] = Map([]),
+) -> DirectoryLoad raise @fs.IOError {
+  load_directories([directory], overrides~)
 }
 
 ///|
@@ -32,6 +35,7 @@ pub fn load_directory(directory : String) -> DirectoryLoad raise @fs.IOError {
 /// each package id wins, including when that file contains diagnostics.
 pub fn load_directories(
   directories : Array[String],
+  overrides? : Map[String, String] = Map([]),
 ) -> DirectoryLoad raise @fs.IOError {
   let packages = @pc.PackageSet::new()
   let package_ids : Array[String] = []
@@ -54,7 +58,12 @@ pub fn load_directories(
       seen_files[id] = true
       let path = @path.Path(directory).join(@path.Path(name)).to_string()
       let content = @fs.read_file_to_string(path)
-      let document = @pc.parse(content, source=path, pcfiledir=directory)
+      let document = @pc.parse(
+        content,
+        source=path,
+        pcfiledir=directory,
+        overrides~,
+      )
       let file_diagnostics = document.diagnostics.copy()
       for problem in document.diagnostics {
         diagnostics.push(problem)
