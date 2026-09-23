@@ -63,6 +63,22 @@ moon run --target native cmd/check testdata/pkgconf-3.0.7
 
 预期显示 `Checked 10 packages from 10 .pc files; 0 diagnostics.`。这些文件未经修改地取自官方pkgconf 3.0.7测试套件，具体来源、提交和许可证记录在同目录README中。
 
+## 8. 编译并运行原生示例
+
+Linux 或 macOS：
+
+```sh
+sh scripts/verify-native-example.sh
+```
+
+Windows PowerShell：
+
+```powershell
+./scripts/verify-native-example.ps1
+```
+
+脚本会编译 `examples/native` 中的 C 静态库，然后使用 MoonPkgConfig 查询出的 Cflags 和 Libs 构建 C++ 调用程序。成功时程序实际运行并显示 `MoonPkgConfig native demo: 42`，脚本最后显示 `Native C/C++ integration: passed`。
+
 ## 退出码
 
 | 退出码 | 含义 |

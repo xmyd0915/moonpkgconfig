@@ -1,0 +1,8 @@
+includedir=${pcfiledir}/include
+libdir=${pcfiledir}/build
+
+Name: moonpkg-demo
+Description: Small C library consumed by the native integration example
+Version: 1.0.0
+Libs: -L${libdir} -lmoonpkg_demo
+Cflags: -I${includedir}
