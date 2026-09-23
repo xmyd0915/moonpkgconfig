@@ -10,6 +10,8 @@
 
 安装包以管理映像方式解包到仓库忽略的 `.tools` 目录，没有把二进制文件提交进项目。
 
+Ubuntu CI 从同一官方发布下载 `pkgconf-3.0.7.tar.xz`，校验 SHA-256 `c926ff491cbd9a331a589160811bd97ab1749b4d5198a519338f2cdfabe6940a` 后在临时目录编译。差分测试不使用发行版预装版本，避免参考语义随 runner 镜像变化。
+
 ## 对照样例
 
 `examples/valid` 包含 `imagekit -> codec -> compression` 三个自编包。每个包都有独立的编译和链接参数，根包和依赖还包含私有链接字段。

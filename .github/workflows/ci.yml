@@ -111,14 +111,21 @@ jobs:
       - name: Build and run native C/C++ example
         run: sh scripts/verify-native-example.sh
 
-      - name: Install pkgconf reference when needed
+      - name: Build pinned pkgconf 3.0.7 reference
         shell: bash
         run: |
-          if ! command -v pkgconf >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y pkgconf
-          fi
-          pkgconf --version
+          archive="$RUNNER_TEMP/pkgconf-3.0.7.tar.xz"
+          source_dir="$RUNNER_TEMP/pkgconf-3.0.7"
+          install_dir="$RUNNER_TEMP/pkgconf-3.0.7-install"
+          curl -fsSL --retry 3 -o "$archive" https://github.com/pkgconf/pkgconf/releases/download/pkgconf-3.0.7/pkgconf-3.0.7.tar.xz
+          echo "c926ff491cbd9a331a589160811bd97ab1749b4d5198a519338f2cdfabe6940a  $archive" | sha256sum -c -
+          tar -xJf "$archive" -C "$RUNNER_TEMP"
+          cd "$source_dir"
+          ./configure --prefix="$install_dir"
+          make -j2
+          make install
+          echo "PKGCONF=$install_dir/bin/pkgconf" >> "$GITHUB_ENV"
+          "$install_dir/bin/pkgconf" --version
 
       - name: Compare supported queries with pkgconf
         run: sh scripts/compare-pkgconf.sh
