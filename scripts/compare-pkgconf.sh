@@ -15,8 +15,10 @@ export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
 
 assert_equal() {
   label=$1
-  expected=$2
-  actual=$3
+  # pkgconf versions differ on whether a display line ends in one space.
+  # Keep argument contents and order strict while ignoring only line-end space.
+  expected=$(printf '%s' "$2" | sed 's/[[:space:]]*$//')
+  actual=$(printf '%s' "$3" | sed 's/[[:space:]]*$//')
   if [ "$actual" != "$expected" ]; then
     echo "$label differs" >&2
     echo "pkgconf:      $expected" >&2
