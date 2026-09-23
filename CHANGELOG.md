@@ -59,3 +59,5 @@
 新增自动 pkgconf 差分脚本，在 Windows 和 Ubuntu CI 中逐项比较12组参数输出、依赖顺序、变量覆盖和版本条件退出码。
 
 自动差分发现并修正 Cflags 私有依赖语义：`Requires.private` 的编译参数参与普通 Cflags 查询，只有其链接参数受静态模式限制。
+
+加入 zlib 1.3.1 与 libffi 3.4.6 的固定上游 pkg-config 模板及许可证，并把对应查询加入自动差分，比较项增至16项。

@@ -76,6 +76,8 @@ try {
     if ($LASTEXITCODE -ne 1 -or $invalidDirectory -notmatch 'package-that-is-not-here' -or $invalidDirectory -notmatch 'private-helper' -or $invalidDirectory -notmatch '4 diagnostics\.') { throw 'Invalid directory check failed.' }
     $upstreamDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check testdata/pkgconf-3.0.7 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $upstreamDirectory -ne 'Checked 10 packages from 10 .pc files; 0 diagnostics.') { throw 'Upstream pkgconf corpus check failed.' }
+    $realWorldDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check testdata/real-world | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $realWorldDirectory -ne 'Checked 2 packages from 2 .pc files; 0 diagnostics.') { throw 'Real-world upstream templates check failed.' }
     & "$PSScriptRoot\verify-native-example.ps1"
     if ($LASTEXITCODE -ne 0) { throw 'Native C/C++ integration failed.' }
     & "$PSScriptRoot\compare-pkgconf.ps1"

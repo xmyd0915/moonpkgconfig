@@ -61,6 +61,21 @@ assert_equal "private dependency order" \
   "$("$reference" --static --libs root)" \
   "$(moon run --target native cmd/query examples/order root --libs --static)"
 
+export PKG_CONFIG_PATH="$project_root/testdata/real-world"
+export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
+assert_equal "zlib template Cflags" \
+  "$("$reference" --cflags zlib)" \
+  "$(moon run --target native cmd/query testdata/real-world zlib --cflags)"
+assert_equal "zlib template Libs" \
+  "$("$reference" --libs zlib)" \
+  "$(moon run --target native cmd/query testdata/real-world zlib --libs)"
+assert_equal "libffi template Cflags" \
+  "$("$reference" --cflags libffi)" \
+  "$(moon run --target native cmd/query testdata/real-world libffi --cflags)"
+assert_equal "libffi template Libs" \
+  "$("$reference" --libs libffi)" \
+  "$(moon run --target native cmd/query testdata/real-world libffi --libs)"
+
 compare_status() {
   label=$1
   reference_option=$2
@@ -86,4 +101,4 @@ compare_status "minimum version match" --atleast-version=1.1 --atleast-version=1
 compare_status "maximum version mismatch" --max-version=1.1 --max-version=1.1
 compare_status "exact version match" --exact-version=1.2.0 --exact-version=1.2.0
 
-echo "pkgconf differential checks: 12 passed (reference $("$reference" --version))"
+echo "pkgconf differential checks: 16 passed (reference $("$reference" --version))"

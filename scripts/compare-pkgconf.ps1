@@ -47,6 +47,15 @@ try {
     Assert-Equal 'diamond Cflags order' (Invoke-Text $Reference @('--cflags', 'root')) (Invoke-MoonQuery 'examples/order' @('--cflags'))
     Assert-Equal 'private dependency order' (Invoke-Text $Reference @('--static', '--libs', 'root')) (Invoke-MoonQuery 'examples/order' @('--libs', '--static'))
 
+    $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'testdata/real-world'
+    $env:PKG_CONFIG_LIBDIR = $env:PKG_CONFIG_PATH
+    $script:Package = 'zlib'
+    Assert-Equal 'zlib template Cflags' (Invoke-Text $Reference @('--cflags', 'zlib')) (Invoke-MoonQuery 'testdata/real-world' @('--cflags'))
+    Assert-Equal 'zlib template Libs' (Invoke-Text $Reference @('--libs', 'zlib')) (Invoke-MoonQuery 'testdata/real-world' @('--libs'))
+    $script:Package = 'libffi'
+    Assert-Equal 'libffi template Cflags' (Invoke-Text $Reference @('--cflags', 'libffi')) (Invoke-MoonQuery 'testdata/real-world' @('--cflags'))
+    Assert-Equal 'libffi template Libs' (Invoke-Text $Reference @('--libs', 'libffi')) (Invoke-MoonQuery 'testdata/real-world' @('--libs'))
+
     $script:Package = 'imagekit'
     $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'examples/valid'
     $env:PKG_CONFIG_LIBDIR = $env:PKG_CONFIG_PATH
@@ -61,7 +70,7 @@ try {
     }
 
     $version = Invoke-Text $Reference @('--version')
-    Write-Output "pkgconf differential checks: 12 passed (reference $version)"
+    Write-Output "pkgconf differential checks: 16 passed (reference $version)"
 } finally {
     Pop-Location
     $env:PKG_CONFIG_PATH = $oldPath
