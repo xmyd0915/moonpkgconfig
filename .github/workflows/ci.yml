@@ -41,6 +41,21 @@ jobs:
       - name: Test all targets
         run: moon test --target all --deny-warn
 
+      - name: Check publish package contents
+        shell: bash
+        run: |
+          package_files="$(moon package --list 2>&1)"
+          listed_files="$(grep -vE '^(Running moon check|Finished\.|Check passed|Package to )' <<< "$package_files")"
+          grep -qx "README.md" <<< "$listed_files"
+          grep -qx "LICENSE" <<< "$listed_files"
+          grep -qx "ORIGINS.md" <<< "$listed_files"
+          grep -qx "parser.mbt" <<< "$listed_files"
+          grep -qx "flags.mbt" <<< "$listed_files"
+          ! grep -Eq '(^|[/\\])(_build|\.tools)([/\\]|$)|credentials\.json' <<< "$listed_files"
+
+      - name: Run library API demo
+        run: moon run cmd/demo
+
       - name: Run valid file demo
         run: moon run --target native cmd/inspect examples/valid/imagekit.pc
 

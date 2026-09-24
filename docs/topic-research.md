@@ -11,7 +11,7 @@
 - Web 搜索 `MoonBit pkgconf`、`MoonBit pkg-config parser library`、`site:mooncakes.io pkg-config`，发现 tonyfettes/cairo 调用外部 pkg-config 发现 Cairo 库，属于潜在使用场景，而非独立 `.pc` 解析库：<https://mooncakes.io/docs/tonyfettes/cairo>。
 - 候选 depfile 方向排除：MoonNinja 已有 Make 风格依赖文件解析：<https://www.gitlink.org.cn/Zcxxffss/MoonNinja>；MoonCakes 另有 Zcxssxx/moon-ninja。
 - 原 MoonGitAttrs 方向排除：Xpeng/moongitattrs 已覆盖解析、匹配、求值和解释，仓库 <https://github.com/pxgt/moongitattrs>。API 记录版本 0.1.0 创建时间为 2026-09-15T03:52:04Z；早先搜索缓存的“3 小时前”不能用于判断实际发布时间。
-- <https://moonbitlang.github.io/Hackathon2026/> 已核实月度新项目、9 月 24 日节点、公开仓库、实质工作、MoonBit 为主、来源及许可证、允许 AI 和加入交流群要求。未获取到完整九月参赛项目名单，不能声称对报名项目已全部去重。
+- <https://moonbitlang.github.io/Hackathon2026/> 已于 2026-09-24 复核：九月赛报名与项目验收截止时间为 9 月 30 日，要求公开仓库持续提交、MoonBit 为主要实现语言、清晰 README、可运行示例、必要测试、来源与许可证说明，并要求参赛者加入赛事交流群。未获取到完整九月参赛项目名单，不能声称对报名项目已全部去重。
 
 ## 选择理由
 

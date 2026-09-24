@@ -8,6 +8,8 @@ license = "MIT"
 
 description = "Source-aware pkg-config metadata parsing and native dependency inspection in MoonBit"
 
+repository = "https://github.com/xmyd0915/moonpkgconfig"
+
 keywords = [ "pkg-config", "native", "ffi", "build-tools" ]
 
 import {

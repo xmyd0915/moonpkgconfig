@@ -123,7 +123,7 @@ let libs = doc.field("Libs")
 
 `PackageSet::check_all` 把集合中的每个包作为根节点检查，并默认包含私有依赖；重复出现的同一诊断只报告一次，适合 CI 或目录级检查。
 
-`collect_cflags` 与 `collect_libs` 聚合依赖图中的参数，每个参数保留包名、字段和来源位置。静态链接查询会加入私有依赖与 `Libs.private`。`FlagResult::shell_text` 提供可复制到 POSIX shell 的文本表示；直接集成时应使用 `flags` 数组，避免再次解析展示文本。
+`collect_cflags` 与 `collect_libs` 聚合依赖图中的参数，每个参数保留包名、字段和来源位置。Cflags 会包含公开与私有依赖需要的编译参数；动态 Libs 只使用公开依赖，静态 Libs 会加入私有依赖与 `Libs.private`。`FlagResult::shell_text` 提供可复制到 POSIX shell 的文本表示；直接集成时应使用 `flags` 数组，避免再次解析展示文本。
 
 `FlagResult::deduplicate_search_paths` 可选择性去除重复的连接式或分离式 `-I`/`-L` 参数，两种写法会按同一路径比较并保留首次出现项的原始形式和来源。分离式参数只与同一包、同一字段中的下一项配对，避免跨来源误判。它不会去重 `-l`、宏定义或其他参数。
 
@@ -140,4 +140,4 @@ let libs = doc.field("Libs")
 - 仅解析文本，不查找系统包、不修改构建配置、不运行编译器或安装依赖。
 - 尚不实现 sysroot 重写、Windows 自动重定位、系统路径过滤、完整片段去重或全部 pkgconf 3 扩展；当前仅提供显式的搜索路径去重。
 
-可复制的演示步骤见 [docs/demo.md](docs/demo.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，上游兼容样本见 [testdata/pkgconf-3.0.7](testdata/pkgconf-3.0.7)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。
+可复制的演示步骤见 [docs/demo.md](docs/demo.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，发布准备见 [docs/release.md](docs/release.md)，上游兼容样本见 [testdata/pkgconf-3.0.7](testdata/pkgconf-3.0.7)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。

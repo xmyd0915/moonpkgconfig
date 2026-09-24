@@ -1,6 +1,6 @@
 # 验证记录
 
-最近验证：2026-09-23；平台：Windows x64。
+最近验证：2026-09-24；平台：Windows x64。
 
 工具链：交接所列 MoonBit 官方便携安装，`moon 0.1.20260915 (2e1a46d 2026-09-15)`。
 
@@ -12,6 +12,7 @@
 | `moon check --target all --deny-warn` | 四目标成功，无警告 |
 | `moon test --target all --deny-warn` | wasm 54/54，wasm-gc 54/54，JS 54/54，native 54/54 |
 | `moon run cmd/demo` | 成功，输出六项字段及来源，无解析诊断 |
+| `moon package --list` | 成功，包含核心源码、README、许可证与来源说明，不包含构建、工具或凭据文件 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc --json` | 成功，输出完整条目与空诊断数组 |
 | `moon run --target native cmd/inspect examples/invalid/broken.pc` | 按预期报告五项问题并返回退出码 1 |
@@ -31,7 +32,7 @@
 | 原生 C/C++ 闭环 | 查询 `moonpkg-demo.pc` 得到参数，编译 C 静态库与 C++ 调用程序，运行输出精确匹配 |
 | `cmd/check testdata/real-world` | zlib 1.3.1 与 libffi 3.4.6 固定上游模板全部通过，退出码 0 |
 | 自动 pkgconf 差分 | 16 项 Cflags、动态/静态 Libs、依赖顺序、真实模板、版本、变量覆盖及退出码与固定的 pkgconf 3.0.7 一致；仅忽略行末空白差异 |
-| GitHub Actions CI | Ubuntu 全新环境成功，含原生 C/C++ 闭环及固定版本差分，运行记录 [35811642974](https://github.com/xmyd0915/moonpkgconfig/actions/runs/35811642974) |
+| GitHub Actions CI | Ubuntu 全新环境成功，含原生 C/C++ 闭环、真实上游模板及16项固定版本差分，运行记录 [35812524313](https://github.com/xmyd0915/moonpkgconfig/actions/runs/35812524313) |
 
 54 个逻辑测试在四个目标各运行一次，不将它们宣传为 216 个独立测试。覆盖顺序变量展开、调用方变量覆盖、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重、最短公开/私有依赖路径、Cflags 私有依赖语义、虚拟包提供者、循环和包冲突诊断、参数聚合与来源、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
 

@@ -20,6 +20,13 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
     & "$MoonHome\bin\moon.exe" run cmd/demo
     if ($LASTEXITCODE -ne 0) { throw 'Demo failed.' }
+    $packageFiles = (& "$MoonHome\bin\moon.exe" package --list 2>&1 | Out-String)
+    if ($LASTEXITCODE -ne 0) { throw 'Package manifest check failed.' }
+    $packageFileLines = $packageFiles -split "`r?`n" | Where-Object { $_ -and $_ -notmatch '^(Running moon check|Finished\.|Check passed|Package to )' }
+    foreach ($requiredFile in @('README.md', 'LICENSE', 'ORIGINS.md', 'parser.mbt', 'flags.mbt')) {
+        if ($requiredFile -notin $packageFileLines) { throw "Package is missing $requiredFile." }
+    }
+    if ($packageFileLines -match '(^|[\\/])(_build|\.tools)([\\/]|$)' -or $packageFileLines -match 'credentials\.json') { throw 'Package contains a build, tool, or credential artifact.' }
     & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/valid/imagekit.pc
     if ($LASTEXITCODE -ne 0) { throw 'File inspector failed.' }
     & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/valid/imagekit.pc --json
