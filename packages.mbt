@@ -62,7 +62,8 @@ pub fn PackageSet::get(self : PackageSet, id : String) -> Package? {
 ///|
 /// Find the first package, in insertion order, whose `Provides` field can
 /// satisfy a virtual dependency. Exact package identifiers are handled by the
-/// caller and always take precedence.
+/// caller and always take precedence. Versioned rules follow pkgconf 3.0.7's
+/// constraint-pair semantics, including its deliberately asymmetric ranges.
 fn PackageSet::find_provider(
   self : PackageSet,
   requirement : Requirement,
@@ -76,15 +77,93 @@ fn PackageSet::find_provider(
     }
     for provided in provides {
       if provided.name == requirement.name &&
-        (
-          requirement.op == Any ||
-          (provided.op == Equal && requirement.matches(provided.version))
-        ) {
+        virtual_requirement_matches(requirement, provided) {
         return Some(pkg)
       }
     }
   }
   None
+}
+
+///|
+/// Compare a requested virtual dependency with one `Provides` declaration.
+///
+/// This is not ordinary interval intersection. It mirrors the comparator-pair
+/// table used by pkgconf 3.0.7 so range boundaries behave the same way.
+fn virtual_requirement_matches(
+  requirement : Requirement,
+  provided : Requirement,
+) -> Bool {
+  if requirement.op == Any {
+    return provided.op != Any
+  }
+  if provided.op == Any {
+    return false
+  }
+  let order = compare_versions(requirement.version, provided.version)
+  match requirement.op {
+    Any => abort("handled above")
+    Less =>
+      match provided.op {
+        Any => false
+        Less => order < 0
+        Greater => order > 0
+        LessEqual => order <= 0
+        GreaterEqual => order > 0
+        Equal => order > 0
+        NotEqual => order <= 0
+      }
+    Greater =>
+      match provided.op {
+        Any => false
+        Less => order < 0
+        Greater => order > 0
+        LessEqual => order < 0
+        GreaterEqual => order >= 0
+        Equal => order < 0
+        NotEqual => order >= 0
+      }
+    LessEqual =>
+      match provided.op {
+        Any => false
+        Less => order < 0
+        Greater => order > 0
+        LessEqual => order <= 0
+        GreaterEqual => order >= 0
+        Equal => order >= 0
+        NotEqual => order < 0
+      }
+    GreaterEqual =>
+      match provided.op {
+        Any => false
+        Less => order < 0
+        Greater => order > 0
+        LessEqual => order <= 0
+        GreaterEqual => order >= 0
+        Equal => order <= 0
+        NotEqual => order > 0
+      }
+    Equal =>
+      match provided.op {
+        Any => false
+        Less => order < 0
+        Greater => order > 0
+        LessEqual => order <= 0
+        GreaterEqual => order >= 0
+        Equal => order == 0
+        NotEqual => order != 0
+      }
+    NotEqual =>
+      match provided.op {
+        Any => false
+        Less => order >= 0
+        Greater => order <= 0
+        LessEqual => order > 0
+        GreaterEqual => order < 0
+        Equal => order != 0
+        NotEqual => order == 0
+      }
+  }
 }
 
 ///|

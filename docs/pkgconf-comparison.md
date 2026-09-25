@@ -65,10 +65,12 @@ MoonPkgConfig 查询结果：
 
 `examples/path-policy` 固定了 `/usr/include`、`/usr/lib` 与自定义目录。给 pkgconf 显式设置系统目录环境变量、给 MoonPkgConfig 传入对应的 `--system-include-path`/`--system-library-path` 后，两边都只移除精确匹配的 `-I`/`-L`；设置 `/sdk` sysroot 后，两边均重写绝对的 `-I`、`-L` 和 `-isystem` 路径。4项路径输出已加入差分，总比较数为20项。MoonPkgConfig 使用显式参数而非读取宿主环境，以保证构建复现性。
 
+官方 `provides.pc` 声明了 `=、!=、<、<=、>、>=` 六种虚拟包范围。MoonPkgConfig 按 pkgconf 3.0.7 源码中的比较矩阵实现，而不是把两边约束简单视为区间相交。`bar-new` 对 `provides-test-bar >= 1.1.1` 的依赖在两边均成功，`bar-old` 对 `provides-test-bar <= 1.1.0` 的依赖在两边均失败；这两项退出码差分使总比较数增至22项。
+
 这些差异是当前兼容边界，不把本次结果表述为完整兼容。搜索路径去重只处理连接式或分离式 `-I`/`-L`，不会删除重复库或其他可能影响链接语义的参数。系统目录仅精确匹配；sysroot 不自动读取环境。后续仍需扩大真实 `.pc` 文件样本，并继续核对参数顺序。
 
 ## 上游测试样本
 
-仓库另包含10个未经修改的pkgconf 3.0.7官方测试文件，固定到提交 `0c9e506b64124d8727b68d8af0ed73739e66e2ba`。它们在Windows本地验证和Ubuntu CI中通过整目录检查，覆盖变量空白、续行、CRLF、无末尾换行、反斜杠、引号、美元转义和分离式参数等输入。
+仓库另包含11个未经修改的pkgconf 3.0.7官方测试文件，固定到提交 `0c9e506b64124d8727b68d8af0ed73739e66e2ba`。它们在Windows本地验证和Ubuntu CI中通过整目录检查，覆盖变量空白、续行、CRLF、无末尾换行、反斜杠、引号、美元转义、分离式参数和虚拟包范围等输入。
 
 样本清单、原始路径与ISC许可证见 [`testdata/pkgconf-3.0.7`](../testdata/pkgconf-3.0.7)。这是选定语料的兼容证据，不等同于完整pkgconf一致性。

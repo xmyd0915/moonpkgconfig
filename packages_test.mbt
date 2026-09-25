@@ -67,3 +67,75 @@ test "package set accepts matching virtual providers" {
     "PC015",
   ])
 }
+
+///|
+fn virtual_provider_accepts(provides : String, request : String) -> Bool {
+  let packages = @moonpkgconfig.PackageSet::new()
+  packages.add(
+    "provider",
+    @moonpkgconfig.parse(
+      "Name: provider\nDescription: virtual provider fixture\nVersion: 9\nProvides: " +
+      provides,
+      source="provider.pc",
+    ),
+  )
+  |> ignore
+  packages
+  .check_requirements(@moonpkgconfig.parse_requirements(request).unwrap())
+  .is_empty()
+}
+
+///|
+test "range virtual providers follow pkgconf comparator pairs" {
+  @debug.assert_eq(virtual_provider_accepts("virtual > 1.1.0", "virtual"), true)
+  @debug.assert_eq(
+    virtual_provider_accepts("virtual > 1.1.0", "virtual >= 1.1.1"),
+    true,
+  )
+  @debug.assert_eq(
+    virtual_provider_accepts("virtual > 1.1.0", "virtual <= 1.1.1"),
+    true,
+  )
+  @debug.assert_eq(
+    virtual_provider_accepts("virtual > 1.1.0", "virtual <= 1.1.0"),
+    false,
+  )
+  @debug.assert_eq(
+    virtual_provider_accepts("virtual > 1.1.0", "virtual != 1.1.0"),
+    true,
+  )
+  @debug.assert_eq(
+    virtual_provider_accepts("virtual > 1.1.0", "virtual != 1.1.1"),
+    false,
+  )
+  @debug.assert_eq(
+    virtual_provider_accepts("virtual < 1.2.0", "virtual >= 1.1.0"),
+    true,
+  )
+  @debug.assert_eq(
+    virtual_provider_accepts("virtual < 1.2.0", "virtual >= 1.2.0"),
+    false,
+  )
+  @debug.assert_eq(
+    virtual_provider_accepts("virtual <= 1.2.0", "virtual >= 1.2.0"),
+    true,
+  )
+  @debug.assert_eq(
+    virtual_provider_accepts("virtual >= 1.1.0", "virtual <= 1.1.0"),
+    true,
+  )
+  @debug.assert_eq(
+    virtual_provider_accepts("virtual != 1.3.0", "virtual = 1.2.0"),
+    true,
+  )
+  @debug.assert_eq(
+    virtual_provider_accepts("virtual != 1.3.0", "virtual = 1.3.0"),
+    false,
+  )
+}
+
+///|
+test "unversioned Provides does not synthesize a usable virtual version" {
+  @debug.assert_eq(virtual_provider_accepts("virtual", "virtual"), false)
+  @debug.assert_eq(virtual_provider_accepts("virtual", "virtual = 1"), false)
+}

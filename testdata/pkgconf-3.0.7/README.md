@@ -1,6 +1,6 @@
 # pkgconf 3.0.7 compatibility fixtures
 
-These ten `.pc` files are unmodified copies from the official pkgconf test
+These eleven `.pc` files are unmodified copies from the official pkgconf test
 suite at tag `pkgconf-3.0.7`, commit
 `0c9e506b64124d8727b68d8af0ed73739e66e2ba`:
 
@@ -18,11 +18,12 @@ suite at tag `pkgconf-3.0.7`, commit
 | `dos-lineendings.pc` | `tests/lib1/dos-lineendings.pc` |
 | `flag-whitespace.pc` | `tests/lib1/flag-whitespace.pc` |
 | `cflags-libs-only.pc` | `tests/lib1/cflags-libs-only.pc` |
+| `provides.pc` | `tests/lib1/provides.pc` |
 
 The files exercise metadata, variable whitespace, logical-line folding, CRLF,
 a missing final newline, escaped backslashes, quoted fragments, dollar-sign
-escaping, and split `-I` arguments. `LICENSE.pkgconf` contains the upstream ISC
-license notice.
+escaping, split `-I` arguments, and all six version operators in `Provides`.
+`LICENSE.pkgconf` contains the upstream ISC license notice.
 
 Passing this selected corpus demonstrates compatibility with these inputs only.
 It is not a claim that MoonPkgConfig passes the complete pkgconf test suite or

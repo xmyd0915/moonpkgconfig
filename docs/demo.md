@@ -9,7 +9,7 @@ moon check --target all --deny-warn
 moon test --target all --deny-warn
 ```
 
-预期四个目标均通过。目前每个目标运行 57 个逻辑测试。
+预期四个目标均通过。目前每个目标运行 59 个逻辑测试。
 
 ## 2. 检查正常文件
 
@@ -61,7 +61,16 @@ moon run --target native cmd/check examples/invalid
 moon run --target native cmd/check testdata/pkgconf-3.0.7
 ```
 
-预期显示 `Checked 10 packages from 10 .pc files; 0 diagnostics.`。这些文件未经修改地取自官方pkgconf 3.0.7测试套件，具体来源、提交和许可证记录在同目录README中。
+预期显示 `Checked 11 packages from 11 .pc files; 0 diagnostics.`。这些文件未经修改地取自官方pkgconf 3.0.7测试套件，具体来源、提交和许可证记录在同目录README中。
+
+其中 `provides.pc` 覆盖 `Provides` 的六种版本运算符。下面两条命令分别演示范围匹配成功和边界不满足：
+
+```sh
+moon run --target native cmd/query examples/provides bar-new --path testdata/pkgconf-3.0.7 --exists
+moon run --target native cmd/query examples/provides bar-old --path testdata/pkgconf-3.0.7 --exists
+```
+
+第一条返回 `0`，第二条返回 `1`；两者均在自动脚本中与 pkgconf 3.0.7 对照。
 
 ## 8. 编译并运行原生示例
 

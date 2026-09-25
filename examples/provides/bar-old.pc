@@ -1,0 +1,5 @@
+Name: bar-old
+Description: rejected range virtual dependency
+Version: 1
+Requires: provides-test-bar <= 1.1.0
+Libs: -lbar-old

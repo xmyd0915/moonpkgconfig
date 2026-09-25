@@ -5,7 +5,7 @@
 ## 参考资料
 
 1. pkgconf 项目 `.pc` 格式文档：<https://github.com/pkgconf/pkgconf/blob/main/man/pc.5>。
-2. pkgconf 版本比较接口文档：<https://pkgconf.readthedocs.io/en/latest/libpkgconf-pkg.html>，用于核对比较结果约定和 RPM 风格规则。
+2. pkgconf 版本比较接口文档：<https://pkgconf.readthedocs.io/en/latest/libpkgconf-pkg.html>，用于核对比较结果约定和 RPM 风格规则；固定标签3.0.7的 `libpkgconf/pkg.c` 用于核对 `Provides` 比较矩阵，并以发行版命令复验行为。
 3. pkg-config Guide：<https://people.freedesktop.org/~dbn/pkg-config-guide.html>。本次访问被站点拒绝，不能作为本次已读取证据。
 4. MoonBit 官方语言及包配置文档：<https://docs.moonbitlang.com/en/latest/>。
 5. MoonBit 标准库（工具链自带）：<https://github.com/moonbitlang/core>，Apache-2.0；本项目使用 API，不复制其实现。
@@ -13,7 +13,7 @@
 
 本项目依据公开格式独立编写，没有移植或复制 pkgconf/pkg-config/MoonNinja/MoonGitAttrs 的实现代码。功能单元测试与 `examples` 中的 `.pc` 示例均为本项目自编。
 
-`testdata/pkgconf-3.0.7` 中的10个兼容样本未经修改地复制自pkgconf官方测试套件标签 `pkgconf-3.0.7`（提交 `0c9e506b64124d8727b68d8af0ed73739e66e2ba`），并随附上游ISC许可证。文件清单与原始路径见该目录README。
+`testdata/pkgconf-3.0.7` 中的11个兼容样本未经修改地复制自pkgconf官方测试套件标签 `pkgconf-3.0.7`（提交 `0c9e506b64124d8727b68d8af0ed73739e66e2ba`），并随附上游ISC许可证。文件清单与原始路径见该目录README。
 
 `testdata/real-world` 保存 zlib 1.3.1 与 libffi 3.4.6 的官方 `.pc.in` 模板内容，只把文件后缀改为 `.pc` 供目录加载器直接检查。目录README记录固定提交、上游路径和替换标记边界，并随附各自许可证。
 

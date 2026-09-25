@@ -21,11 +21,11 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 | 证据 | 当前结果 |
 | --- | --- |
-| 自动化测试 | 57 个逻辑测试 × 4 个目标，全部通过 |
+| 自动化测试 | 59 个逻辑测试 × 4 个目标，全部通过 |
 | 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言 |
-| 上游兼容语料 | 10 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
+| 上游兼容语料 | 11 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
 | 真实项目模板 | 固定版本、提交和许可证的 zlib 1.3.1 与 libffi 3.4.6 官方 `.pc.in` 内容 |
-| 自动差分对照 | CI 对 20 项参数、顺序、路径策略、变量和退出码行为逐项比较 MoonPkgConfig 与固定的 pkgconf 3.0.7 |
+| 自动差分对照 | CI 对 22 项参数、顺序、路径策略、虚拟包、变量和退出码行为逐项比较 MoonPkgConfig 与固定的 pkgconf 3.0.7 |
 | 原生闭环 | 使用查询得到的 Cflags/Libs 编译 C 静态库和 C++ 调用程序，并运行核对结果 |
 
 详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
@@ -74,6 +74,7 @@ moon run --target native cmd/query examples/valid imagekit --variable=prefix
 moon run --target native cmd/query examples/valid imagekit --cflags --define-variable=prefix=/custom
 moon run --target native cmd/query examples/path-policy paths --cflags --sysroot=/sdk
 moon run --target native cmd/query examples/path-policy paths --libs --system-library-path=/usr/lib
+moon run --target native cmd/query examples/provides bar-new --path testdata/pkgconf-3.0.7 --exists
 moon run --target native cmd/query examples/valid imagekit --exists
 moon run --target native cmd/query examples/valid imagekit --atleast-version=1.1
 ```
@@ -97,7 +98,7 @@ Windows 当前工作区可运行 `./scripts/verify.ps1`。它只为本次进程�
 
 GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检查、四目标类型检查与测试，并运行正常和错误文件演示。工作流只需要仓库只读权限。
 
-`testdata/pkgconf-3.0.7` 保存了10个未经修改的官方pkgconf测试文件，固定到上游标签、提交和ISC许可证。CI会把它们作为独立兼容语料检查；这证明所选输入受支持，不代表通过pkgconf完整测试套件。
+`testdata/pkgconf-3.0.7` 保存了11个未经修改的官方pkgconf测试文件，固定到上游标签、提交和ISC许可证。CI会把它们作为独立兼容语料检查；这证明所选输入受支持，不代表通过pkgconf完整测试套件。
 
 `cmd/inspect` 读取一个 UTF-8 `.pc` 文件，默认列出常用字段、来源和诊断；加 `--json` 输出完整解析结果。检查通过时退出码为 `0`，发现解析或必填元数据问题时为 `1`，用法或文件读取错误时为 `2`。文件访问使用 MoonBit 官方 `moonbitlang/x`，解析核心仍不直接接触文件系统。
 
@@ -121,7 +122,7 @@ let libs = doc.field("Libs")
 
 `split_flags` 返回参数数组，不启动 shell；`parse_requirements` 返回包名、比较运算符和版本文本。`compare_versions` 和 `Requirement::matches` 可用于检查已安装版本是否满足约束。
 
-`PackageSet` 接收已解析文档并检查直接依赖，报告重复包、缺失包和版本不满足。`PackageSet::resolve` 生成依赖优先的传递顺序，按需包含 `Requires.private`，并诊断循环依赖及带版本条件的 `Conflicts`。找不到同名包时，可按加入顺序选择 `Provides` 中无版本或精确版本匹配的虚拟包提供者；范围形式的 `Provides` 仍留待后续兼容工作。
+`PackageSet` 接收已解析文档并检查直接依赖，报告重复包、缺失包和版本不满足。`PackageSet::resolve` 生成依赖优先的传递顺序，按需包含 `Requires.private`，并诊断循环依赖及带版本条件的 `Conflicts`。找不到同名包时，可按加入顺序选择 `Provides` 虚拟包提供者；六种版本运算符的组合按固定 pkgconf 3.0.7 比较矩阵判断。无版本 `Provides` 不会合成可查询版本，这一边界也与参考实现一致。
 
 `PackageSet::check_all` 把集合中的每个包作为根节点检查，并默认包含私有依赖；重复出现的同一诊断只报告一次，适合 CI 或目录级检查。
 

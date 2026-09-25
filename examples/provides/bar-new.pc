@@ -1,0 +1,5 @@
+Name: bar-new
+Description: matching range virtual dependency
+Version: 1
+Requires: provides-test-bar >= 1.1.1
+Libs: -lbar-new

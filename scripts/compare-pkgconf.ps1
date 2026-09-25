@@ -85,8 +85,21 @@ try {
         }
     }
 
+    $providerPaths = (Join-Path $projectRoot 'examples/provides') + [IO.Path]::PathSeparator + (Join-Path $projectRoot 'testdata/pkgconf-3.0.7')
+    $env:PKG_CONFIG_PATH = $providerPaths
+    $env:PKG_CONFIG_LIBDIR = $providerPaths
+    foreach ($package in @('bar-new', 'bar-old')) {
+        & $Reference --exists $package *> $null
+        $referenceStatus = $LASTEXITCODE
+        & moon run --target native cmd/query examples/provides $package --path testdata/pkgconf-3.0.7 --exists *> $null
+        $moonStatus = $LASTEXITCODE
+        if ($referenceStatus -ne $moonStatus) {
+            throw "Provides $package exit status differs: pkgconf=$referenceStatus MoonPkgConfig=$moonStatus"
+        }
+    }
+
     $version = Invoke-Text $Reference @('--version')
-    Write-Output "pkgconf differential checks: 20 passed (reference $version)"
+    Write-Output "pkgconf differential checks: 22 passed (reference $version)"
 } finally {
     Pop-Location
     $env:PKG_CONFIG_PATH = $oldPath

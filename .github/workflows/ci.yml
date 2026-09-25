@@ -104,6 +104,12 @@ jobs:
           test "$(moon run --target native cmd/query examples/path-policy paths --libs --system-library-path=/usr/lib)" = "-L/opt/lib -lpaths"
           test "$(moon run --target native cmd/query examples/path-policy paths --cflags --sysroot=/sdk)" = "-I/sdk/usr/include -I/sdk/opt/include -isystem /sdk/usr/include/system -DKEEP=1"
           test "$(moon run --target native cmd/query examples/path-policy paths --libs --sysroot=/sdk)" = "-L/sdk/usr/lib -L/sdk/opt/lib -lpaths"
+          moon run --target native cmd/query examples/provides bar-new --path testdata/pkgconf-3.0.7 --exists
+          set +e
+          moon run --target native cmd/query examples/provides bar-old --path testdata/pkgconf-3.0.7 --exists
+          provides_status=$?
+          set -e
+          test "$provides_status" -eq 1
           moon run --target native cmd/query examples/valid imagekit --exists
           moon run --target native cmd/query examples/valid imagekit --atleast-version=1.1
           moon run --target native cmd/query examples/valid imagekit --exact-version=1.2.0
@@ -117,7 +123,7 @@ jobs:
         shell: bash
         run: |
           test "$(moon run --target native cmd/check examples/valid)" = "Checked 3 packages from 3 .pc files; 0 diagnostics."
-          test "$(moon run --target native cmd/check testdata/pkgconf-3.0.7)" = "Checked 10 packages from 10 .pc files; 0 diagnostics."
+          test "$(moon run --target native cmd/check testdata/pkgconf-3.0.7)" = "Checked 11 packages from 11 .pc files; 0 diagnostics."
           test "$(moon run --target native cmd/check testdata/real-world)" = "Checked 2 packages from 2 .pc files; 0 diagnostics."
           set +e
           output="$(moon run --target native cmd/check examples/invalid)"

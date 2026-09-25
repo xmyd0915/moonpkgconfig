@@ -121,4 +121,23 @@ compare_status "minimum version match" --atleast-version=1.1 --atleast-version=1
 compare_status "maximum version mismatch" --max-version=1.1 --max-version=1.1
 compare_status "exact version match" --exact-version=1.2.0 --exact-version=1.2.0
 
-echo "pkgconf differential checks: 20 passed (reference $("$reference" --version))"
+compare_provider_status() {
+  package=$1
+  set +e
+  "$reference" --exists "$package" >/dev/null 2>&1
+  reference_status=$?
+  moon run --target native cmd/query examples/provides "$package" --path testdata/pkgconf-3.0.7 --exists >/dev/null 2>&1
+  moon_status=$?
+  set -e
+  if [ "$moon_status" -ne "$reference_status" ]; then
+    echo "Provides $package exit status differs: pkgconf=$reference_status MoonPkgConfig=$moon_status" >&2
+    exit 1
+  fi
+}
+
+export PKG_CONFIG_PATH="$project_root/examples/provides:$project_root/testdata/pkgconf-3.0.7"
+export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
+compare_provider_status bar-new
+compare_provider_status bar-old
+
+echo "pkgconf differential checks: 22 passed (reference $("$reference" --version))"
