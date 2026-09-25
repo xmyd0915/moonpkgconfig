@@ -1,6 +1,6 @@
 # pkgconf 对照记录
 
-日期：2026-09-18；平台：Windows x64。
+最近复核：2026-09-25；平台：Windows x64 与 Ubuntu CI。
 
 对照工具为 pkgconf 3.0.7 官方 Windows x64 MSI：
 
@@ -63,7 +63,9 @@ MoonPkgConfig 查询结果：
 
 对 `imagekit` 执行 `--variable=prefix` 时，两边均输出 `/opt/example`；加入 `--define-variable=prefix=/custom` 后，变量查询均输出 `/custom`，Cflags 均改为 `/custom/include` 下的三组路径。变量读取、覆盖和覆盖后的参数展开已进入本地验证与 CI。
 
-这些差异是当前兼容边界，不把本次结果表述为完整兼容。搜索路径去重只处理连接式或分离式 `-I`/`-L`，不会删除重复库或其他可能影响链接语义的参数。后续仍需扩大真实 `.pc` 文件样本，并继续核对参数顺序。
+`examples/path-policy` 固定了 `/usr/include`、`/usr/lib` 与自定义目录。给 pkgconf 显式设置系统目录环境变量、给 MoonPkgConfig 传入对应的 `--system-include-path`/`--system-library-path` 后，两边都只移除精确匹配的 `-I`/`-L`；设置 `/sdk` sysroot 后，两边均重写绝对的 `-I`、`-L` 和 `-isystem` 路径。4项路径输出已加入差分，总比较数为20项。MoonPkgConfig 使用显式参数而非读取宿主环境，以保证构建复现性。
+
+这些差异是当前兼容边界，不把本次结果表述为完整兼容。搜索路径去重只处理连接式或分离式 `-I`/`-L`，不会删除重复库或其他可能影响链接语义的参数。系统目录仅精确匹配；sysroot 不自动读取环境。后续仍需扩大真实 `.pc` 文件样本，并继续核对参数顺序。
 
 ## 上游测试样本
 

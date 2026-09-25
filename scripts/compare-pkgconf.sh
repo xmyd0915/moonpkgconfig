@@ -76,6 +76,26 @@ assert_equal "libffi template Libs" \
   "$("$reference" --libs libffi)" \
   "$(moon run --target native cmd/query testdata/real-world libffi --libs)"
 
+export PKG_CONFIG_PATH="$project_root/examples/path-policy"
+export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
+export PKG_CONFIG_SYSTEM_INCLUDE_PATH=/usr/include
+export PKG_CONFIG_SYSTEM_LIBRARY_PATH=/usr/lib
+unset PKG_CONFIG_SYSROOT_DIR || true
+assert_equal "system Cflags filtering" \
+  "$("$reference" --cflags paths)" \
+  "$(moon run --target native cmd/query examples/path-policy paths --cflags --system-include-path=/usr/include)"
+assert_equal "system Libs filtering" \
+  "$("$reference" --libs paths)" \
+  "$(moon run --target native cmd/query examples/path-policy paths --libs --system-library-path=/usr/lib)"
+export PKG_CONFIG_SYSROOT_DIR=/sdk
+assert_equal "sysroot Cflags" \
+  "$("$reference" --cflags paths)" \
+  "$(moon run --target native cmd/query examples/path-policy paths --cflags --sysroot=/sdk --system-include-path=/usr/include)"
+assert_equal "sysroot Libs" \
+  "$("$reference" --libs paths)" \
+  "$(moon run --target native cmd/query examples/path-policy paths --libs --sysroot=/sdk --system-library-path=/usr/lib)"
+unset PKG_CONFIG_SYSROOT_DIR
+
 compare_status() {
   label=$1
   reference_option=$2
@@ -101,4 +121,4 @@ compare_status "minimum version match" --atleast-version=1.1 --atleast-version=1
 compare_status "maximum version mismatch" --max-version=1.1 --max-version=1.1
 compare_status "exact version match" --exact-version=1.2.0 --exact-version=1.2.0
 
-echo "pkgconf differential checks: 16 passed (reference $("$reference" --version))"
+echo "pkgconf differential checks: 20 passed (reference $("$reference" --version))"

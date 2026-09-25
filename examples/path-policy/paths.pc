@@ -1,0 +1,5 @@
+Name: paths
+Description: explicit system path and sysroot example
+Version: 1
+Cflags: -I/usr/include -I/opt/include -isystem /usr/include/system -DKEEP=1
+Libs: -L/usr/lib -L/opt/lib -lpaths

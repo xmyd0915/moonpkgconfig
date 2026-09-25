@@ -104,6 +104,141 @@ pub fn FlagResult::deduplicate_search_paths(self : FlagResult) -> FlagResult {
 }
 
 ///|
+/// Prefix absolute compiler and linker search paths with a sysroot.
+///
+/// Attached and split `-I`, `-L` and `-isystem` forms are supported. Relative
+/// paths and unrelated arguments are unchanged, and every rewritten flag keeps
+/// its original package, field and source location.
+pub fn FlagResult::with_sysroot(
+  self : FlagResult,
+  sysroot : String,
+) -> FlagResult {
+  if sysroot.is_empty() || sysroot == "/" {
+    return { flags: self.flags.copy(), diagnostics: self.diagnostics.copy(), }
+  }
+  let root_chars = sysroot.to_array()
+  let root = if root_chars[root_chars.length() - 1] == '/' {
+    sysroot[:sysroot.length() - 1].to_owned()
+  } else {
+    sysroot
+  }
+  let flags : Array[ResolvedFlag] = []
+  let mut i = 0
+  while i < self.flags.length() {
+    let flag = self.flags[i]
+    let split = (
+        flag.value == "-I" || flag.value == "-L" || flag.value == "-isystem"
+      ) &&
+      i + 1 < self.flags.length() &&
+      same_flag_origin(flag, self.flags[i + 1])
+    if split {
+      let operand = self.flags[i + 1]
+      flags.push(flag)
+      flags.push(flag_with_value(operand, sysroot_path(root, operand.value)))
+      i = i + 2
+    } else {
+      let prefix_length = if flag.value.has_prefix("-isystem") &&
+        flag.value.length() > 8 {
+        8
+      } else if (flag.value.has_prefix("-I") || flag.value.has_prefix("-L")) &&
+        flag.value.length() > 2 {
+        2
+      } else {
+        0
+      }
+      if prefix_length > 0 {
+        let path = flag.value[prefix_length:].to_owned()
+        flags.push(
+          flag_with_value(
+            flag,
+            flag.value[:prefix_length].to_owned() + sysroot_path(root, path),
+          ),
+        )
+      } else {
+        flags.push(flag)
+      }
+      i = i + 1
+    }
+  }
+  { flags, diagnostics: self.diagnostics.copy(), }
+}
+
+///|
+/// Remove exact system `-I` and `-L` search paths.
+///
+/// The caller supplies the system paths explicitly, keeping library behavior
+/// deterministic across hosts. `-isystem` and path prefixes are intentionally
+/// retained, matching pkgconf's system path filtering behavior.
+pub fn FlagResult::filter_system_search_paths(
+  self : FlagResult,
+  include_paths : Array[String],
+  library_paths : Array[String],
+) -> FlagResult {
+  let includes : Map[String, Bool] = Map([])
+  let libraries : Map[String, Bool] = Map([])
+  for path in include_paths {
+    includes[path] = true
+  }
+  for path in library_paths {
+    libraries[path] = true
+  }
+  let flags : Array[ResolvedFlag] = []
+  let mut i = 0
+  while i < self.flags.length() {
+    let flag = self.flags[i]
+    let split = (flag.value == "-I" || flag.value == "-L") &&
+      i + 1 < self.flags.length() &&
+      same_flag_origin(flag, self.flags[i + 1])
+    if split {
+      let operand = self.flags[i + 1]
+      let paths = if flag.value == "-I" { includes } else { libraries }
+      if !paths.contains(operand.value) {
+        flags.push(flag)
+        flags.push(operand)
+      }
+      i = i + 2
+    } else {
+      let removable = if flag.value.has_prefix("-I") && flag.value.length() > 2 {
+        includes.contains(flag.value[2:].to_owned())
+      } else if flag.value.has_prefix("-L") && flag.value.length() > 2 {
+        libraries.contains(flag.value[2:].to_owned())
+      } else {
+        false
+      }
+      if !removable {
+        flags.push(flag)
+      }
+      i = i + 1
+    }
+  }
+  { flags, diagnostics: self.diagnostics.copy(), }
+}
+
+///|
+fn flag_with_value(flag : ResolvedFlag, value : String) -> ResolvedFlag {
+  {
+    value,
+    package_id: flag.package_id,
+    field: flag.field,
+    location: flag.location,
+  }
+}
+
+///|
+fn sysroot_path(sysroot : String, path : String) -> String {
+  if is_absolute_search_path(path) {
+    sysroot + path
+  } else {
+    path
+  }
+}
+
+///|
+fn is_absolute_search_path(path : String) -> Bool {
+  path.has_prefix("/")
+}
+
+///|
 fn same_flag_origin(left : ResolvedFlag, right : ResolvedFlag) -> Bool {
   left.package_id == right.package_id &&
   left.field == right.field &&

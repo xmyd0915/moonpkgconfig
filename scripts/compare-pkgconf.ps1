@@ -5,6 +5,9 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $oldPath = $env:PKG_CONFIG_PATH
 $oldLibDir = $env:PKG_CONFIG_LIBDIR
+$oldSysroot = $env:PKG_CONFIG_SYSROOT_DIR
+$oldSystemIncludes = $env:PKG_CONFIG_SYSTEM_INCLUDE_PATH
+$oldSystemLibraries = $env:PKG_CONFIG_SYSTEM_LIBRARY_PATH
 
 function Invoke-Text([string]$Executable, [string[]]$Arguments) {
     $text = (& $Executable @Arguments | Out-String).Trim()
@@ -56,6 +59,19 @@ try {
     Assert-Equal 'libffi template Cflags' (Invoke-Text $Reference @('--cflags', 'libffi')) (Invoke-MoonQuery 'testdata/real-world' @('--cflags'))
     Assert-Equal 'libffi template Libs' (Invoke-Text $Reference @('--libs', 'libffi')) (Invoke-MoonQuery 'testdata/real-world' @('--libs'))
 
+    $script:Package = 'paths'
+    $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'examples/path-policy'
+    $env:PKG_CONFIG_LIBDIR = $env:PKG_CONFIG_PATH
+    $env:PKG_CONFIG_SYSTEM_INCLUDE_PATH = '/usr/include'
+    $env:PKG_CONFIG_SYSTEM_LIBRARY_PATH = '/usr/lib'
+    Remove-Item Env:PKG_CONFIG_SYSROOT_DIR -ErrorAction SilentlyContinue
+    Assert-Equal 'system Cflags filtering' (Invoke-Text $Reference @('--cflags', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--cflags', '--system-include-path=/usr/include'))
+    Assert-Equal 'system Libs filtering' (Invoke-Text $Reference @('--libs', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--libs', '--system-library-path=/usr/lib'))
+    $env:PKG_CONFIG_SYSROOT_DIR = '/sdk'
+    Assert-Equal 'sysroot Cflags' (Invoke-Text $Reference @('--cflags', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--cflags', '--sysroot=/sdk', '--system-include-path=/usr/include'))
+    Assert-Equal 'sysroot Libs' (Invoke-Text $Reference @('--libs', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--libs', '--sysroot=/sdk', '--system-library-path=/usr/lib'))
+    Remove-Item Env:PKG_CONFIG_SYSROOT_DIR -ErrorAction SilentlyContinue
+
     $script:Package = 'imagekit'
     $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'examples/valid'
     $env:PKG_CONFIG_LIBDIR = $env:PKG_CONFIG_PATH
@@ -70,9 +86,12 @@ try {
     }
 
     $version = Invoke-Text $Reference @('--version')
-    Write-Output "pkgconf differential checks: 16 passed (reference $version)"
+    Write-Output "pkgconf differential checks: 20 passed (reference $version)"
 } finally {
     Pop-Location
     $env:PKG_CONFIG_PATH = $oldPath
     $env:PKG_CONFIG_LIBDIR = $oldLibDir
+    $env:PKG_CONFIG_SYSROOT_DIR = $oldSysroot
+    $env:PKG_CONFIG_SYSTEM_INCLUDE_PATH = $oldSystemIncludes
+    $env:PKG_CONFIG_SYSTEM_LIBRARY_PATH = $oldSystemLibraries
 }

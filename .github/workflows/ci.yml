@@ -100,6 +100,10 @@ jobs:
           test "$(moon run --target native cmd/query examples/valid imagekit --variable=prefix)" = "/opt/example"
           test "$(moon run --target native cmd/query examples/valid imagekit --variable=prefix --define-variable=prefix=/custom)" = "/custom"
           test "$(moon run --target native cmd/query examples/valid imagekit --cflags --define-variable=prefix=/custom)" = "-I/custom/include -DIMAGEKIT=1 -I/custom/include/codec -I/custom/include/compression"
+          test "$(moon run --target native cmd/query examples/path-policy paths --cflags --system-include-path=/usr/include)" = "-I/opt/include -isystem /usr/include/system -DKEEP=1"
+          test "$(moon run --target native cmd/query examples/path-policy paths --libs --system-library-path=/usr/lib)" = "-L/opt/lib -lpaths"
+          test "$(moon run --target native cmd/query examples/path-policy paths --cflags --sysroot=/sdk)" = "-I/sdk/usr/include -I/sdk/opt/include -isystem /sdk/usr/include/system -DKEEP=1"
+          test "$(moon run --target native cmd/query examples/path-policy paths --libs --sysroot=/sdk)" = "-L/sdk/usr/lib -L/sdk/opt/lib -lpaths"
           moon run --target native cmd/query examples/valid imagekit --exists
           moon run --target native cmd/query examples/valid imagekit --atleast-version=1.1
           moon run --target native cmd/query examples/valid imagekit --exact-version=1.2.0

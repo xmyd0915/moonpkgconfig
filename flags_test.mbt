@@ -241,3 +241,68 @@ test "shell output preserves argument boundaries and literal characters" {
     "'-I/opt/sdk dir/include' '-DNAME=a b' '' plain 'a'\\''b' '$HOME'",
   )
 }
+
+///|
+test "sysroot rewrites absolute search paths and retains origins" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  packages.add(
+    "paths",
+    flag_package(
+      "paths", "", "-I/usr/include -I relative -isystem /opt/system -isystemrelative -DKEEP=1",
+      "-L/usr/lib -L relative -lpaths",
+    ),
+  )
+  |> ignore
+  let cflags = packages.collect_cflags("paths").with_sysroot("/sdk/")
+  @debug.assert_eq(cflags.flags.map(f => f.value), [
+    "-I/sdk/usr/include", "-I", "relative", "-isystem", "/sdk/opt/system", "-isystemrelative",
+    "-DKEEP=1",
+  ])
+  @debug.assert_eq(cflags.flags.map(f => f.package_id), [
+    "paths", "paths", "paths", "paths", "paths", "paths", "paths",
+  ])
+  @debug.assert_eq(
+    packages.collect_libs("paths").with_sysroot("/sdk").flags.map(f => f.value),
+    ["-L/sdk/usr/lib", "-L", "relative", "-lpaths"],
+  )
+}
+
+///|
+test "system path filtering is exact and limited to I and L flags" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  packages.add(
+    "paths",
+    flag_package(
+      "paths", "", "-I/usr/include -I /usr/include -I/usr/include/project -isystem /usr/include -DKEEP=1",
+      "-L/usr/lib -L /usr/lib -L/usr/lib/project -lpaths",
+    ),
+  )
+  |> ignore
+  let cflags = packages
+    .collect_cflags("paths")
+    .filter_system_search_paths(["/usr/include"], ["/usr/lib"])
+  @debug.assert_eq(cflags.flags.map(f => f.value), [
+    "-I/usr/include/project", "-isystem", "/usr/include", "-DKEEP=1",
+  ])
+  let libs = packages
+    .collect_libs("paths")
+    .filter_system_search_paths(["/usr/include"], ["/usr/lib"])
+  @debug.assert_eq(libs.flags.map(f => f.value), [
+    "-L/usr/lib/project", "-lpaths",
+  ])
+}
+
+///|
+test "sysroot composition keeps rewritten former system paths" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  packages.add(
+    "paths",
+    flag_package("paths", "", "-I/usr/include", "-L/usr/lib"),
+  )
+  |> ignore
+  let cflags = packages
+    .collect_cflags("paths")
+    .with_sysroot("/sdk")
+    .filter_system_search_paths(["/usr/include"], ["/usr/lib"])
+  @debug.assert_eq(cflags.flags.map(f => f.value), ["-I/sdk/usr/include"])
+}

@@ -1,6 +1,6 @@
 # 验证记录
 
-最近验证：2026-09-24；平台：Windows x64。
+最近验证：2026-09-25；平台：Windows x64。
 
 工具链：交接所列 MoonBit 官方便携安装，`moon 0.1.20260915 (2e1a46d 2026-09-15)`。
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | `moon fmt` | 成功 |
 | `moon check --target all --deny-warn` | 四目标成功，无警告 |
-| `moon test --target all --deny-warn` | wasm 54/54，wasm-gc 54/54，JS 54/54，native 54/54 |
+| `moon test --target all --deny-warn` | wasm 57/57，wasm-gc 57/57，JS 57/57，native 57/57 |
 | `moon run cmd/demo` | 成功，输出六项字段及来源，无解析诊断 |
 | `moon package --list` | 成功，包含核心源码、README、许可证与来源说明，不包含构建、工具或凭据文件 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
@@ -18,6 +18,7 @@
 | `moon run --target native cmd/inspect examples/invalid/broken.pc` | 按预期报告五项问题并返回退出码 1 |
 | `cmd/query` 三种查询 | Cflags、动态 Libs、静态 Libs 均成功并通过精确输出断言 |
 | `cmd/query --dedupe-paths` | 连接式与分离式重复搜索路径按同一路径稳定去除；孤立选项不会跨包或字段绑定下一参数 |
+| `cmd/query` 路径策略 | 显式系统目录过滤与 sysroot 重写通过精确输出断言；连接式/分离式参数均保留来源 |
 | `cmd/query` 参数引用 | 官方 `fragment-quoting.pc` 中含字面引号的宏参数按 POSIX shell 规则输出，并通过精确断言 |
 | `cmd/query` 参数顺序 | 菱形依赖中 Cflags 包含公开/私有依赖，动态 Libs 只含公开依赖，静态 Libs 加入私有依赖；顺序与 pkgconf 3.0.7 一致 |
 | `cmd/query --explain` | 每个参数显示包、字段、源码位置及从根包出发的最短公开/私有依赖路径 |
@@ -31,12 +32,12 @@
 | `cmd/check testdata/pkgconf-3.0.7` | 10个未经修改的官方pkgconf 3.0.7样本全部通过，退出码 0 |
 | 原生 C/C++ 闭环 | 查询 `moonpkg-demo.pc` 得到参数，编译 C 静态库与 C++ 调用程序，运行输出精确匹配 |
 | `cmd/check testdata/real-world` | zlib 1.3.1 与 libffi 3.4.6 固定上游模板全部通过，退出码 0 |
-| 自动 pkgconf 差分 | 16 项 Cflags、动态/静态 Libs、依赖顺序、真实模板、版本、变量覆盖及退出码与固定的 pkgconf 3.0.7 一致；仅忽略行末空白差异 |
-| GitHub Actions CI | Ubuntu 全新环境成功，含包内容检查、原生 C/C++ 闭环、真实上游模板及16项固定版本差分，运行记录 [36018176180](https://github.com/xmyd0915/moonpkgconfig/actions/runs/36018176180) |
+| 自动 pkgconf 差分 | 20 项 Cflags、动态/静态 Libs、依赖顺序、路径策略、真实模板、版本、变量覆盖及退出码与固定的 pkgconf 3.0.7 一致；仅忽略行末空白差异 |
+| GitHub Actions CI | 上一次公开提交在 Ubuntu 全新环境成功；本次路径策略提交推送后将以新运行记录替换 |
 
-54 个逻辑测试在四个目标各运行一次，不将它们宣传为 216 个独立测试。覆盖顺序变量展开、调用方变量覆盖、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重、最短公开/私有依赖路径、Cflags 私有依赖语义、虚拟包提供者、循环和包冲突诊断、参数聚合与来源、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
+57 个逻辑测试在四个目标各运行一次，不将它们宣传为 228 个独立测试。覆盖顺序变量展开、调用方变量覆盖、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重、最短公开/私有依赖路径、Cflags 私有依赖语义、虚拟包提供者、循环和包冲突诊断、参数聚合与来源、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重、系统目录过滤、sysroot重写和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
 
-当前证据仅证明所覆盖子集。目录查询只读取调用者明确指定的位置，尚未实现系统搜索路径和 sysroot 处理；参数结果对照使用自编依赖图，上游语料验证使用10个固定的pkgconf官方测试文件。
+当前证据仅证明所覆盖子集。目录、系统路径和sysroot均由调用者显式指定，不读取宿主pkg-config环境；参数结果对照使用自编依赖图，上游语料验证使用10个固定的pkgconf官方测试文件。
 
 ## 对照工具与记录
 

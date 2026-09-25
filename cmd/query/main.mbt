@@ -18,7 +18,10 @@ fn print_usage() -> Unit {
   println(
     "Modes: --cflags, --libs, --variable=<name>, --modversion, --exists, --atleast-version=<version>, --exact-version=<version>, --max-version=<version>",
   )
-  println("Options: --define-variable=<name>=<value>, --path <directory>")
+  println(
+    "Options: --define-variable=<name>=<value>, --path <directory>, --sysroot=<path>",
+  )
+  println("         --system-include-path=<path>, --system-library-path=<path>")
 }
 
 ///|
@@ -85,6 +88,9 @@ fn main {
   let mut json = false
   let mut explain = false
   let mut dedupe_paths = false
+  let mut sysroot = ""
+  let system_include_paths : Array[String] = []
+  let system_library_paths : Array[String] = []
   let mut invalid = false
   let mut help = false
   let mut i = 1
@@ -169,6 +175,27 @@ fn main {
             }
             None => invalid = true
           }
+        } else if option.has_prefix("--sysroot=") {
+          let path = option[10:].to_owned()
+          if path.is_empty() || !sysroot.is_empty() {
+            invalid = true
+          } else {
+            sysroot = path
+          }
+        } else if option.has_prefix("--system-include-path=") {
+          let path = option[22:].to_owned()
+          if path.is_empty() {
+            invalid = true
+          } else {
+            system_include_paths.push(path)
+          }
+        } else if option.has_prefix("--system-library-path=") {
+          let path = option[22:].to_owned()
+          if path.is_empty() {
+            invalid = true
+          } else {
+            system_library_paths.push(path)
+          }
         } else if option.has_prefix("-") {
           invalid = true
         } else {
@@ -190,8 +217,18 @@ fn main {
     println("--static is only valid with --libs")
     @sys.exit(2)
   }
-  if !flag_mode && (dedupe_paths || json || explain) {
-    println("--dedupe-paths, --json and --explain require --cflags or --libs")
+  if !flag_mode &&
+    (
+      dedupe_paths ||
+      json ||
+      explain ||
+      !sysroot.is_empty() ||
+      !system_include_paths.is_empty() ||
+      !system_library_paths.is_empty()
+    ) {
+    println(
+      "flag path options, --json and --explain require --cflags or --libs",
+    )
     @sys.exit(2)
   }
   let directory = positionals[0]
@@ -219,10 +256,14 @@ fn main {
           Libs => loaded.packages.collect_libs(root, static_linking~)
           _ => abort("unreachable query mode")
         }
+        let rooted = collected.with_sysroot(sysroot)
+        let filtered = rooted.filter_system_search_paths(
+          system_include_paths, system_library_paths,
+        )
         let result = if dedupe_paths {
-          collected.deduplicate_search_paths()
+          filtered.deduplicate_search_paths()
         } else {
-          collected
+          filtered
         }
         if json {
           println(result.json_text(pretty=true))
