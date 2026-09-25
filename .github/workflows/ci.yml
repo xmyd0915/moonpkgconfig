@@ -51,10 +51,15 @@ jobs:
           grep -qx "ORIGINS.md" <<< "$listed_files"
           grep -qx "parser.mbt" <<< "$listed_files"
           grep -qx "flags.mbt" <<< "$listed_files"
+          grep -qx "docs/reviewer-guide.md" <<< "$listed_files"
+          grep -qx "scripts/review-demo.sh" <<< "$listed_files"
           ! grep -Eq '(^|[/\\])(_build|\.tools)([/\\]|$)|credentials\.json' <<< "$listed_files"
 
       - name: Run library API demo
         run: moon run cmd/demo
+
+      - name: Run reviewer walkthrough
+        run: sh scripts/review-demo.sh
 
       - name: Run valid file demo
         run: moon run --target native cmd/inspect examples/valid/imagekit.pc

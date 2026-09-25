@@ -12,6 +12,7 @@
 | `moon check --target all --deny-warn` | 四目标成功，无警告 |
 | `moon test --target all --deny-warn` | wasm 59/59，wasm-gc 59/59，JS 59/59，native 59/59 |
 | `moon run cmd/demo` | 成功，输出六项字段及来源，无解析诊断 |
+| `scripts/review-demo.*` | 来源解释、错误目录、sysroot与虚拟包范围四步演示均通过；成功/失败退出码均有断言 |
 | `moon package --list` | 成功，包含核心源码、README、许可证与来源说明，不包含构建、工具或凭据文件 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc --json` | 成功，输出完整条目与空诊断数组 |

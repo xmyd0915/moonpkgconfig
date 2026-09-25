@@ -30,12 +30,15 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
 
+如果只想快速判断项目是否可运行，可从 [评审快速入口](docs/reviewer-guide.md) 开始；它用一个脚本依次展示来源解释、错误诊断、sysroot 和虚拟依赖范围。
+
 ## 一分钟体验
 
 需要 MoonBit 工具链：
 
 ```sh
 moon update
+sh scripts/review-demo.sh
 moon run --target native cmd/query examples/valid imagekit --cflags --explain
 moon run --target native cmd/check examples/invalid
 moon test --target all --deny-warn
@@ -145,4 +148,4 @@ let libs = doc.field("Libs")
 - 仅解析文本，不查找系统包、不修改构建配置、不运行编译器或安装依赖。
 - sysroot 与系统目录由调用方显式提供；尚不读取 `PKG_CONFIG_SYSROOT_DIR` 等环境变量，不实现 Windows 自动重定位、完整片段去重或全部 pkgconf 3 扩展。
 
-可复制的演示步骤见 [docs/demo.md](docs/demo.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，发布准备见 [docs/release.md](docs/release.md)，上游兼容样本见 [testdata/pkgconf-3.0.7](testdata/pkgconf-3.0.7)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。
+可复制的演示步骤见 [docs/demo.md](docs/demo.md)，评审入口见 [docs/reviewer-guide.md](docs/reviewer-guide.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，0.1.0说明草案见 [docs/release-notes-0.1.0.md](docs/release-notes-0.1.0.md)，发布准备见 [docs/release.md](docs/release.md)，上游兼容样本见 [testdata/pkgconf-3.0.7](testdata/pkgconf-3.0.7)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。
