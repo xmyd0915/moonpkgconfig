@@ -8,6 +8,8 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 这个选题来自维护者较多的 C++ 开发实践：接入原生库时，最终参数通常能查到，但参数为什么出现、经过哪条依赖路径以及错误应回到哪里修改并不直观。MoonPkgConfig 尝试把这层过程变成可检查的数据。
 
+核心库已发布在 [MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig)，可以在 MoonBit 项目中执行 `moon add xmyd0915/moonpkgconfig@0.1.0` 添加依赖。下面的命令行演示需要克隆本仓库运行。
+
 ## 项目亮点
 
 | 能力 | 实际用途 |
