@@ -1,5 +1,5 @@
 param(
-    [string]$MoonHome = 'C:\Users\hp\Documents\Codex\2026-09-16\new-chat\work\moonbit-toolchain\portable'
+    [string]$MoonHome = (Join-Path $env:USERPROFILE '.moon')
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
