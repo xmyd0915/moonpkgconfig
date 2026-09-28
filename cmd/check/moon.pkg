@@ -1,6 +1,6 @@
 import {
-  "local/moonpkgconfig" @pc,
-  "local/moonpkgconfig/cli" @loader,
+  "xmyd0915/moonpkgconfig" @pc,
+  "xmyd0915/moonpkgconfig/cli" @loader,
   "moonbitlang/core/env",
   "moonbitlang/x/fs",
   "moonbitlang/x/sys",

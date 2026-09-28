@@ -4,9 +4,9 @@
 
 - 模块版本为 `0.1.0`，许可证为 MIT，仓库地址已写入 `moon.mod`。
 - `moon package --list` 已进入本地验证与 CI，必须包含核心源码、README、许可证和来源说明，且不能包含构建目录、工具缓存或登录凭据。
-- 核心库和命令行工具均通过四目标检查；原生 CLI 在 Windows 与 Ubuntu 验证。
-- 当前模块名 `local/moonpkgconfig` 是开发期占位名，尚未发布到 MoonCakes。
-- 0.1.0发布说明草案与评审快速入口已就绪，正式发布前只需替换命名空间并重跑验证。
+- 核心库和命令行工具均通过四目标检查；原生 CLI 在 Windows 与 Ubuntu 验证。Windows 本地验证使用 `moonc 0.10.14`。
+- 模块名已由开发期占位名改为 `xmyd0915/moonpkgconfig`，尚未发布到 MoonCakes。
+- 0.1.0 发布说明与评审快速入口已就绪；命名空间变更后的完整本地验证及 MoonCakes 发布预检已通过。
 
 ## 一致性审计（2026-09-25）
 
@@ -23,10 +23,8 @@
 
 ## 首次发布前需要维护者完成
 
-1. 登录 MoonCakes，确认账号对应的模块命名空间。
-2. 把 `moon.mod` 的 `name` 以及各 `moon.pkg` 中的内部导入从 `local/moonpkgconfig` 统一替换为最终名称。
-3. 重新执行 `scripts/verify.ps1`，确认四目标测试、CLI、C/C++ 闭环、pkgconf 差分和打包清单全部通过。
-4. 检查 `CHANGELOG.md`、版本号和 Git 工作区，创建对应 GitHub Release。
-5. 执行 `moon login` 后再运行 `moon publish`。登录凭据不得进入仓库或验证记录。
+1. 检查 `CHANGELOG.md`、版本号和 Git 工作区，推送发布版本。
+2. 执行 `moon publish`，并核对公开页面。登录凭据不得进入仓库或验证记录。
+3. 如有需要，再创建对应的 GitHub Release。
 
-首次发布属于外部账号操作。在命名空间确认前保留占位名，避免发布到错误名称后再迁移。
+首次发布属于外部账号操作。如发布时提示命名空间不匹配，先核对 MoonCakes 账号名称再调整，避免发布到错误名称后再迁移。

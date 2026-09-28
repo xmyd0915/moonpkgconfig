@@ -1,4 +1,4 @@
-name = "local/moonpkgconfig"
+name = "xmyd0915/moonpkgconfig"
 
 version = "0.1.0"
 

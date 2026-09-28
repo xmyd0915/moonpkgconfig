@@ -1,5 +1,5 @@
 import {
-  "local/moonpkgconfig" @pc,
+  "xmyd0915/moonpkgconfig" @pc,
   "moonbitlang/core/debug",
 }
 
