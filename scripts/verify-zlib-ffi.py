@@ -92,7 +92,7 @@ def main():
             f'  link: {json.dumps({"native": native}, indent=2)},\n)\n'
         )
         (consumer / "moon.pkg").write_text(manifest, encoding="utf-8")
-        output = run([moon, "run", "--target", "native", "--deny-warn"], consumer)
+        output = run([moon, "run", "--target", "native", "--deny-warn", "."], consumer)
         if output != SUCCESS:
             raise RuntimeError(f"Unexpected FFI program output:\n{output}")
         print(output)
