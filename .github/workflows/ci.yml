@@ -34,6 +34,7 @@ jobs:
         run: |
           moon fmt
           moon -C examples/zlib-ffi fmt
+          moon -C examples/libpng-ffi fmt
           git diff --exit-code
 
       - name: Type-check all targets
@@ -158,6 +159,27 @@ jobs:
           make install
           cd "$GITHUB_WORKSPACE"
           python3 scripts/verify-zlib-ffi.py --pc-dir "$install_dir/lib/pkgconfig"
+
+      - name: Build pinned libpng and verify private zlib dependency
+        shell: bash
+        run: |
+          archive="$RUNNER_TEMP/libpng-1.6.59.tar.gz"
+          source_dir="$RUNNER_TEMP/libpng-1.6.59"
+          install_dir="$RUNNER_TEMP/libpng-1.6.59-install"
+          zlib_dir="$RUNNER_TEMP/zlib-1.3.1-install"
+          curl -fsSL --retry 3 --connect-timeout 15 --max-time 60 -o "$archive" https://downloads.sourceforge.net/project/libpng/libpng16/1.6.59/libpng-1.6.59.tar.gz
+          echo "86a3e4b501f7f50e392c4e456ea158893e9a595b1c63eb88c7bb9f6cf8772dad  $archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+          cd "$source_dir"
+          CPPFLAGS="-I$zlib_dir/include" LDFLAGS="-L$zlib_dir/lib" CFLAGS="-O2 -fPIC" \
+            ./configure --disable-shared --enable-static --prefix="$install_dir"
+          make -j2
+          make install
+          test -f "$install_dir/lib/libpng16.a"
+          test ! -e "$install_dir/lib/libpng16.so"
+          cd "$GITHUB_WORKSPACE"
+          python3 scripts/verify-libpng-ffi.py \
+            --pc-dir "$install_dir/lib/pkgconfig" --path "$zlib_dir/lib/pkgconfig"
 
       - name: Build pinned pkgconf 3.0.7 reference
         shell: bash

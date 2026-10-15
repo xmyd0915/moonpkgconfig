@@ -19,6 +19,8 @@
 
 `examples/zlib-ffi` 中的 MoonBit 程序、C 包装和运行脚本为本项目编写，API 用法参考 <https://zlib.net/manual.html>。CI 在临时目录构建官方 zlib 1.3.1 发行包；不把 zlib 实现或编译产物纳入本仓库。
 
+`examples/libpng-ffi` 中的 MoonBit 程序与 C 包装同样为本项目编写，API 用法参考 <https://www.libpng.org/pub/png/libpng-manual.txt>。CI 从官方发行包安装 libpng 1.6.59，使用安装生成的元数据检查其对 zlib 的私有依赖，再运行 PNG 编解码。库源码和编译产物不纳入本仓库；固定下载及校验值见示例 README。
+
 ## 非代码验证工具
 
 已使用官方 pkgconf 3.0.7 Windows x64 发行版对自编三包依赖图和错误样例进行对照，只运行公开命令并记录结果。工具二进制不进入仓库，也不随本项目重新许可；详细版本、哈希和差异见 `docs/pkgconf-comparison.md`。

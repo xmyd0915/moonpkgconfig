@@ -6,3 +6,6 @@
 /examples/native/build/
 /examples/zlib-ffi/_build/
 /examples/zlib-ffi/.mooncakes/
+/examples/libpng-ffi/_build/
+/examples/libpng-ffi/.mooncakes/
+__pycache__/

@@ -102,6 +102,8 @@ Windows 可运行 `./scripts/verify.ps1`。它默认使用用户目录中的 `.m
 
 [zlib FFI 示例](examples/zlib-ffi) 则使用真实安装的 `zlib.pc`：查询参数后生成 MoonBit 原生构建配置，在 MoonBit 程序中调用 zlib 完成 CRC-32、压缩和解压，并检查损坏输入及缓冲区错误。Linux 或 macOS 可运行 `python3 scripts/verify-zlib-ffi.py --pc-dir /path/to/zlib/lib/pkgconfig`；CI 使用固定版本 zlib 1.3.1 构建并运行这一流程。核心库不依赖 zlib，示例单独构建。
 
+[libpng FFI 示例](examples/libpng-ffi) 接着验证真实的 `libpng → zlib` 私有依赖：跨安装目录解析参数，区分普通与静态查询，检查缺失依赖，再用完整参数构建 MoonBit 程序完成 PNG 编解码和像素核对。
+
 `scripts/compare-pkgconf.sh`（Windows 同样有 `.ps1`）把相同样本分别交给 MoonPkgConfig 和 pkgconf，比较 Cflags、动态/静态 Libs、依赖顺序、路径策略、版本、变量覆盖及版本条件退出码。CI 每次提交都会重新执行，不依赖人工抄录结果。
 
 GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检查、四目标类型检查与测试，并运行正常和错误文件演示。工作流只需要仓库只读权限。
