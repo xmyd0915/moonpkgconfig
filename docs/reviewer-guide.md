@@ -35,10 +35,11 @@ Windows PowerShell：
 | 真实输入 | zlib 1.3.1、libffi 3.4.6 模板及11个官方 pkgconf 测试文件 |
 | 原生使用闭环 | 查询参数后编译 C 静态库、链接并运行 C++ 调用程序 |
 | MoonBit 接入真实 C 库 | `examples/zlib-ffi` 从已安装的 zlib 元数据取得构建参数，由 MoonBit 调用 CRC-32、压缩和解压；CI 从固定版本源码安装并验证 |
+| 真实多库依赖 | `examples/libpng-ffi` 使用 libpng → zlib 私有依赖，验证跨目录查询和缺失依赖诊断，再静态构建 MoonBit PNG 编解码程序 |
 | 来源与许可证 | `ORIGINS.md`、MIT许可证以及随样本保存的上游许可证 |
 | 独立环境复现 | `.github/workflows/ci.yml` 与 `docs/verification.md` 中的公开运行记录 |
 
-真实 zlib 示例的前置条件和运行命令见 [examples/zlib-ffi](../examples/zlib-ffi)。该示例当前在 Ubuntu CI 验证，使用独立的原生模块，不增加核心库的外部依赖。
+真实原生库示例的前置条件和命令见 [zlib](../examples/zlib-ffi) 与 [libpng](../examples/libpng-ffi)。两个示例均在 Ubuntu CI 验证，使用独立的原生模块，不增加核心库的外部依赖。
 
 ## 边界
 

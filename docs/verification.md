@@ -1,6 +1,6 @@
 # 验证记录
 
-最近验证：2026-10-15；核心回归平台：Windows x64；真实 zlib FFI 平台：Ubuntu CI。
+最近验证：2026-10-15；核心回归平台：Windows x64；真实 zlib/libpng FFI 平台：Ubuntu CI。
 
 工具链：`moon 0.1.20260915 (2e1a46d 2026-09-15)`，`moonc v0.10.14+7d59c7ec9 (2026-09-18)`。
 
@@ -35,9 +35,10 @@
 | `cmd/check testdata/pkgconf-3.0.7` | 11个未经修改的官方pkgconf 3.0.7样本全部通过，退出码 0 |
 | 原生 C/C++ 闭环 | 查询 `moonpkg-demo.pc` 得到参数，编译 C 静态库与 C++ 调用程序，运行输出精确匹配 |
 | 真实 MoonBit zlib FFI | 从官方 zlib 1.3.1 发行包构建静态库，查询安装生成的 `zlib.pc` 并生成 MoonBit 原生配置；标准 CRC-32 向量、3种输入的压缩/解压及3种错误返回在 Ubuntu CI 全部通过。当前示例未适配 Windows MSVC |
+| 真实私有依赖与 PNG | 官方 libpng 1.6.59 与 zlib 1.3.1 分别静态安装到不同前缀；查询普通/静态参数，验证缺失私有依赖时的退出码及 `PC015`，并在 MoonBit 中完成3组 RGBA PNG 像素往返和4种错误检查。当前示例未适配 Windows MSVC |
 | `cmd/check testdata/real-world` | zlib 1.3.1 与 libffi 3.4.6 固定上游模板全部通过，退出码 0 |
 | 自动 pkgconf 差分 | 22 项 Cflags、动态/静态 Libs、依赖顺序、路径策略、虚拟包、真实模板、版本、变量覆盖及退出码与固定的 pkgconf 3.0.7 一致；仅忽略行末空白差异 |
-| GitHub Actions CI | 固定工具链的 Ubuntu 全新环境成功，含评审演示、包内容检查、C/C++ 闭环、真实 zlib FFI、11个上游样本及22项固定版本差分；运行记录：[38756751222](https://github.com/xmyd0915/moonpkgconfig/actions/runs/38756751222)。9月首次发布的运行记录保留于 [36442570605](https://github.com/xmyd0915/moonpkgconfig/actions/runs/36442570605) |
+| GitHub Actions CI | 固定工具链的 Ubuntu 全新环境成功，含评审演示、包内容检查、C/C++ 闭环、真实 zlib/libpng FFI、11个上游样本及22项固定版本差分；运行记录：[38759756062](https://github.com/xmyd0915/moonpkgconfig/actions/runs/38759756062)。9月首次发布的运行记录保留于 [36442570605](https://github.com/xmyd0915/moonpkgconfig/actions/runs/36442570605) |
 
 59 个逻辑测试在四个目标各运行一次，不将它们宣传为 236 个独立测试。覆盖顺序变量展开、调用方变量覆盖、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重、最短公开/私有依赖路径、Cflags 私有依赖语义、虚拟包提供者及范围比较矩阵、循环和包冲突诊断、参数聚合与来源、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重、系统目录过滤、sysroot重写和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
 
