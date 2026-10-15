@@ -1,4 +1,4 @@
-# MoonPkgConfig 0.1.0 发布说明草案
+# MoonPkgConfig 0.1.0 发布说明
 
 0.1.0 是第一个可公开验证的版本。它提供保留源码位置的 `.pc` 解析、依赖检查和编译/链接参数查询，主要面向 MoonBit FFI、原生库接入、构建工具与 CI。
 
@@ -25,6 +25,6 @@
 - 不自动读取系统 pkg-config 环境或默认搜索目录；
 - 不实现 Windows 自动重定位、全部片段优化和所有 pkgconf 扩展；
 - 参数文本使用 POSIX shell 引用，跨平台程序集成应读取 JSON 数组；
-- 当前 MoonCakes 模块名仍是开发期占位名，确认维护者命名空间后才能正式发布。
+- MoonCakes 模块为 `xmyd0915/moonpkgconfig`，核心库可用 `moon add xmyd0915/moonpkgconfig@0.1.0` 安装。
 
-发布前仍需替换最终模块名、复跑完整验证、创建 GitHub Release 并由维护者登录 MoonCakes 发布。
+0.1.0 于2026年9月28日发布，源码归档标签为 `v0.1.0`。该标签之后的示例和文档维护以 GitHub 主分支为准。

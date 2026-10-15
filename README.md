@@ -95,9 +95,11 @@ Requires: codec >= 2.0 [imagekit.pc:7]
 Requires.private: compression >= 1.0 [imagekit.pc:8]
 ```
 
-Windows 当前工作区可运行 `./scripts/verify.ps1`。它只为本次进程设置便携工具链环境；也可通过 `-MoonHome` 指定其他安装位置。
+Windows 可运行 `./scripts/verify.ps1`。它默认使用用户目录中的 `.moon`，只为本次进程设置工具链环境；也可通过 `-MoonHome` 指定其他安装位置。
 
 `scripts/verify-native-example.sh`（Windows 可用对应的 `.ps1`）先编译一个小型 C 静态库，再让 MoonPkgConfig 从 `moonpkg-demo.pc` 算出编译和链接参数，最后构建并运行 C++ 调用程序。这个闭环需要系统提供 C/C++ 编译器和 `ar`。
+
+[zlib FFI 示例](examples/zlib-ffi) 则使用真实安装的 `zlib.pc`：查询参数后生成 MoonBit 原生构建配置，在 MoonBit 程序中调用 zlib 完成 CRC-32、压缩和解压，并检查损坏输入及缓冲区错误。Linux 或 macOS 可运行 `python3 scripts/verify-zlib-ffi.py --pc-dir /path/to/zlib/lib/pkgconfig`；CI 使用固定版本 zlib 1.3.1 构建并运行这一流程。核心库不依赖 zlib，示例单独构建。
 
 `scripts/compare-pkgconf.sh`（Windows 同样有 `.ps1`）把相同样本分别交给 MoonPkgConfig 和 pkgconf，比较 Cflags、动态/静态 Libs、依赖顺序、路径策略、版本、变量覆盖及版本条件退出码。CI 每次提交都会重新执行，不依赖人工抄录结果。
 
@@ -150,4 +152,4 @@ let libs = doc.field("Libs")
 - 仅解析文本，不查找系统包、不修改构建配置、不运行编译器或安装依赖。
 - sysroot 与系统目录由调用方显式提供；尚不读取 `PKG_CONFIG_SYSROOT_DIR` 等环境变量，不实现 Windows 自动重定位、完整片段去重或全部 pkgconf 3 扩展。
 
-可复制的演示步骤见 [docs/demo.md](docs/demo.md)，评审入口见 [docs/reviewer-guide.md](docs/reviewer-guide.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，0.1.0说明草案见 [docs/release-notes-0.1.0.md](docs/release-notes-0.1.0.md)，发布准备见 [docs/release.md](docs/release.md)，上游兼容样本见 [testdata/pkgconf-3.0.7](testdata/pkgconf-3.0.7)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。
+可复制的演示步骤见 [docs/demo.md](docs/demo.md)，评审入口见 [docs/reviewer-guide.md](docs/reviewer-guide.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，0.1.0发布说明见 [docs/release-notes-0.1.0.md](docs/release-notes-0.1.0.md)，发布记录见 [docs/release.md](docs/release.md)，上游兼容样本见 [testdata/pkgconf-3.0.7](testdata/pkgconf-3.0.7)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。

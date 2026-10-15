@@ -4,3 +4,5 @@
 /.tools/
 /.tmp/
 /examples/native/build/
+/examples/zlib-ffi/_build/
+/examples/zlib-ffi/.mooncakes/
