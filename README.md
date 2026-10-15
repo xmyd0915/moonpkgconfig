@@ -36,7 +36,7 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 ## 一分钟体验
 
-需要 MoonBit 工具链：
+需要 MoonBit 工具链；当前 CI 固定使用 `0.10.14+7d59c7ec9`，建议复现时使用同一版本。在仓库根目录运行：
 
 ```sh
 moon update
