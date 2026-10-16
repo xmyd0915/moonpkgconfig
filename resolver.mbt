@@ -27,7 +27,7 @@ pub fn PackageSet::resolve(
   }
   match root_id {
     Some(id) =>
-      resolve_visit(
+      resolve_graph(
         self, id, include_private, source, states, order, stack, diagnostics,
       )
     None =>
@@ -113,7 +113,20 @@ fn append_selected_conflicts(
 }
 
 ///|
-fn resolve_visit(
+priv enum ResolveStep {
+  Visit(String)
+  Problem(Diagnostic)
+}
+
+///|
+priv struct ResolveFrame {
+  id : String
+  steps : Array[ResolveStep]
+  mut next : Int
+}
+
+///|
+fn resolve_graph(
   packages : PackageSet,
   id : String,
   include_private : Bool,
@@ -123,67 +136,83 @@ fn resolve_visit(
   stack : Array[String],
   diagnostics : Array[Diagnostic],
 ) -> Unit {
-  match states.get(id) {
-    Some(2) => return
-    Some(1) => {
-      diagnostics.push(
-        diag("PC017", "Dependency cycle: " + stack.join(" -> ") + " -> " + id, {
-          source,
-          line: 1,
-          column: 1,
-        }),
-      )
-      return
-    }
-    _ => ()
-  }
-  guard packages.packages.get(id) is Some(pkg) else {
-    diagnostics.push(
-      diag("PC015", "Required package not found: " + id, {
-        source,
-        line: 1,
-        column: 1,
-      }),
-    )
-    return
-  }
+  let frames : Array[ResolveFrame] = [
+    { id, steps: resolve_steps(packages, id, include_private), next: 0, },
+  ]
   states[id] = 1
   stack.push(id)
-  visit_requirement_field(
-    packages, pkg, "Requires", include_private, source, states, order, stack, diagnostics,
-  )
-  if include_private {
-    visit_requirement_field(
-      packages, pkg, "Requires.private", include_private, source, states, order,
-      stack, diagnostics,
-    )
+  while !frames.is_empty() {
+    let last = frames.length() - 1
+    let frame = frames[last]
+    if frame.next == frame.steps.length() {
+      frames.pop() |> ignore
+      stack.pop() |> ignore
+      states[frame.id] = 2
+      order.push(frame.id)
+      continue
+    }
+    let step = frame.steps[frame.next]
+    frame.next = frame.next + 1
+    match step {
+      Problem(problem) => diagnostics.push(problem)
+      Visit(next) =>
+        match states.get(next) {
+          Some(2) => ()
+          Some(1) =>
+            diagnostics.push(
+              diag(
+                "PC017",
+                "Dependency cycle: " + stack.join(" -> ") + " -> " + next,
+                { source, line: 1, column: 1, },
+              ),
+            )
+          _ => {
+            states[next] = 1
+            stack.push(next)
+            frames.push({
+              id: next,
+              steps: resolve_steps(packages, next, include_private),
+              next: 0,
+            })
+          }
+        }
+    }
   }
-  stack.pop() |> ignore
-  states[id] = 2
-  order.push(id)
 }
 
 ///|
-fn visit_requirement_field(
+fn resolve_steps(
+  packages : PackageSet,
+  id : String,
+  include_private : Bool,
+) -> Array[ResolveStep] {
+  let steps : Array[ResolveStep] = []
+  let pkg = packages.packages.get(id).unwrap()
+  append_resolve_steps(packages, pkg, "Requires", steps)
+  if include_private {
+    append_resolve_steps(packages, pkg, "Requires.private", steps)
+  }
+  steps
+}
+
+///|
+fn append_resolve_steps(
   packages : PackageSet,
   pkg : Package,
   field_name : String,
-  include_private : Bool,
-  source : String,
-  states : Map[String, Int],
-  order : Array[String],
-  stack : Array[String],
-  diagnostics : Array[Diagnostic],
+  steps : Array[ResolveStep],
 ) -> Unit {
   guard pkg.document.field(field_name) is Some(field) else { return }
   match parse_requirements(field.value, source=field.location.source) {
     Err(problem) =>
-      diagnostics.push(
-        diag(problem.code, problem.message, {
-          source: field.location.source,
-          line: field.location.line,
-          column: field.location.column + problem.location.column - 1,
-        }),
+      steps.push(
+        Problem(
+          diag(problem.code, problem.message, {
+            source: field.location.source,
+            line: field.location.line,
+            column: field.location.column + problem.location.column - 1,
+          }),
+        ),
       )
     Ok(requirements) =>
       for requirement in requirements {
@@ -191,55 +220,40 @@ fn visit_requirement_field(
           None =>
             match packages.find_provider(requirement) {
               None =>
-                diagnostics.push(
-                  diag(
-                    "PC015",
-                    "Required package not found: " + requirement.name,
-                    {
-                      source: field.location.source,
-                      line: field.location.line,
-                      column: field.location.column,
-                    },
+                steps.push(
+                  Problem(
+                    diag(
+                      "PC015",
+                      "Required package not found: " + requirement.name,
+                      {
+                        source: field.location.source,
+                        line: field.location.line,
+                        column: field.location.column,
+                      },
+                    ),
                   ),
                 )
-              Some(provider) =>
-                resolve_visit(
-                  packages,
-                  provider.id,
-                  include_private,
-                  source,
-                  states,
-                  order,
-                  stack,
-                  diagnostics,
-                )
+              Some(provider) => steps.push(Visit(provider.id))
             }
           Some(dependency) => {
             let version = dependency.document.field("Version").unwrap().value
             if !requirement.matches(version) {
-              diagnostics.push(
-                diag(
-                  "PC016",
-                  "Package " +
-                  requirement.name +
-                  " has version " +
-                  version +
-                  ", which does not satisfy " +
-                  requirement_text(requirement),
-                  field.location,
+              steps.push(
+                Problem(
+                  diag(
+                    "PC016",
+                    "Package " +
+                    requirement.name +
+                    " has version " +
+                    version +
+                    ", which does not satisfy " +
+                    requirement_text(requirement),
+                    field.location,
+                  ),
                 ),
               )
             } else {
-              resolve_visit(
-                packages,
-                requirement.name,
-                include_private,
-                source,
-                states,
-                order,
-                stack,
-                diagnostics,
-              )
+              steps.push(Visit(requirement.name))
             }
           }
         }

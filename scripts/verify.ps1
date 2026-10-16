@@ -89,6 +89,8 @@ try {
     if ($LASTEXITCODE -ne 0 -or $realWorldDirectory -ne 'Checked 2 packages from 2 .pc files; 0 diagnostics.') { throw 'Real-world upstream templates check failed.' }
     & python "$PSScriptRoot\verify-flag-selection.py"
     if ($LASTEXITCODE -ne 0) { throw 'Flag selection CLI checks failed.' }
+    & python "$PSScriptRoot\verify-performance.py"
+    if ($LASTEXITCODE -ne 0) { throw 'Graph and expansion workloads failed.' }
     & "$PSScriptRoot\verify-native-example.ps1"
     if ($LASTEXITCODE -ne 0) { throw 'Native C/C++ integration failed.' }
     & "$PSScriptRoot\compare-pkgconf.ps1"

@@ -61,12 +61,9 @@ fn print_flags(
 ) -> Unit {
   println(result.shell_text())
   if explain {
+    let paths = packages.dependency_paths(root, include_private~)
     for flag in result.flags {
-      let path = packages.dependency_path(
-        root,
-        flag.package_id,
-        include_private~,
-      )
+      let path = paths.path_to(flag.package_id)
       let path_text = if path.is_empty() {
         flag.package_id
       } else {

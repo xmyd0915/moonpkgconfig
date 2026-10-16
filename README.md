@@ -23,7 +23,7 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 | 证据 | 当前结果 |
 | --- | --- |
-| 自动化测试 | 65 个逻辑测试 × 4 个目标，全部通过 |
+| 自动化测试 | 70 个逻辑测试 × 4 个目标，全部通过 |
 | 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言 |
 | 上游兼容语料 | 11 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
 | 真实项目模板 | 固定版本、提交和许可证的 zlib 1.3.1 与 libffi 3.4.6 官方 `.pc.in` 内容 |
@@ -31,8 +31,11 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 | 原生闭环 | 使用查询得到的 Cflags/Libs 编译 C 静态库和 C++ 调用程序，并运行核对结果 |
 | 真实 MoonBit FFI | 从 zlib 1.3.1 安装生成的 `.pc` 查询参数，构建 MoonBit 程序并验证 CRC-32、压缩/解压和错误返回 |
 | 真实私有依赖 | libpng 1.6.59 → zlib 1.3.1 跨目录查询、普通/静态参数区分、缺失依赖诊断与 MoonBit PNG 像素往返验证 |
+| 大图与边界 | 四种1,000包图、5,000包长链、展开上限附近的输入；保留耗时和峰值内存记录 |
 
 详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
+
+大型图测量及已知瓶颈见 [性能记录](docs/performance.md)。这轮消除了路径解释中的重复搜索和中间路径复制，并修复原生深链解析的进程异常退出；性能数据注明平台和测量范围。
 
 如果只想快速判断项目是否可运行，可从 [评审快速入口](docs/reviewer-guide.md) 开始；它用一个脚本依次展示来源解释、错误诊断、sysroot 和虚拟依赖范围。
 
@@ -140,6 +143,8 @@ let libs = doc.field("Libs")
 `PackageSet::check_all` 把集合中的每个包作为根节点检查，并默认包含私有依赖；重复出现的同一诊断只报告一次，适合 CI 或目录级检查。
 
 `collect_cflags` 与 `collect_libs` 聚合依赖图中的参数，每个参数保留包名、字段和来源位置。Cflags 会包含公开与私有依赖需要的编译参数；动态 Libs 只使用公开依赖，静态 Libs 会加入私有依赖与 `Libs.private`。`FlagResult::shell_text` 提供可复制到 POSIX shell 的文本表示；直接集成时应使用 `flags` 数组，避免再次解析展示文本。
+
+主分支的 `PackageSet::dependency_paths(root, include_private=...)` 一次建立最短路径的前驱索引，返回的 `DependencyPaths::path_to(package_id)` 按需生成独立路径数组。适合解释同一根包的多个参数；已有 `dependency_path` 仍可用于单个目标。索引为调用时的快照，后续添加包时应重新建立。这个接口尚未包含在 MoonCakes 0.1.0 中。
 
 主分支新增 `FlagResult::select(FlagSelection)`，可选 `IncludePaths`、`OtherCflags`、`LibraryPaths`、`Libraries` 或 `OtherLibs`，对应下面五种 CLI 模式。它保留参数顺序、重复库、诊断和来源，分离式选项与操作数成对选择，GNU 链接器分组整体保留在其他链接参数中。此接口尚未包含在 MoonCakes 0.1.0 中。
 

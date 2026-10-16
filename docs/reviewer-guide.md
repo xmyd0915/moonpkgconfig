@@ -30,7 +30,7 @@ Windows PowerShell：
 
 | 关注点 | 仓库证据 |
 | --- | --- |
-| MoonBit 实现与多目标可用性 | 65 个逻辑测试分别在 wasm、wasm-gc、JavaScript、native 运行 |
+| MoonBit 实现与多目标可用性 | 70 个逻辑测试分别在 wasm、wasm-gc、JavaScript、native 运行，含5,000包长链 |
 | 与既有工具的行为关系 | 38 项输出或退出码与固定 pkgconf 3.0.7 自动差分，含五种参数分类 |
 | 真实输入 | zlib 1.3.1、libffi 3.4.6 模板及11个官方 pkgconf 测试文件 |
 | 原生使用闭环 | 查询参数后编译 C 静态库、链接并运行 C++ 调用程序 |

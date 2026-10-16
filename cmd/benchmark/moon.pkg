@@ -1,0 +1,9 @@
+import {
+  "xmyd0915/moonpkgconfig" @pc,
+  "moonbitlang/core/bench",
+  "moonbitlang/core/env",
+  "moonbitlang/core/string",
+  "moonbitlang/x/sys",
+}
+
+pkgtype(kind: "executable")

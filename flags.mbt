@@ -293,29 +293,9 @@ pub fn PackageSet::dependency_path(
   target : String,
   include_private? : Bool = false,
 ) -> Array[String] {
-  let root_requirement : Requirement = { name: root, op: Any, version: "", }
-  let root_id = match self.packages.get(root) {
-    Some(_) => Some(root)
-    None => self.find_provider(root_requirement).map(pkg => pkg.id)
-  }
-  guard root_id is Some(start) else { return [] }
-  let paths : Map[String, Array[String]] = Map([])
-  let queue : Array[String] = [start]
-  paths[start] = [start]
-  let mut index = 0
-  while index < queue.length() {
-    let id = queue[index]
-    if id == target {
-      return paths.get(id).unwrap().copy()
-    }
-    let pkg = self.packages.get(id).unwrap()
-    append_dependency_paths(self, pkg, "Requires", paths, queue)
-    if include_private {
-      append_dependency_paths(self, pkg, "Requires.private", paths, queue)
-    }
-    index = index + 1
-  }
-  []
+  self
+  .build_dependency_paths(root, include_private, Some(target))
+  .path_to(target)
 }
 
 ///|
@@ -370,32 +350,6 @@ fn append_flag_requirements(
         seen[id] = true
         order.push(id)
       }
-    }
-  }
-}
-
-///|
-fn append_dependency_paths(
-  packages : PackageSet,
-  pkg : Package,
-  field_name : String,
-  paths : Map[String, Array[String]],
-  queue : Array[String],
-) -> Unit {
-  guard pkg.document.field(field_name) is Some(field) else { return }
-  guard parse_requirements(field.value, source=field.location.source)
-    is Ok(requirements) else {
-    return
-  }
-  for requirement in requirements {
-    guard matching_dependency_id(packages, requirement) is Some(id) else {
-      continue
-    }
-    if !paths.contains(id) {
-      let path = paths.get(pkg.id).unwrap().copy()
-      path.push(id)
-      paths[id] = path
-      queue.push(id)
     }
   }
 }
