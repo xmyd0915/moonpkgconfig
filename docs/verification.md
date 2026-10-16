@@ -42,7 +42,7 @@
 | 真实私有依赖与 PNG | 官方 libpng 1.6.59 与 zlib 1.3.1 分别静态安装到不同前缀；查询普通/静态参数，验证缺失私有依赖时的退出码及 `PC015`，并在 MoonBit 中完成3组 RGBA PNG 像素往返和4种错误检查。当前示例未适配 Windows MSVC |
 | `cmd/check testdata/real-world` | zlib 1.3.1 与 libffi 3.4.6 固定上游模板全部通过，退出码 0 |
 | 自动 pkgconf 差分 | 38 项 Cflags、动态/静态 Libs、五种参数分类、依赖顺序、路径策略、虚拟包、真实模板、版本、变量覆盖及退出码与固定的 pkgconf 3.0.7 一致；仅忽略行末空白差异 |
-| GitHub Actions CI（上次运行） | 2026-10-16：参数分类实现提交 `9b4a557` 在固定工具链的 Ubuntu 全新环境成功，含65个四目标逻辑测试、分类 CLI 检查、评审演示、包内容检查、C/C++ 闭环、真实 zlib/libpng FFI、11个上游样本及38项固定版本差分；运行记录：[38881755734](https://github.com/xmyd0915/moonpkgconfig/actions/runs/38881755734)。9月首次发布的运行记录保留于 [36442570605](https://github.com/xmyd0915/moonpkgconfig/actions/runs/36442570605) |
+| GitHub Actions CI | 2026-10-16：大图实现提交 `038b11c` 在固定工具链的 Ubuntu 全新环境成功，含70个四目标逻辑测试、分类 CLI 检查、大图/展开边界工作负载、评审演示、包内容检查、C/C++ 闭环、真实 zlib/libpng FFI、11个上游样本及38项固定版本差分；运行记录：[38884224658](https://github.com/xmyd0915/moonpkgconfig/actions/runs/38884224658)。9月首次发布的运行记录保留于 [36442570605](https://github.com/xmyd0915/moonpkgconfig/actions/runs/36442570605) |
 
 70 个逻辑测试在四个目标各运行一次，不将它们宣传为 280 个独立测试。覆盖顺序变量展开、调用方变量覆盖、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重、最短公开/私有依赖路径和快照、5,000包深链及诊断顺序、Cflags 私有依赖语义、虚拟包提供者及范围比较矩阵、循环和包冲突诊断、参数聚合与来源、五种参数分类及 GNU 链接器分组、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重、系统目录过滤、sysroot重写和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
 

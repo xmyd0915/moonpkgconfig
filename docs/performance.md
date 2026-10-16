@@ -8,7 +8,7 @@
 
 每项分别测量输入生成与加载、依赖解析、编译参数收集、链尾路径、全部包的路径解释和整目录检查。使用固定工具链 `@bench.monotonic_clock_*` 计时，单位为微秒。除 `load` 外，耗时不含生成/加载、进程启动、文件 IO 或输出序列化；因此路径结果反映 CLI 解释所需的核心计算，不是完整命令的墙钟耗时。
 
-每个样本启动一个新进程。普通图每项采样3次，报告中位数；峰值内存取各样本的最大工作集，涵盖整个进程，包括输入生成和加载。Windows 通过 `GetProcessMemoryInfo` 读取峰值，POSIX 使用单独测量进程的 `resource.getrusage`。这些数值不是核心库独占的分配量。
+每个样本启动一个新进程。普通图每项采样3次，报告中位数；遇到超时或进程失败时停止该项的后续采样，保留失败记录。峰值内存取各成功样本的最大工作集，涵盖整个进程，包括输入生成和加载。Windows 通过 `GetProcessMemoryInfo` 读取峰值，POSIX 使用单独测量进程的 `resource.getrusage`。这些数值不是核心库独占的分配量。
 
 原始采样、错误、硬件信息和二进制 SHA-256 保存在 [测量数据](performance/windows-2026-10-16.json)。优化前核心为提交 `0392fb8`；测量适配程序是本轮新增。基线的全部路径操作逐包调用 `dependency_path`；优化后使用一次 `dependency_paths`，逐包调用 `path_to`，分别对应两版 CLI 的实际计算方式。
 
@@ -52,6 +52,8 @@ python scripts/benchmark.py --binary _build/native/release/build/cmd/benchmark/b
 ```
 
 `python scripts/verify-performance.py` 自动构建并定位产物，执行1,000包四种图的解析/参数/路径检查、5,000包长链及展开边界。Windows 完整验证和 Ubuntu CI 都运行这条入口。规模、输出计数、路径长度、退出码和诊断是正确性断言；耗时仅记录，CI 不设绝对速度门槛。
+
+本轮实现提交 `038b11c` 的 Ubuntu [CI 运行](https://github.com/xmyd0915/moonpkgconfig/actions/runs/38884224658) 已通过，包含上述工作负载、四目标70项逻辑测试和原有原生集成流程。
 
 ## 已知瓶颈与测量限制
 
