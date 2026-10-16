@@ -1,7 +1,7 @@
 ///|
 enum QueryMode {
-  Cflags
-  Libs
+  Cflags(@pc.FlagSelection?)
+  Libs(@pc.FlagSelection?)
   Variable(String)
   ModVersion
   Exists
@@ -17,6 +17,9 @@ fn print_usage() -> Unit {
   )
   println(
     "Modes: --cflags, --libs, --variable=<name>, --modversion, --exists, --atleast-version=<version>, --exact-version=<version>, --max-version=<version>",
+  )
+  println(
+    "       --cflags-only-I, --cflags-only-other, --libs-only-L, --libs-only-l, --libs-only-other",
   )
   println(
     "Options: --define-variable=<name>=<value>, --path <directory>, --sysroot=<path>",
@@ -100,13 +103,35 @@ fn main {
         if mode is Some(_) {
           invalid = true
         } else {
-          mode = Some(Cflags)
+          mode = Some(Cflags(None))
         }
       "--libs" =>
         if mode is Some(_) {
           invalid = true
         } else {
-          mode = Some(Libs)
+          mode = Some(Libs(None))
+        }
+      "--cflags-only-I" | "--cflags-only-other" as option =>
+        if mode is Some(_) {
+          invalid = true
+        } else {
+          let selection = if option == "--cflags-only-I" {
+            @pc.IncludePaths
+          } else {
+            @pc.OtherCflags
+          }
+          mode = Some(Cflags(Some(selection)))
+        }
+      "--libs-only-L" | "--libs-only-l" | "--libs-only-other" as option =>
+        if mode is Some(_) {
+          invalid = true
+        } else {
+          let selection = match option {
+            "--libs-only-L" => @pc.LibraryPaths
+            "--libs-only-l" => @pc.Libraries
+            _ => @pc.OtherLibs
+          }
+          mode = Some(Libs(Some(selection)))
         }
       "--modversion" =>
         if mode is Some(_) {
@@ -212,9 +237,11 @@ fn main {
     print_usage()
     @sys.exit(2)
   }
-  let flag_mode = mode == Some(Cflags) || mode == Some(Libs)
-  if static_linking && mode != Some(Libs) {
-    println("--static is only valid with --libs")
+  let cflags_mode = mode is Some(Cflags(_))
+  let libs_mode = mode is Some(Libs(_))
+  let flag_mode = cflags_mode || libs_mode
+  if static_linking && !libs_mode {
+    println("--static requires --libs or a --libs-only-* mode")
     @sys.exit(2)
   }
   if !flag_mode &&
@@ -227,7 +254,7 @@ fn main {
       !system_library_paths.is_empty()
     ) {
     println(
-      "flag path options, --json and --explain require --cflags or --libs",
+      "flag path options, --json and --explain require a compiler or linker flag mode",
     )
     @sys.exit(2)
   }
@@ -250,20 +277,24 @@ fn main {
       @sys.exit(1)
     }
     match mode.unwrap() {
-      Cflags | Libs as flag_query => {
-        let collected = match flag_query {
-          Cflags => loaded.packages.collect_cflags(root)
-          Libs => loaded.packages.collect_libs(root, static_linking~)
-          _ => abort("unreachable query mode")
+      Cflags(selection) | Libs(selection) => {
+        let collected = if cflags_mode {
+          loaded.packages.collect_cflags(root)
+        } else {
+          loaded.packages.collect_libs(root, static_linking~)
         }
         let rooted = collected.with_sysroot(sysroot)
         let filtered = rooted.filter_system_search_paths(
           system_include_paths, system_library_paths,
         )
-        let result = if dedupe_paths {
+        let deduplicated = if dedupe_paths {
           filtered.deduplicate_search_paths()
         } else {
           filtered
+        }
+        let result = match selection {
+          Some(group) => deduplicated.select(group)
+          None => deduplicated
         }
         if json {
           println(result.json_text(pretty=true))
@@ -273,7 +304,7 @@ fn main {
             explain,
             loaded.packages,
             root,
-            flag_query == Cflags || static_linking,
+            cflags_mode || static_linking,
           )
         }
         if !result.diagnostics.is_empty() {

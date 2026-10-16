@@ -141,6 +141,9 @@ jobs:
           grep -q "private-helper" <<< "$output"
           grep -q "4 diagnostics." <<< "$output"
 
+      - name: Verify flag selection CLI
+        run: python3 scripts/verify-flag-selection.py
+
       - name: Build and run native C/C++ example
         run: sh scripts/verify-native-example.sh
 

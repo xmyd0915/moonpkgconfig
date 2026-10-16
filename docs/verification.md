@@ -1,6 +1,6 @@
 # 验证记录
 
-最近验证：2026-10-15；核心回归平台：Windows x64；真实 zlib/libpng FFI 平台：Ubuntu CI。
+最近本地验证：2026-10-16；核心回归平台：Windows x64；真实 zlib/libpng FFI 平台：Ubuntu CI。
 
 工具链：`moon 0.1.20260915 (2e1a46d 2026-09-15)`，`moonc v0.10.14+7d59c7ec9 (2026-09-18)`。
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | `moon fmt` | 成功 |
 | `moon check --target all --deny-warn` | 四目标成功，无警告 |
-| `moon test --target all --deny-warn` | wasm 59/59，wasm-gc 59/59，JS 59/59，native 59/59 |
+| `moon test --target all --deny-warn` | wasm 65/65，wasm-gc 65/65，JS 65/65，native 65/65 |
 | `moon run cmd/demo` | 成功，输出六项字段及来源，无解析诊断 |
 | `scripts/review-demo.*` | 来源解释、错误目录、sysroot与虚拟包范围四步演示均通过；成功/失败退出码均有断言 |
 | `moon package --list` | 成功，包含核心源码、README、许可证与来源说明，不包含构建、工具或凭据文件 |
@@ -19,6 +19,7 @@
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc --json` | 成功，输出完整条目与空诊断数组 |
 | `moon run --target native cmd/inspect examples/invalid/broken.pc` | 按预期报告五项问题并返回退出码 1 |
 | `cmd/query` 三种查询 | Cflags、动态 Libs、静态 Libs 均成功并通过精确输出断言 |
+| `cmd/query` 五种参数分类 | 包含头文件目录、其他编译选项、库目录、库及其他链接选项；CLI 检查 JSON、来源解释、静态私有参数、带空格/分离式参数及错误退出码；GNU 链接器分组保持完整 |
 | `cmd/query --dedupe-paths` | 连接式与分离式重复搜索路径按同一路径稳定去除；孤立选项不会跨包或字段绑定下一参数 |
 | `cmd/query` 路径策略 | 显式系统目录过滤与 sysroot 重写通过精确输出断言；连接式/分离式参数均保留来源 |
 | `cmd/query` 虚拟包范围 | 官方 `provides.pc` 的六种运算符按 pkgconf 3.0.7 比较矩阵解析；匹配与拒绝样例退出码一致 |
@@ -37,10 +38,10 @@
 | 真实 MoonBit zlib FFI | 从官方 zlib 1.3.1 发行包构建静态库，查询安装生成的 `zlib.pc` 并生成 MoonBit 原生配置；标准 CRC-32 向量、3种输入的压缩/解压及3种错误返回在 Ubuntu CI 全部通过。当前示例未适配 Windows MSVC |
 | 真实私有依赖与 PNG | 官方 libpng 1.6.59 与 zlib 1.3.1 分别静态安装到不同前缀；查询普通/静态参数，验证缺失私有依赖时的退出码及 `PC015`，并在 MoonBit 中完成3组 RGBA PNG 像素往返和4种错误检查。当前示例未适配 Windows MSVC |
 | `cmd/check testdata/real-world` | zlib 1.3.1 与 libffi 3.4.6 固定上游模板全部通过，退出码 0 |
-| 自动 pkgconf 差分 | 22 项 Cflags、动态/静态 Libs、依赖顺序、路径策略、虚拟包、真实模板、版本、变量覆盖及退出码与固定的 pkgconf 3.0.7 一致；仅忽略行末空白差异 |
-| GitHub Actions CI | 固定工具链的 Ubuntu 全新环境成功，含评审演示、包内容检查、C/C++ 闭环、真实 zlib/libpng FFI、11个上游样本及22项固定版本差分；运行记录：[38759756062](https://github.com/xmyd0915/moonpkgconfig/actions/runs/38759756062)。9月首次发布的运行记录保留于 [36442570605](https://github.com/xmyd0915/moonpkgconfig/actions/runs/36442570605) |
+| 自动 pkgconf 差分 | 38 项 Cflags、动态/静态 Libs、五种参数分类、依赖顺序、路径策略、虚拟包、真实模板、版本、变量覆盖及退出码与固定的 pkgconf 3.0.7 一致；仅忽略行末空白差异 |
+| GitHub Actions CI（上次运行） | 2026-10-15：固定工具链的 Ubuntu 全新环境成功，含评审演示、包内容检查、C/C++ 闭环、真实 zlib/libpng FFI、11个上游样本及22项固定版本差分；运行记录：[38759756062](https://github.com/xmyd0915/moonpkgconfig/actions/runs/38759756062)。9月首次发布的运行记录保留于 [36442570605](https://github.com/xmyd0915/moonpkgconfig/actions/runs/36442570605) |
 
-59 个逻辑测试在四个目标各运行一次，不将它们宣传为 236 个独立测试。覆盖顺序变量展开、调用方变量覆盖、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重、最短公开/私有依赖路径、Cflags 私有依赖语义、虚拟包提供者及范围比较矩阵、循环和包冲突诊断、参数聚合与来源、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重、系统目录过滤、sysroot重写和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
+65 个逻辑测试在四个目标各运行一次，不将它们宣传为 260 个独立测试。覆盖顺序变量展开、调用方变量覆盖、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重、最短公开/私有依赖路径、Cflags 私有依赖语义、虚拟包提供者及范围比较矩阵、循环和包冲突诊断、参数聚合与来源、五种参数分类及 GNU 链接器分组、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重、系统目录过滤、sysroot重写和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
 
 当前证据仅证明所覆盖子集。目录、系统路径和sysroot均由调用者显式指定，不读取宿主pkg-config环境；参数结果对照使用自编依赖图，上游语料验证使用11个固定的pkgconf官方测试文件。
 

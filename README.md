@@ -23,11 +23,11 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 | 证据 | 当前结果 |
 | --- | --- |
-| 自动化测试 | 59 个逻辑测试 × 4 个目标，全部通过 |
+| 自动化测试 | 65 个逻辑测试 × 4 个目标，全部通过 |
 | 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言 |
 | 上游兼容语料 | 11 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
 | 真实项目模板 | 固定版本、提交和许可证的 zlib 1.3.1 与 libffi 3.4.6 官方 `.pc.in` 内容 |
-| 自动差分对照 | CI 对 22 项参数、顺序、路径策略、虚拟包、变量和退出码行为逐项比较 MoonPkgConfig 与固定的 pkgconf 3.0.7 |
+| 自动差分对照 | CI 对 38 项参数、分类查询、顺序、路径策略、虚拟包、变量和退出码行为逐项比较 MoonPkgConfig 与固定的 pkgconf 3.0.7 |
 | 原生闭环 | 使用查询得到的 Cflags/Libs 编译 C 静态库和 C++ 调用程序，并运行核对结果 |
 | 真实 MoonBit FFI | 从 zlib 1.3.1 安装生成的 `.pc` 查询参数，构建 MoonBit 程序并验证 CRC-32、压缩/解压和错误返回 |
 | 真实私有依赖 | libpng 1.6.59 → zlib 1.3.1 跨目录查询、普通/静态参数区分、缺失依赖诊断与 MoonBit PNG 像素往返验证 |
@@ -75,6 +75,8 @@ moon run --target native cmd/query examples/valid imagekit --cflags --explain
 moon run --target native cmd/query examples/valid imagekit --libs
 moon run --target native cmd/query examples/valid imagekit --libs --dedupe-paths
 moon run --target native cmd/query examples/valid imagekit --libs --static
+moon run --target native cmd/query examples/valid imagekit --cflags-only-I --json
+moon run --target native cmd/query examples/valid imagekit --libs-only-l --static
 moon run --target native cmd/query examples/search/first demo --path examples/search/second --cflags
 moon run --target native cmd/query examples/valid imagekit --modversion
 moon run --target native cmd/query examples/valid imagekit --variable=prefix
@@ -139,6 +141,18 @@ let libs = doc.field("Libs")
 
 `collect_cflags` 与 `collect_libs` 聚合依赖图中的参数，每个参数保留包名、字段和来源位置。Cflags 会包含公开与私有依赖需要的编译参数；动态 Libs 只使用公开依赖，静态 Libs 会加入私有依赖与 `Libs.private`。`FlagResult::shell_text` 提供可复制到 POSIX shell 的文本表示；直接集成时应使用 `flags` 数组，避免再次解析展示文本。
 
+主分支新增 `FlagResult::select(FlagSelection)`，可选 `IncludePaths`、`OtherCflags`、`LibraryPaths`、`Libraries` 或 `OtherLibs`，对应下面五种 CLI 模式。它保留参数顺序、重复库、诊断和来源，分离式选项与操作数成对选择，GNU 链接器分组整体保留在其他链接参数中。此接口尚未包含在 MoonCakes 0.1.0 中。
+
+| 分类模式 | 输出内容 |
+| --- | --- |
+| `--cflags-only-I` | `-I` 头文件搜索参数 |
+| `--cflags-only-other` | 其余编译参数，包括宏、`-isystem` 及其路径 |
+| `--libs-only-L` | `-L` 库搜索参数 |
+| `--libs-only-l` | `-l` 库参数，支持 `--static` 加入私有库 |
+| `--libs-only-other` | 其余链接参数，包括 framework、线程选项及 GNU 链接器分组 |
+
+每次查询选择一个模式；分类模式同样支持 `--json`、`--explain`、sysroot、系统目录过滤及搜索路径去重。结果保留 `-I`、`-L`、`-l` 前缀，JSON 中分离式选项与操作数仍为两个数组元素。先完成依赖检查和路径策略，再选择分类；即使选中结果为空，依赖或解析错误仍返回诊断和退出码 1。
+
 `FlagResult::deduplicate_search_paths` 可选择性去除重复的连接式或分离式 `-I`/`-L` 参数，两种写法会按同一路径比较并保留首次出现项的原始形式和来源。分离式参数只与同一包、同一字段中的下一项配对，避免跨来源误判。它不会去重 `-l`、宏定义或其他参数。
 
 `FlagResult::with_sysroot` 重写以 `/` 开头的 `-I`、`-L` 与 `-isystem` 路径；`filter_system_search_paths` 只移除调用者明确给出的精确 `-I`/`-L` 目录。两项转换都保留参数来源，且不依赖宿主环境。
@@ -153,7 +167,7 @@ let libs = doc.field("Libs")
 - 支持 `${name}`、`$${...}` 字面量及调用者提供的 `pcfiledir`。不读取环境变量。
 - 重复字段、重复变量、覆盖 `pcfiledir`、未定义引用采用严格错误诊断；不同于某些宽松实现。
 - 来源行是逻辑行起始的物理行；列为合并续行并处理注释后的 Unicode 字符列。续行中间的精确物理跨度还未实现。
-- 仅解析文本，不查找系统包、不修改构建配置、不运行编译器或安装依赖。
+- 核心库仅解析和查询元数据，不查找系统包、不修改构建配置、不运行编译器或安装依赖；原生集成示例会显式调用编译器。
 - sysroot 与系统目录由调用方显式提供；尚不读取 `PKG_CONFIG_SYSROOT_DIR` 等环境变量，不实现 Windows 自动重定位、完整片段去重或全部 pkgconf 3 扩展。
 
 可复制的演示步骤见 [docs/demo.md](docs/demo.md)，评审入口见 [docs/reviewer-guide.md](docs/reviewer-guide.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，0.1.0发布说明见 [docs/release-notes-0.1.0.md](docs/release-notes-0.1.0.md)，发布记录见 [docs/release.md](docs/release.md)，上游兼容样本见 [testdata/pkgconf-3.0.7](testdata/pkgconf-3.0.7)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。

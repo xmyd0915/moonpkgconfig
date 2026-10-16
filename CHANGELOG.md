@@ -1,5 +1,11 @@
 # 更新记录
 
+## 主分支维护 — 2026-10-16
+
+新增 `FlagResult::select(FlagSelection)` 和五种参数分类查询：`--cflags-only-I`、`--cflags-only-other`、`--libs-only-L`、`--libs-only-l`、`--libs-only-other`。保留来源、参数顺序和诊断，分离式参数、framework 操作数与 GNU 链接器分组不会拆散；链接分类支持静态私有依赖。该接口尚未发布到 MoonCakes，已发布核心库仍为 0.1.0。
+
+核心回归增至65个逻辑测试，固定 pkgconf 3.0.7 差分增至38项。新增 CLI JSON、引用边界、来源解释和错误退出码检查，接入 Windows 验证及 Ubuntu CI。校正演示说明中的差分数量，并明确核心库与原生构建示例的职责。
+
 ## 主分支维护 — 2026-10-15
 
 新增真实 zlib 的 MoonBit FFI 示例：读取安装生成的 `.pc`，用 JSON 查询结果生成原生编译配置，并实际验证 CRC-32、压缩/解压及错误返回。Ubuntu CI 从固定版本 zlib 1.3.1 源码构建并运行；示例不增加核心库依赖。

@@ -87,6 +87,8 @@ try {
     if ($LASTEXITCODE -ne 0 -or $upstreamDirectory -ne 'Checked 11 packages from 11 .pc files; 0 diagnostics.') { throw 'Upstream pkgconf corpus check failed.' }
     $realWorldDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check testdata/real-world | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $realWorldDirectory -ne 'Checked 2 packages from 2 .pc files; 0 diagnostics.') { throw 'Real-world upstream templates check failed.' }
+    & python "$PSScriptRoot\verify-flag-selection.py"
+    if ($LASTEXITCODE -ne 0) { throw 'Flag selection CLI checks failed.' }
     & "$PSScriptRoot\verify-native-example.ps1"
     if ($LASTEXITCODE -ne 0) { throw 'Native C/C++ integration failed.' }
     & "$PSScriptRoot\compare-pkgconf.ps1"

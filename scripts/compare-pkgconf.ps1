@@ -8,6 +8,7 @@ $oldLibDir = $env:PKG_CONFIG_LIBDIR
 $oldSysroot = $env:PKG_CONFIG_SYSROOT_DIR
 $oldSystemIncludes = $env:PKG_CONFIG_SYSTEM_INCLUDE_PATH
 $oldSystemLibraries = $env:PKG_CONFIG_SYSTEM_LIBRARY_PATH
+$script:ComparisonCount = 0
 
 function Invoke-Text([string]$Executable, [string[]]$Arguments) {
     $text = (& $Executable @Arguments | Out-String).Trim()
@@ -19,6 +20,7 @@ function Assert-Equal([string]$Label, [string]$Expected, [string]$Actual) {
     if ($Expected -ne $Actual) {
         throw "$Label differs.`npkgconf: $Expected`nMoonPkgConfig: $Actual"
     }
+    $script:ComparisonCount++
 }
 
 function Invoke-MoonQuery([string]$Directory, [string[]]$Options) {
@@ -43,6 +45,19 @@ try {
     Assert-Equal 'variable' (Invoke-Text $Reference @('--variable=prefix', 'imagekit')) (Invoke-MoonQuery 'examples/valid' @('--variable=prefix'))
     Assert-Equal 'overridden variable' (Invoke-Text $Reference @('--define-variable=prefix=/custom', '--variable=prefix', 'imagekit')) (Invoke-MoonQuery 'examples/valid' @('--variable=prefix', '--define-variable=prefix=/custom'))
     Assert-Equal 'overridden Cflags' (Invoke-Text $Reference @('--define-variable=prefix=/custom', '--cflags', 'imagekit')) (Invoke-MoonQuery 'examples/valid' @('--cflags', '--define-variable=prefix=/custom'))
+    foreach ($option in @('--cflags-only-I', '--cflags-only-other', '--libs-only-L', '--libs-only-l', '--libs-only-other')) {
+        Assert-Equal "imagekit $option" (Invoke-Text $Reference @($option, 'imagekit')) (Invoke-MoonQuery 'examples/valid' @($option, '--dedupe-paths'))
+    }
+
+    $script:Package = 'mixed'
+    $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'examples/flag-selection'
+    $env:PKG_CONFIG_LIBDIR = $env:PKG_CONFIG_PATH
+    foreach ($option in @('--cflags-only-I', '--cflags-only-other', '--libs-only-L', '--libs-only-l', '--libs-only-other')) {
+        Assert-Equal "mixed $option" (Invoke-Text $Reference @($option, 'mixed')) (Invoke-MoonQuery 'examples/flag-selection' @($option))
+    }
+    foreach ($option in @('--libs-only-L', '--libs-only-l', '--libs-only-other')) {
+        Assert-Equal "static mixed $option" (Invoke-Text $Reference @('--static', $option, 'mixed')) (Invoke-MoonQuery 'examples/flag-selection' @($option, '--static'))
+    }
 
     $script:Package = 'root'
     $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'examples/order'
@@ -67,9 +82,12 @@ try {
     Remove-Item Env:PKG_CONFIG_SYSROOT_DIR -ErrorAction SilentlyContinue
     Assert-Equal 'system Cflags filtering' (Invoke-Text $Reference @('--cflags', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--cflags', '--system-include-path=/usr/include'))
     Assert-Equal 'system Libs filtering' (Invoke-Text $Reference @('--libs', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--libs', '--system-library-path=/usr/lib'))
+    Assert-Equal 'selected system Cflags' (Invoke-Text $Reference @('--cflags-only-I', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--cflags-only-I', '--system-include-path=/usr/include'))
     $env:PKG_CONFIG_SYSROOT_DIR = '/sdk'
     Assert-Equal 'sysroot Cflags' (Invoke-Text $Reference @('--cflags', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--cflags', '--sysroot=/sdk', '--system-include-path=/usr/include'))
     Assert-Equal 'sysroot Libs' (Invoke-Text $Reference @('--libs', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--libs', '--sysroot=/sdk', '--system-library-path=/usr/lib'))
+    Assert-Equal 'selected sysroot Cflags' (Invoke-Text $Reference @('--cflags-only-I', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--cflags-only-I', '--sysroot=/sdk', '--system-include-path=/usr/include'))
+    Assert-Equal 'selected sysroot Libs' (Invoke-Text $Reference @('--libs-only-L', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--libs-only-L', '--sysroot=/sdk', '--system-library-path=/usr/lib'))
     Remove-Item Env:PKG_CONFIG_SYSROOT_DIR -ErrorAction SilentlyContinue
 
     $script:Package = 'imagekit'
@@ -83,6 +101,7 @@ try {
         if ($referenceStatus -ne $moonStatus) {
             throw "$option exit status differs: pkgconf=$referenceStatus MoonPkgConfig=$moonStatus"
         }
+        $script:ComparisonCount++
     }
 
     $providerPaths = (Join-Path $projectRoot 'examples/provides') + [IO.Path]::PathSeparator + (Join-Path $projectRoot 'testdata/pkgconf-3.0.7')
@@ -96,10 +115,11 @@ try {
         if ($referenceStatus -ne $moonStatus) {
             throw "Provides $package exit status differs: pkgconf=$referenceStatus MoonPkgConfig=$moonStatus"
         }
+        $script:ComparisonCount++
     }
 
     $version = Invoke-Text $Reference @('--version')
-    Write-Output "pkgconf differential checks: 22 passed (reference $version)"
+    Write-Output "pkgconf differential checks: $script:ComparisonCount passed (reference $version)"
 } finally {
     Pop-Location
     $env:PKG_CONFIG_PATH = $oldPath

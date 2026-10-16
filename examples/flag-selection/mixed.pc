@@ -1,0 +1,6 @@
+Name: mixed
+Description: Compiler and linker argument selection fixture
+Version: 1.0
+Cflags: -I/opt/selection/include -isystem /opt/selection/system -DMIXED=1 -pthread
+Libs: -L/opt/selection/lib -lmixed -l:exact.a -Wl,-rpath,/opt/selection/lib -framework CoreFoundation -pthread -Wl,--start-group -lfirst -lsecond -Wl,--end-group
+Libs.private: -lm -Wl,--export-dynamic

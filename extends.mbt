@@ -64,3 +64,9 @@ pub extend Requirement with Eq::{not_equal, equal}
 
 ///|
 pub extend Requirement with @debug.Debug::{to_repr}
+
+///|
+pub extend FlagSelection with Eq::{equal, not_equal}
+
+///|
+pub extend FlagSelection with @debug.Debug::{to_repr}

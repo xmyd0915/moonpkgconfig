@@ -30,8 +30,8 @@ Windows PowerShell：
 
 | 关注点 | 仓库证据 |
 | --- | --- |
-| MoonBit 实现与多目标可用性 | 59 个逻辑测试分别在 wasm、wasm-gc、JavaScript、native 运行 |
-| 与既有工具的行为关系 | 22 项输出或退出码与固定 pkgconf 3.0.7 自动差分 |
+| MoonBit 实现与多目标可用性 | 65 个逻辑测试分别在 wasm、wasm-gc、JavaScript、native 运行 |
+| 与既有工具的行为关系 | 38 项输出或退出码与固定 pkgconf 3.0.7 自动差分，含五种参数分类 |
 | 真实输入 | zlib 1.3.1、libffi 3.4.6 模板及11个官方 pkgconf 测试文件 |
 | 原生使用闭环 | 查询参数后编译 C 静态库、链接并运行 C++ 调用程序 |
 | MoonBit 接入真实 C 库 | `examples/zlib-ffi` 从已安装的 zlib 元数据取得构建参数，由 MoonBit 调用 CRC-32、压缩和解压；CI 从固定版本源码安装并验证 |

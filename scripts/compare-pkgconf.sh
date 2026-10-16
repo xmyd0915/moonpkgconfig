@@ -12,6 +12,7 @@ fi
 
 export PKG_CONFIG_PATH="$project_root/examples/valid"
 export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
+checks=0
 
 assert_equal() {
   label=$1
@@ -28,6 +29,7 @@ assert_equal() {
     fi
     exit 1
   fi
+  checks=$((checks + 1))
 }
 
 assert_equal "Cflags" \
@@ -51,6 +53,25 @@ assert_equal "overridden variable" \
 assert_equal "overridden Cflags" \
   "$("$reference" --define-variable=prefix=/custom --cflags imagekit)" \
   "$(moon run --target native cmd/query examples/valid imagekit --cflags --define-variable=prefix=/custom)"
+
+for option in --cflags-only-I --cflags-only-other --libs-only-L --libs-only-l --libs-only-other; do
+  assert_equal "imagekit $option" \
+    "$("$reference" "$option" imagekit)" \
+    "$(moon run --target native cmd/query examples/valid imagekit "$option" --dedupe-paths)"
+done
+
+export PKG_CONFIG_PATH="$project_root/examples/flag-selection"
+export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
+for option in --cflags-only-I --cflags-only-other --libs-only-L --libs-only-l --libs-only-other; do
+  assert_equal "mixed $option" \
+    "$("$reference" "$option" mixed)" \
+    "$(moon run --target native cmd/query examples/flag-selection mixed "$option")"
+done
+for option in --libs-only-L --libs-only-l --libs-only-other; do
+  assert_equal "static mixed $option" \
+    "$("$reference" --static "$option" mixed)" \
+    "$(moon run --target native cmd/query examples/flag-selection mixed "$option" --static)"
+done
 
 export PKG_CONFIG_PATH="$project_root/examples/order"
 export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
@@ -87,6 +108,9 @@ assert_equal "system Cflags filtering" \
 assert_equal "system Libs filtering" \
   "$("$reference" --libs paths)" \
   "$(moon run --target native cmd/query examples/path-policy paths --libs --system-library-path=/usr/lib)"
+assert_equal "selected system Cflags" \
+  "$("$reference" --cflags-only-I paths)" \
+  "$(moon run --target native cmd/query examples/path-policy paths --cflags-only-I --system-include-path=/usr/include)"
 export PKG_CONFIG_SYSROOT_DIR=/sdk
 assert_equal "sysroot Cflags" \
   "$("$reference" --cflags paths)" \
@@ -94,6 +118,12 @@ assert_equal "sysroot Cflags" \
 assert_equal "sysroot Libs" \
   "$("$reference" --libs paths)" \
   "$(moon run --target native cmd/query examples/path-policy paths --libs --sysroot=/sdk --system-library-path=/usr/lib)"
+assert_equal "selected sysroot Cflags" \
+  "$("$reference" --cflags-only-I paths)" \
+  "$(moon run --target native cmd/query examples/path-policy paths --cflags-only-I --sysroot=/sdk --system-include-path=/usr/include)"
+assert_equal "selected sysroot Libs" \
+  "$("$reference" --libs-only-L paths)" \
+  "$(moon run --target native cmd/query examples/path-policy paths --libs-only-L --sysroot=/sdk --system-library-path=/usr/lib)"
 unset PKG_CONFIG_SYSROOT_DIR
 
 compare_status() {
@@ -113,6 +143,7 @@ compare_status() {
     fi
     exit 1
   fi
+  checks=$((checks + 1))
 }
 
 export PKG_CONFIG_PATH="$project_root/examples/valid"
@@ -133,6 +164,7 @@ compare_provider_status() {
     echo "Provides $package exit status differs: pkgconf=$reference_status MoonPkgConfig=$moon_status" >&2
     exit 1
   fi
+  checks=$((checks + 1))
 }
 
 export PKG_CONFIG_PATH="$project_root/examples/provides:$project_root/testdata/pkgconf-3.0.7"
@@ -140,4 +172,4 @@ export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
 compare_provider_status bar-new
 compare_provider_status bar-old
 
-echo "pkgconf differential checks: 22 passed (reference $("$reference" --version))"
+echo "pkgconf differential checks: $checks passed (reference $("$reference" --version))"

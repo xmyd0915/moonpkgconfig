@@ -1,6 +1,6 @@
 # pkgconf 对照记录
 
-最近复核：2026-09-25；平台：Windows x64 与 Ubuntu CI。
+最近复核：2026-10-16；平台：Windows x64 与 Ubuntu CI。
 
 对照工具为 pkgconf 3.0.7 官方 Windows x64 MSI：
 
@@ -68,6 +68,12 @@ MoonPkgConfig 查询结果：
 官方 `provides.pc` 声明了 `=、!=、<、<=、>、>=` 六种虚拟包范围。MoonPkgConfig 按 pkgconf 3.0.7 源码中的比较矩阵实现，而不是把两边约束简单视为区间相交。`bar-new` 对 `provides-test-bar >= 1.1.1` 的依赖在两边均成功，`bar-old` 对 `provides-test-bar <= 1.1.0` 的依赖在两边均失败；这两项退出码差分使总比较数增至22项。
 
 这些差异是当前兼容边界，不把本次结果表述为完整兼容。搜索路径去重只处理连接式或分离式 `-I`/`-L`，不会删除重复库或其他可能影响链接语义的参数。系统目录仅精确匹配；sysroot 不自动读取环境。后续仍需扩大真实 `.pc` 文件样本，并继续核对参数顺序。
+
+## 参数分类
+
+新增五种常用参数分类，依据固定版本 [pkgconf 3.0.7 的过滤实现](https://github.com/pkgconf/pkgconf/blob/pkgconf-3.0.7/cli/core.c)：`--cflags-only-I` 仅选 `-I`，`--cflags-only-other` 选其他编译参数；`--libs-only-L` 仅选 `-L`，`--libs-only-l` 仅选 `-l`，`--libs-only-other` 选其他链接参数。`-isystem` 与 framework 属于其他参数；`-Wl,--start-group` 至 `-Wl,--end-group` 整组属于其他链接参数，组内库不会被单独抽出。
+
+在原22项上增加16项输出对照：`imagekit` 的五种分类，`examples/flag-selection/mixed.pc` 的五种分类与三种静态链接分类，以及三项系统目录/sysroot与分类组合。总计38项，脚本按实际成功次数报告数量。混合样例包括 `-isystem`、精确库名、rpath、framework、线程选项和 GNU 链接器分组。分离式参数和带空格路径另外由核心测试及 CLI JSON/文本边界检查验证，保留原写法而不强制合并成连接式参数。
 
 ## 上游测试样本
 
