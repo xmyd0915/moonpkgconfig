@@ -12,6 +12,8 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 
 `python scripts/verify-performance.py` 构建原生 release 基准并验证大图及展开边界，不设机器相关的耗时门槛。详细测量使用 `scripts/benchmark.py`，范围、命令和原始记录见 `docs/performance.md`。修改遍历时必须保留深图安全性、最短路径选择以及诊断顺序；批量解释应复用一次 `dependency_paths` 快照。
 
+查询期间的提供者索引和依赖步骤放在内部 `QueryContext`，不得跨公开调用复用，因为 `PackageSet` 和文档由调用方持有。目录优化仅复用能够证明无诊断且无冲突字段的子图；问题根保持完整遍历。提供者顺序、精确包优先、文档修改可见性和每根冲突范围由回归测试保护。后续测量及剩余边界见 `docs/query-performance.md`。
+
 真实 zlib 和 libpng 的 MoonBit FFI 示例使用独立模块，在 Linux CI 中构建和运行。命令及前置条件见各自示例的 README；它们不加入核心库的四目标依赖。两个运行脚本共用 `scripts/native_ffi.py`，修改共用代码时必须重跑两条集成流程。
 
 仓库只保留与 MoonPkgConfig 有关的源码、测试和开发记录。提交应说明实际改动，不为数量拆分无意义修改。

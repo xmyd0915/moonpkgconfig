@@ -60,32 +60,6 @@ pub fn PackageSet::get(self : PackageSet, id : String) -> Package? {
 }
 
 ///|
-/// Find the first package, in insertion order, whose `Provides` field can
-/// satisfy a virtual dependency. Exact package identifiers are handled by the
-/// caller and always take precedence. Versioned rules follow pkgconf 3.0.7's
-/// constraint-pair semantics, including its deliberately asymmetric ranges.
-fn PackageSet::find_provider(
-  self : PackageSet,
-  requirement : Requirement,
-) -> Package? {
-  for id in self.package_ids {
-    let pkg = self.packages.get(id).unwrap()
-    guard pkg.document.field("Provides") is Some(field) else { continue }
-    guard parse_requirements(field.value, source=field.location.source)
-      is Ok(provides) else {
-      continue
-    }
-    for provided in provides {
-      if provided.name == requirement.name &&
-        virtual_requirement_matches(requirement, provided) {
-        return Some(pkg)
-      }
-    }
-  }
-  None
-}
-
-///|
 /// Compare a requested virtual dependency with one `Provides` declaration.
 ///
 /// This is not ordinary interval intersection. It mirrors the comparator-pair
@@ -174,10 +148,11 @@ pub fn PackageSet::check_requirements(
   source? : String = "Requires",
 ) -> Array[Diagnostic] {
   let diagnostics : Array[Diagnostic] = []
+  let context = QueryContext::new(self, false)
   for requirement in requirements {
     match self.packages.get(requirement.name) {
       None =>
-        if self.find_provider(requirement) is None {
+        if context.find_provider(requirement) is None {
           diagnostics.push(
             diag("PC015", "Required package not found: " + requirement.name, {
               source,

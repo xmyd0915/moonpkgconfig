@@ -14,8 +14,10 @@ fn package_text(shape : String, size : Int, index : Int) -> String {
       text.write_string(if shape == "virtual" { "v\{i} >= 1" } else { "p\{i}" })
     }
     text.write_string("\n")
-  } else if shape == "chain" && index + 1 < size {
+  } else if (shape == "chain" || shape == "broken") && index + 1 < size {
     text.write_string("Requires: p\{index + 1}\n")
+  } else if shape == "broken" && index + 1 == size {
+    text.write_string("Requires: missing\n")
   } else if shape == "shared" && index > 0 && index + 1 < size {
     text.write_string("Requires: p\{size - 1}\n")
   }
@@ -31,7 +33,7 @@ fn main {
   let args = @env.args()
   if args.length() != 4 {
     println(
-      "Usage: benchmark <chain|wide|shared|virtual> <size> <load|resolve|cflags|path-last|paths|check>",
+      "Usage: benchmark <chain|wide|shared|virtual|broken> <size> <load|resolve|cflags|path-last|paths|check>",
     )
     println(
       "       benchmark expansion <size> <expand-variable|expand-literal>",
@@ -84,6 +86,7 @@ fn main {
   if size < 4 ||
     size > 100000 ||
     !(shape == "chain" ||
+    shape == "broken" ||
     shape == "wide" ||
     shape == "shared" ||
     shape == "virtual") {
@@ -105,7 +108,7 @@ fn main {
     "load" => size.to_int64()
     "resolve" => {
       let result = packages.resolve("p0")
-      if !result.diagnostics.is_empty() ||
+      if !expected_diagnostics(result.diagnostics, shape) ||
         result.order.length() != size ||
         result.order[size - 1] != "p0" {
         abort("Incorrect resolution")
@@ -114,7 +117,7 @@ fn main {
     }
     "cflags" => {
       let result = packages.collect_cflags("p0")
-      if !result.diagnostics.is_empty() ||
+      if !expected_diagnostics(result.diagnostics, shape) ||
         result.flags.length() != size ||
         result.flags[0].package_id != "p0" {
         abort("Incorrect compiler flags")
@@ -123,7 +126,7 @@ fn main {
     }
     "path-last" => {
       let result = packages.dependency_path("p0", "p\{size - 1}")
-      let expected = if shape == "chain" {
+      let expected = if shape == "chain" || shape == "broken" {
         size
       } else if shape == "shared" {
         3
@@ -144,7 +147,7 @@ fn main {
         let path = paths.path_to("p\{i}")
         length = length + path.length().to_int64()
       }
-      let expected = if shape == "chain" {
+      let expected = if shape == "chain" || shape == "broken" {
         size.to_int64() * (size.to_int64() + 1L) / 2L
       } else if shape == "shared" {
         size.to_int64() * 2L
@@ -157,7 +160,7 @@ fn main {
       length
     }
     "check" => {
-      if !packages.check_all().is_empty() {
+      if !expected_diagnostics(packages.check_all(), shape) {
         abort("Incorrect graph diagnostics")
       }
       size.to_int64()
@@ -183,4 +186,18 @@ fn main {
       "checksum": Json(checksum),
     }).stringify(),
   )
+}
+
+///|
+fn expected_diagnostics(
+  diagnostics : Array[@pc.Diagnostic],
+  shape : String,
+) -> Bool {
+  if shape == "broken" {
+    diagnostics.length() == 1 &&
+    diagnostics[0].code == "PC015" &&
+    diagnostics[0].message == "Required package not found: missing"
+  } else {
+    diagnostics.is_empty()
+  }
 }

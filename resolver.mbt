@@ -16,20 +16,23 @@ pub fn PackageSet::resolve(
   include_private? : Bool = false,
   source? : String = "query",
 ) -> Resolution {
+  QueryContext::new(self, include_private).resolve(root, source)
+}
+
+///|
+fn QueryContext::resolve(
+  self : QueryContext,
+  root : String,
+  source : String,
+) -> Resolution {
   let states : Map[String, Int] = Map([])
   let order : Array[String] = []
   let stack : Array[String] = []
   let diagnostics : Array[Diagnostic] = []
-  let root_requirement : Requirement = { name: root, op: Any, version: "", }
-  let root_id = match self.packages.get(root) {
-    Some(_) => Some(root)
-    None => self.find_provider(root_requirement).map(pkg => pkg.id)
-  }
+  let root_id = self.root_id(root)
   match root_id {
     Some(id) =>
-      resolve_graph(
-        self, id, include_private, source, states, order, stack, diagnostics,
-      )
+      resolve_graph(self, id, source, states, order, stack, diagnostics)
     None =>
       diagnostics.push(
         diag("PC015", "Required package not found: " + root, {
@@ -39,7 +42,7 @@ pub fn PackageSet::resolve(
         }),
       )
   }
-  append_selected_conflicts(self, order, diagnostics)
+  append_selected_conflicts(self.packages, order, diagnostics)
   { order, diagnostics, }
 }
 
@@ -51,9 +54,14 @@ pub fn PackageSet::check_all(
   self : PackageSet,
   include_private? : Bool = true,
 ) -> Array[Diagnostic] {
+  let context = QueryContext::new(self, include_private)
+  let clean = context.clean_subgraphs()
   let diagnostics : Array[Diagnostic] = []
   for id in self.package_ids {
-    let result = self.resolve(id, include_private~, source=id)
+    if clean.get(id) == Some(2) {
+      continue
+    }
+    let result = context.resolve(id, id)
     for problem in result.diagnostics {
       if !diagnostics.any(existing => existing == problem) {
         diagnostics.push(problem)
@@ -127,9 +135,8 @@ priv struct ResolveFrame {
 
 ///|
 fn resolve_graph(
-  packages : PackageSet,
+  context : QueryContext,
   id : String,
-  include_private : Bool,
   source : String,
   states : Map[String, Int],
   order : Array[String],
@@ -137,7 +144,7 @@ fn resolve_graph(
   diagnostics : Array[Diagnostic],
 ) -> Unit {
   let frames : Array[ResolveFrame] = [
-    { id, steps: resolve_steps(packages, id, include_private), next: 0, },
+    { id, steps: context.resolve_steps(id), next: 0, },
   ]
   states[id] = 1
   stack.push(id)
@@ -171,7 +178,7 @@ fn resolve_graph(
             stack.push(next)
             frames.push({
               id: next,
-              steps: resolve_steps(packages, next, include_private),
+              steps: context.resolve_steps(next),
               next: 0,
             })
           }
@@ -181,23 +188,8 @@ fn resolve_graph(
 }
 
 ///|
-fn resolve_steps(
-  packages : PackageSet,
-  id : String,
-  include_private : Bool,
-) -> Array[ResolveStep] {
-  let steps : Array[ResolveStep] = []
-  let pkg = packages.packages.get(id).unwrap()
-  append_resolve_steps(packages, pkg, "Requires", steps)
-  if include_private {
-    append_resolve_steps(packages, pkg, "Requires.private", steps)
-  }
-  steps
-}
-
-///|
 fn append_resolve_steps(
-  packages : PackageSet,
+  context : QueryContext,
   pkg : Package,
   field_name : String,
   steps : Array[ResolveStep],
@@ -216,9 +208,9 @@ fn append_resolve_steps(
       )
     Ok(requirements) =>
       for requirement in requirements {
-        match packages.packages.get(requirement.name) {
+        match context.packages.packages.get(requirement.name) {
           None =>
-            match packages.find_provider(requirement) {
+            match context.find_provider(requirement) {
               None =>
                 steps.push(
                   Problem(
@@ -233,7 +225,7 @@ fn append_resolve_steps(
                     ),
                   ),
                 )
-              Some(provider) => steps.push(Visit(provider.id))
+              Some(provider) => steps.push(Visit(provider))
             }
           Some(dependency) => {
             let version = dependency.document.field("Version").unwrap().value

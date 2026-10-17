@@ -1,5 +1,7 @@
 # 大型依赖图与边界输入测量
 
+本页保留2026-10-16的首次测量。提供者索引和整目录检查的后续修复、2026-10-17数据及当前限制见 [查询性能记录](query-performance.md)。
+
 测量日期：2026-10-16。平台：Windows x64，Intel Core Ultra 9 275HX；Python 3.9.12；MoonBit `0.10.14+7d59c7ec9`、moon `0.1.20260915`，native release 构建。
 
 ## 测量范围

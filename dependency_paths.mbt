@@ -49,11 +49,8 @@ fn PackageSet::build_dependency_paths(
   target : String?,
 ) -> DependencyPaths {
   let parents : Map[String, String] = Map([])
-  let requirement : Requirement = { name: root, op: Any, version: "", }
-  let root_id = match self.packages.get(root) {
-    Some(_) => Some(root)
-    None => self.find_provider(requirement).map(pkg => pkg.id)
-  }
+  let context = QueryContext::new(self, include_private)
+  let root_id = context.root_id(root)
   guard root_id is Some(start) else { return { root, parents, } }
   let queue : Array[String] = [start]
   parents[start] = start
@@ -63,36 +60,13 @@ fn PackageSet::build_dependency_paths(
     if target == Some(id) {
       break
     }
-    let pkg = self.packages.get(id).unwrap()
-    append_dependency_parents(self, pkg, "Requires", parents, queue)
-    if include_private {
-      append_dependency_parents(self, pkg, "Requires.private", parents, queue)
+    for step in context.resolve_steps(id) {
+      if step is Visit(next) && !parents.contains(next) {
+        parents[next] = id
+        queue.push(next)
+      }
     }
     index = index + 1
   }
   { root: start, parents, }
-}
-
-///|
-fn append_dependency_parents(
-  packages : PackageSet,
-  pkg : Package,
-  field_name : String,
-  parents : Map[String, String],
-  queue : Array[String],
-) -> Unit {
-  guard pkg.document.field(field_name) is Some(field) else { return }
-  guard parse_requirements(field.value, source=field.location.source)
-    is Ok(requirements) else {
-    return
-  }
-  for requirement in requirements {
-    guard matching_dependency_id(packages, requirement) is Some(id) else {
-      continue
-    }
-    if !parents.contains(id) {
-      parents[id] = pkg.id
-      queue.push(id)
-    }
-  }
 }
