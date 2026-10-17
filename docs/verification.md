@@ -15,9 +15,10 @@
 | `scripts/review-demo.*` | 来源解释、错误目录、sysroot与虚拟包范围四步演示均通过；成功/失败退出码均有断言 |
 | `moon package --list` | 成功，包含核心源码、README、许可证与来源说明，不包含构建、工具或凭据文件 |
 | 0.2.0 发布归档消费者 | 实际 ZIP 包含分类、路径、查询上下文与目录检查源码；在独立工作区四目标执行78项归档源码测试和3项消费者测试，验证公开 API 可导入并运行 |
-| 主分支归档复验 | 0.3.0候选归档在独立工作区四目标执行81项源码测试和4项消费者测试，每目标85项通过；新增消费者直接导入并检查静态编译字段、依赖顺序及来源。已发布0.2.0归档保持原内容 |
+| 0.3.0发行归档消费者 | 实际上传归档在独立工作区四目标执行81项源码测试和4项消费者测试，每目标85项通过；新增消费者直接导入并检查静态编译字段、依赖顺序及来源。已发布0.2.0归档保持原内容 |
 | MoonCakes 0.1.0 历史复验 | 2026-09-28：`xmyd0915/moonpkgconfig@0.1.0` 可在全新临时模块中下载并通过 `moon check --target all --deny-warn` |
 | MoonCakes 0.2.0 安装复验 | 2026-10-17：正式发布返回 `200 OK`；全新模块实际下载0.2.0，无本地源码覆盖，四目标检查和每目标3项公开接口消费者测试均通过；归档 SHA-256 与公开索引一致 |
+| MoonCakes 0.3.0 安装复验 | 2026-10-17：正式发布返回 `200 OK`、退出码0；全新模块实际下载0.3.0，无本地源码覆盖，四目标检查和每目标4项公开接口消费者测试通过；含静态编译字段、依赖顺序和来源。上传 ZIP、测试归档与注册表索引 SHA-256 一致，源码标签为 `v0.3.0` |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc --json` | 成功，输出完整条目与空诊断数组 |
 | `moon run --target native cmd/inspect examples/invalid/broken.pc` | 按预期报告五项问题并返回退出码 1 |
@@ -50,7 +51,7 @@
 | 真实 Expat 静态编译 | 官方2.6.2发行包经固定 SHA-256 校验，由 CMake 构建静态库；安装元数据不改写。静态查询提供 `XML_STATIC`，MoonBit 完成9次正常/分块解析、4类错误输入及4项边界检查，Python独立安装核对计数、状态、错误和位置。MSVC 移除该私有字段复现 `__imp_XML_*` 链接失败，恢复后成功；报告为 `_build/verification/expat.json`，流程接入 Ubuntu 与 Windows CI |
 | `cmd/check testdata/real-world` | zlib 1.3.1 与 libffi 3.4.6 固定上游模板全部通过，退出码 0 |
 | 自动 pkgconf 差分 | 38 项 Cflags、动态/静态 Libs、五种参数分类、依赖顺序、路径策略、虚拟包、真实模板、版本、变量覆盖及退出码与固定的 pkgconf 3.0.7 一致；仅忽略行末空白差异 |
-| 六项目模板差分与独立预期 | 六个固定提交的上游模板与完整许可证通过 SHA-256 校验；120项配置查询和4项跨包静态顺序与声明预期、pkgconf 3.0.7 一致，参数来源指回对应字段。包含 Expat `Cflags.private` 修复，主分支尚未发布；原38项差分继续执行 |
+| 六项目模板差分与独立预期 | 六个固定提交的上游模板与完整许可证通过 SHA-256 校验；120项配置查询和4项跨包静态顺序与声明预期、pkgconf 3.0.7 一致，参数来源指回对应字段。包含0.3.0的 Expat `Cflags.private` 修复；原38项差分继续执行 |
 | 固定种子输入检查 | 种子20261017：64个有效参数输入通过 Python shlex 参数数组与展示往返对照，含 CRLF/BOM/无末尾换行；94个异常/截断输入通过文件、静态编译和静态链接查询的 JSON/退出码/来源检查及抽样确定性检查，单进程20秒超时即失败。完整报告与输入保留于忽略目录 |
 | GitHub Actions CI | 2026-10-17：0.2.0发行提交 `092d2fa` 在固定工具链的 Ubuntu 全新环境成功，含78个四目标核心测试、实际归档源码和3项消费者测试、分类 CLI 检查、26个大图/展开边界工作负载、评审演示、包内容检查、C/C++ 闭环、真实 zlib/libpng FFI、11个上游样本及38项固定版本差分；运行记录：[39004844362](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39004844362)。9月首次发布的运行记录保留于 [36442570605](https://github.com/xmyd0915/moonpkgconfig/actions/runs/36442570605) |
 
@@ -62,7 +63,9 @@
 
 ## 对照工具与记录
 
-0.3.0候选提交 `c372debb81b5a4b7447bc5a78d16bdbb7101b9ba` 的双平台 [CI 39025581516](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39025581516) 成功：Ubuntu 包含81项四目标核心测试、4项四目标归档消费者测试、162项固定 pkgconf 差分、158个生成输入、真实 C/C++、zlib、libpng 和 Expat；Windows 通过 zlib、发布包文件消费者及 Expat 正/负对照。附件包含 `ubuntu-expat`、`windows-expat` 及既有兼容性和消费者报告。候选版本仍未正式发布。
+0.3.0候选提交 `c372debb81b5a4b7447bc5a78d16bdbb7101b9ba` 的双平台 [CI 39025581516](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39025581516) 成功：Ubuntu 包含81项四目标核心测试、4项四目标归档消费者测试、162项固定 pkgconf 差分、158个生成输入、真实 C/C++、zlib、libpng 和 Expat；Windows 通过 zlib、发布包文件消费者及 Expat 正/负对照。附件包含 `ubuntu-expat`、`windows-expat` 及既有兼容性和消费者报告。此为发布前候选验证记录。
+
+正式发行提交 `19aa710b356fa33406e9ed8345b3143d4022e77f` 的双平台 [CI 39032073532](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39032073532) 同样通过。0.3.0上传、标签、注册表下载安装和归档校验值见 [发布记录](release.md)。
 
 已下载并校验官方 pkgconf 3.0.7 Windows x64 MSI，发布资产 SHA-256 为 `7a316dba4a4498ea952b746c82deed41c597657095a0f776b75654191b45ae44`。对照结果和已知差异见 `docs/pkgconf-comparison.md`。
 

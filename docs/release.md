@@ -1,12 +1,16 @@
 # 版本与发布记录
 
-## 0.3.0 候选准备
+## 0.3.0 完成记录（2026-10-17）
 
-根模块版本为0.3.0候选版本；尚未上传 MoonCakes，也未创建发布标签。新增静态编译字段及真实 Expat 接入，范围见 [候选发行说明](release-notes-0.3.0.md)。既有0.2.0发行归档及标签保持原内容。
+`xmyd0915/moonpkgconfig@0.3.0` 已正式发布，上传器退出码0，服务端返回 `200 OK`；公开索引包含0.3.0且未撤回。新增静态编译字段及真实 Expat 接入，范围见 [发行说明](release-notes-0.3.0.md)。既有0.1.0、0.2.0发行版本和标签保持原内容。
 
-发布前执行 `python scripts/verify-install.py --package`，从实际候选 ZIP 提取源码，在独立工作区验证四目标公开接口。正式上传后再执行 `python scripts/verify-install.py --version 0.3.0`，检查注册表下载安装；此步骤尚未执行，不能用归档测试代替。
+- [源码标签 v0.3.0](https://github.com/xmyd0915/moonpkgconfig/tree/v0.3.0) 固定到提交 `19aa710b356fa33406e9ed8345b3143d4022e77f`；[发行提交 CI](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39032073532) 的 Ubuntu 与 Windows 检查全部成功。
+- `python scripts/verify-install.py --package` 从实际上传归档提取源码，在独立工作区执行81项源码测试和4项公开接口消费者测试，四目标各85项通过。
+- 正式上传后执行 `python scripts/verify-install.py --version 0.3.0`，全新模块实际从 MoonCakes 下载0.3.0，无本地源码覆盖；四目标检查和每目标4项消费者测试全部通过，含静态编译字段、分类、来源与依赖顺序。
+- 上传器生成的 ZIP 与测试归档、注册表索引的 SHA-256 一致：`5c0523a0dc393aeca4d8dc75f8e08e6f98534450462a34e55ed5f6635d18a4ac`。
+- 发布预检返回 `202 Accepted` 并确认未作修改，旧上传器对此返回非零；正式上传另以 `200 OK`、索引校验和真实下载安装确认完成。
 
-当前复验已发布0.2.0时应显式使用 `python scripts/verify-install.py --version 0.2.0`；独立 zlib 文件消费者继续固定该版本。候选包位于 `_build/publish/xmyd0915-moonpkgconfig-0.3.0.zip`，验证报告与校验值保存在忽略的 `_build/verification` 中。
+复验旧0.2.0时应显式使用 `python scripts/verify-install.py --version 0.2.0`；独立 zlib 文件消费者继续固定该版本作为兼容性基线。正式归档副本保存于 `_build/releases/xmyd0915-moonpkgconfig-0.3.0.zip`，机器记录为 `_build/verification/release-0.3.0.json`；这些验证产物不纳入源码包。
 
 ## 0.2.0 发行内容
 
