@@ -33,6 +33,13 @@ def main():
     for mapping in args.msvc_lib:
         command.extend(["--msvc-lib", mapping])
     print(run(command, consumer), flush=True)
+    evidence_files = list(consumer.glob("_build/consumer-*/evidence.json"))
+    if len(evidence_files) != 1:
+        raise RuntimeError("Expected one completed consumer evidence report")
+    report = ROOT / "_build/verification/zlib-consumer.json"
+    report.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(evidence_files[0], report)
+    print(f"Saved consumer report: {report}", flush=True)
     print(f"Independent registry consumer: {consumer}", flush=True)
 
 

@@ -215,6 +215,13 @@ jobs:
       - name: Compare supported queries with pkgconf
         run: sh scripts/compare-pkgconf.sh
 
+      - name: Retain published consumer evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-published-consumer
+          path: _build/verification/zlib-consumer.json
+          if-no-files-found: error
+
   windows-zlib:
     runs-on: windows-latest
     timeout-minutes: 15
@@ -248,6 +255,13 @@ jobs:
 
       - name: Build pinned MSVC zlib and run MoonBit FFI
         run: python scripts/verify-zlib-windows.py --with-consumer
+
+      - name: Retain published consumer evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-published-consumer
+          path: _build/verification/zlib-consumer.json
+          if-no-files-found: error
 
       - name: Retain zlib build logs on failure
         if: failure()

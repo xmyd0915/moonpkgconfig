@@ -166,9 +166,11 @@ def main():
     package.write_text(manifest.replace(marker, marker + "\n  link: " +
                        json.dumps({"native": native}, indent=2) + ","), encoding="utf-8")
     run([moon, "run", "--target", "native", "--deny-warn", "--build-only", "."], application)
-    binary = application / "_build/native/debug/build" / ("compressor.exe" if os.name == "nt" else "compressor")
-    if not binary.is_file():
-        raise RuntimeError(f"Compressor executable not found: {binary}")
+    binary_directory = application / "_build/native/debug/build"
+    binary = next((binary_directory / name for name in ("compressor.exe", "compressor")
+                   if (binary_directory / name).is_file()), None)
+    if binary is None:
+        raise RuntimeError(f"Compressor executable not found in {binary_directory}")
     if args.demo:
         checks = []
         for label, content in (("empty", b""), ("text", b"MoonPkgConfig builds a real file compressor.\n" * 100),

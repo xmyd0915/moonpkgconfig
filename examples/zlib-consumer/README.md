@@ -62,3 +62,5 @@ Published consumer: 2 dependency failures, repaired build and 3 interoperable fi
 本目录使用 MIT 许可证。C 包装层复用本项目的 zlib FFI 示例，只保留压缩与解压入口；API 参考 [zlib 手册](https://zlib.net/manual.html)。文件与路径操作使用 `moonbitlang/x@0.5.5` 的公开 API，遵循其 Apache-2.0 许可证，不复制其实现。
 
 主仓库的 `scripts/verify-zlib-consumer.py` 会把整个目录复制到仓库之外的系统临时目录，下载普通 MoonCakes 依赖并执行完整演示。Ubuntu CI 在固定 zlib 1.3.1 安装上运行；Windows CI 用同版本 MSVC 安装的正确引用空格路径副本运行。该验证不依赖主分支尚未发布的源码。
+
+仓库验证脚本另将报告保存为 `_build/verification/zlib-consumer.json`，双平台 CI 会上传对应的 `published-consumer` 附件，供下载核对。

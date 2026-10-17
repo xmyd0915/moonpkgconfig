@@ -54,6 +54,8 @@
 
 当前证据仅证明所覆盖子集。目录、系统路径和sysroot均由调用者显式指定，不读取宿主pkg-config环境；参数结果对照使用自编依赖图，上游语料验证使用11个固定的pkgconf官方测试文件。
 
+独立文件消费者的机器可读报告保存于 `_build/verification/zlib-consumer.json`；双平台 CI 分别上传 `ubuntu-published-consumer` 和 `windows-published-consumer` 附件，包含两种失败诊断、修复后的参数来源、依赖路径和文件摘要。
+
 ## 对照工具与记录
 
 已下载并校验官方 pkgconf 3.0.7 Windows x64 MSI，发布资产 SHA-256 为 `7a316dba4a4498ea952b746c82deed41c597657095a0f776b75654191b45ae44`。对照结果和已知差异见 `docs/pkgconf-comparison.md`。
