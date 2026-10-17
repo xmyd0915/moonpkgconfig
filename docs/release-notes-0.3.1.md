@@ -1,6 +1,6 @@
-# MoonPkgConfig 0.3.1 发行候选说明
+# MoonPkgConfig 0.3.1 发行说明
 
-模块：`xmyd0915/moonpkgconfig@0.3.1`；许可证：MIT。当前为发行候选，尚未上传 MoonCakes；已发布版本为0.3.0。正式状态见 [发布记录](release.md)。
+模块：`xmyd0915/moonpkgconfig@0.3.1`；许可证：MIT。正式上传、源码标签及注册表下载安装结果见 [发布记录](https://github.com/xmyd0915/moonpkgconfig/blob/main/docs/release.md)。
 
 ## 修复损坏依赖的诊断
 
@@ -27,7 +27,7 @@ let result = loaded.packages.collect_libs(
 
 新增 [通用原生接入模板](../examples/native-consumer/README.md)，由配置选择根包、静态模式、C/C++ 包装源和 MoonBit 导入。同一个规划器和构建适配层分别接入真实 zlib 与 Expat；模板可复制到仓库外独立使用。
 
-该模板固定使用已发布的0.3.0，作为已有接口的使用基线；文件压缩消费者仍固定0.2.0。它们不会提前调用0.3.1候选新增的诊断参数。模板支持单个根目录可执行包；复杂构建系统可消费规划器的 JSON。完整故障、修复与构建流程见 [原生演示](native-walkthrough.md)。
+该模板固定使用已发布的0.3.0，作为已有接口的使用基线；文件压缩消费者仍固定0.2.0。它们不使用0.3.1新增的诊断参数。模板支持单个根目录可执行包；复杂构建系统可消费规划器的 JSON。完整故障、修复与构建流程见 [原生演示](native-walkthrough.md)。
 
 ## 验收范围
 
@@ -37,4 +37,10 @@ let result = loaded.packages.collect_libs(
 - 对实际 ZIP 提取的源码执行四目标检查、源码和消费者测试，再从归档内运行22个文件加载场景。
 - 保留162项固定 pkgconf 对照、158个输入场景、大图与展开边界、真实原生库集成和0.2.0/0.3.0消费者。
 
-具体命令及执行结果见 [验证记录](verification.md)。归档验证和正式注册表安装是两条不同证据；正式发布后才执行0.3.1的注册表安装验证。已发布归档和标签保持原内容。
+具体命令及执行结果见 [验证记录](verification.md)。归档验证和正式注册表安装是两条不同证据；正式上传后另以 `python scripts/verify-install.py --version 0.3.1` 验证注册表安装，结果记入发布记录。已发布归档和标签保持原内容。
+
+正式发行的安装命令：
+
+```sh
+moon add xmyd0915/moonpkgconfig@0.3.1
+```

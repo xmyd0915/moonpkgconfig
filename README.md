@@ -12,7 +12,7 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 0.3.0新增静态编译字段与真实 Expat 接入，完整范围见 [0.3.0发行说明](docs/release-notes-0.3.0.md)。
 
-当前主分支准备 [0.3.1发行候选](docs/release-notes-0.3.1.md)，修复损坏依赖被误报为缺包的诊断，尚未发布。[通用原生接入模板](examples/native-consumer/README.md) 则直接使用已发布的0.3.0，同一套规划与构建代码支持 zlib、Expat 两个应用；完整演示见 [故障定位与真实构建](docs/native-walkthrough.md)。
+0.3.1修复损坏依赖被误报为缺包的诊断，返回真正出错的文件和行列，接口与范围见 [发行说明](docs/release-notes-0.3.1.md)。正式上传、标签及新项目安装结果见 [发布记录](https://github.com/xmyd0915/moonpkgconfig/blob/main/docs/release.md)。[通用原生接入模板](examples/native-consumer/README.md) 固定使用已发布的0.3.0，同一套规划与构建代码支持 zlib、Expat 两个应用；完整演示见 [故障定位与真实构建](docs/native-walkthrough.md)。
 
 ## 项目亮点
 
@@ -27,7 +27,7 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 | 证据 | 当前结果 |
 | --- | --- |
-| 自动化测试 | 主分支89个逻辑测试 × 4 个目标，全部通过；0.3.0发行源码为81项 |
+| 自动化测试 | 0.3.1源码89个逻辑测试 × 4 个目标，全部通过；0.3.0发行源码为81项 |
 | 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言；Windows 上构建真实 MSVC zlib 并运行 MoonBit FFI |
 | 上游兼容语料 | 11 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
 | 真实项目模板 | zlib、libffi、libuv、libpng、PCRE2、Expat 六项目的固定版本模板、提交及许可证哈希；配置副本按独立预期检查参数和来源 |
@@ -40,7 +40,7 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 | 打包消费者 | 从实际发行归档提取源码，独立项目验证参数分类、路径索引、深图及静态编译字段，四目标执行公开接口测试 |
 | 发布包实际使用 | 独立消费者使用 MoonCakes 0.2.0 计算真实 zlib 构建参数，演示缺失依赖、版本错误及修复，再构建文件压缩工具并检查双向互操作 |
 | 可复用接入模板 | 直接依赖 MoonCakes 0.3.0，在仓库之外以同一规划器和适配代码构建 zlib、Expat 应用，分别验证缺失/版本错误、修复及真实执行 |
-| 损坏依赖定位 | 主分支新增8项核心回归与22个文件加载 CLI 场景，原始文件错误不再变成缺包提示，覆盖私有模式、目录优先级、虚拟包和共享失败依赖 |
+| 损坏依赖定位 | 0.3.1包含8项新增核心回归与22个文件加载 CLI 场景，原始文件错误不再变成缺包提示，覆盖私有模式、目录优先级、虚拟包和共享失败依赖 |
 
 详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
 

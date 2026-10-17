@@ -40,7 +40,7 @@ Windows PowerShell：
 | 已发布库的独立使用 | `examples/zlib-consumer` 直接依赖 MoonCakes 0.2.0，读取真实 zlib 安装，重现缺失依赖和版本错误，再构建文件压缩程序并进行双向互操作检查；验证副本放在仓库之外 |
 | 来源与许可证 | `ORIGINS.md`、MIT许可证以及随样本保存的上游许可证 |
 | 复用同一接入代码 | `examples/native-consumer` 固定依赖 MoonCakes 0.3.0，在仓库外通过配置和应用源码分别构建 zlib、Expat；验证依赖故障、修复、真实运行和来源 |
-| 损坏依赖定位 | 主分支新增22个文件加载 CLI 场景，保留依赖的原始文件错误；此修复尚未发布 |
+| 损坏依赖定位 | 0.3.1包含22个文件加载 CLI 场景，保留依赖的原始文件错误 |
 | 独立环境复现 | `.github/workflows/ci.yml` 与 `docs/verification.md` 中的公开运行记录 |
 
 真实原生库示例的前置条件和命令见 [zlib](../examples/zlib-ffi)、[libpng](../examples/libpng-ffi)、[Expat](../examples/expat-ffi) 与 [发布包消费者](../examples/zlib-consumer)。四个场景均在 Ubuntu CI 验证，zlib、Expat 与发布包消费者另有 Windows MSVC CI；示例使用独立原生模块，不增加核心库的外部依赖。
@@ -49,6 +49,6 @@ Windows PowerShell：
 
 ## 边界
 
-有真实 zlib 和 Expat 安装时，使用 [完整原生演示](native-walkthrough.md) 可串联损坏依赖定位、修复和两个已发布版本消费者的构建。新增诊断映射只在主分支，通用模板使用已发布0.3.0接口。
+有真实 zlib 和 Expat 安装时，使用 [完整原生演示](native-walkthrough.md) 可串联损坏依赖定位、修复和两个已发布版本消费者的构建。新增诊断映射从0.3.1起提供，通用模板使用已发布0.3.0接口。
 
-项目当前是面向常用 `.pc` 解析、检查和参数查询的 0.3.0 实现，不宣称完整替代 pkg-config/pkgconf。目录、系统路径和 sysroot 由调用方显式提供；尚不自动读取系统搜索路径，不实现 Windows 自动重定位及全部 pkgconf 扩展。
+项目当前是面向常用 `.pc` 解析、检查和参数查询的0.3.1实现，不宣称完整替代 pkg-config/pkgconf。目录、系统路径和 sysroot 由调用方显式提供；尚不自动读取系统搜索路径，不实现 Windows 自动重定位及全部 pkgconf 扩展。

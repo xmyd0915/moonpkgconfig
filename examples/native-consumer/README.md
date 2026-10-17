@@ -70,8 +70,8 @@ failures, repair and real execution in a fresh copy outside the checkout; Expat
 output is also compared with Python's independent XML parser.
 
 The planner deliberately uses the published 0.3.0 interface. That version may
-report a malformed transitive dependency as missing. The checkout's newer
-`unavailable` diagnostic map fixes that separately; it is not part of 0.3.0.
+report a malformed transitive dependency as missing. Version 0.3.1 adds an
+`unavailable` diagnostic map for that case; it is not part of 0.3.0.
 
 On Windows, this small adapter understands `-I`, `-D`, `-U`, `-L` and `-l`,
 including split operands from the same source. Library filename mappings are
