@@ -10,6 +10,8 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 
 发行验证使用 `python scripts/verify-install.py --package`：提取实际 ZIP，以独立 `moon.work` 连接归档源码和消费者，执行公开接口测试。默认不传参数时从 MoonCakes 安装当前模块版本，不设置本地依赖覆盖；此模式仅在版本已发布后运行。消费者目录保留在忽略的 `.tmp` 中，便于核对下载内容。
 
+当前 `moon.mod` 为未发布0.3.0候选版本，发布前只运行归档模式；注册表复验旧版本需显式指定 `--version 0.2.0`。0.3.0消费者增加静态编译字段测试，四目标各运行4项消费者测试；已发布0.2.0仍运行原3项。
+
 参数分类的端到端检查为 `python scripts/verify-flag-selection.py`，需要 Python 3；Windows 验证脚本和 Ubuntu CI 均会执行。它检查 JSON 与文本参数边界、来源解释、静态参数及诊断退出码，独立工具对照由 `scripts/compare-pkgconf.*` 执行。
 
 `python scripts/verify-performance.py` 构建原生 release 基准并验证大图及展开边界，不设机器相关的耗时门槛。详细测量使用 `scripts/benchmark.py`，范围、命令和原始记录见 `docs/performance.md`。修改遍历时必须保留深图安全性、最短路径选择以及诊断顺序；批量解释应复用一次 `dependency_paths` 快照。
@@ -23,6 +25,8 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 `examples/zlib-consumer` 是自包含的消费项目，固定依赖 MoonCakes 0.2.0。`python scripts/verify-zlib-consumer.py --pc-dir <目录>` 将它复制到仓库之外，检查缺失/版本错误和修复后的文件工具；Windows CMake 安装另传 `--msvc-lib z=zlibstatic.lib`。不要通过 `moon.work` 或本地主分支替换来让该检查通过。Windows zlib 准备脚本加 `--with-consumer` 可复用安装执行此检查；完整验证的 `-WithWindowsZlib` 已包含它。构建程序与演示可使用本地包缓存，但必须是指定的已发布版本。
 
 仓库只保留与 MoonPkgConfig 有关的源码、测试和开发记录。提交应说明实际改动，不为数量拆分无意义修改。
+
+真实 Expat 验证为 `python scripts/verify-expat.py`，构建固定2.6.2静态库后调用 `verify-expat-ffi.py`；Linux 与 Windows CI 均执行。本地可加 `scripts/verify.ps1 -WithExpat -CMake <路径>`，既有 `-WithWindowsZlib` 可同时指定。Windows MSVC 环境发现已放入共用 `native_ffi.py`，修改时必须重跑两种 Windows 库及 Linux 的既有 FFI 集成。Expat 的私有宏必须来自查询结果，不得在 C 包装或构建脚本中补写；负对照要求真实导入符号链接失败。
 
 后续兼容性测试必须有独立预期值或官方工具依据；不能仅对实现输出生成快照并称之为正确性证明。遇到 pkgconf 与 pkg-config 差异时，记录所选兼容策略。
 

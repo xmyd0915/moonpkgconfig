@@ -8,6 +8,8 @@
 /examples/zlib-ffi/.mooncakes/
 /examples/libpng-ffi/_build/
 /examples/libpng-ffi/.mooncakes/
+/examples/expat-ffi/_build/
+/examples/expat-ffi/.mooncakes/
 /examples/zlib-consumer/_build/
 /examples/zlib-consumer/.mooncakes/
 /examples/zlib-consumer/app/_build/

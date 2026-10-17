@@ -1,5 +1,13 @@
 # 版本与发布记录
 
+## 0.3.0 候选准备
+
+根模块版本为0.3.0候选版本；尚未上传 MoonCakes，也未创建发布标签。新增静态编译字段及真实 Expat 接入，范围见 [候选发行说明](release-notes-0.3.0.md)。既有0.2.0发行归档及标签保持原内容。
+
+发布前执行 `python scripts/verify-install.py --package`，从实际候选 ZIP 提取源码，在独立工作区验证四目标公开接口。正式上传后再执行 `python scripts/verify-install.py --version 0.3.0`，检查注册表下载安装；此步骤尚未执行，不能用归档测试代替。
+
+当前复验已发布0.2.0时应显式使用 `python scripts/verify-install.py --version 0.2.0`；独立 zlib 文件消费者继续固定该版本。候选包位于 `_build/publish/xmyd0915-moonpkgconfig-0.3.0.zip`，验证报告与校验值保存在忽略的 `_build/verification` 中。
+
 ## 0.2.0 发行内容
 
 - 模块为 `xmyd0915/moonpkgconfig@0.2.0`，项目名称为 MoonPkgConfig，许可证为 MIT。

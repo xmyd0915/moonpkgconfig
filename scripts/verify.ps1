@@ -1,6 +1,7 @@
 param(
     [string]$MoonHome = (Join-Path $env:USERPROFILE '.moon'),
     [switch]$WithWindowsZlib,
+    [switch]$WithExpat,
     [string]$CMake = 'cmake'
 )
 $ErrorActionPreference = 'Stop'
@@ -20,6 +21,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Consumer formatting failed.' }
     & "$MoonHome\bin\moon.exe" -C examples/zlib-consumer/app fmt
     if ($LASTEXITCODE -ne 0) { throw 'Compressor formatting failed.' }
+    & "$MoonHome\bin\moon.exe" -C examples/expat-ffi fmt
+    if ($LASTEXITCODE -ne 0) { throw 'Expat formatting failed.' }
     & "$MoonHome\bin\moon.exe" check --target all --deny-warn
     if ($LASTEXITCODE -ne 0) { throw 'Type checking failed.' }
     & "$MoonHome\bin\moon.exe" test --target all --deny-warn
@@ -106,6 +109,10 @@ try {
     if ($WithWindowsZlib) {
         & python "$PSScriptRoot\verify-zlib-windows.py" --cmake $CMake --with-consumer
         if ($LASTEXITCODE -ne 0) { throw 'Windows MSVC zlib integration failed.' }
+    }
+    if ($WithExpat) {
+        & python "$PSScriptRoot\verify-expat.py" --cmake $CMake
+        if ($LASTEXITCODE -ne 0) { throw 'Expat static integration failed.' }
     }
     & "$PSScriptRoot\compare-pkgconf.ps1"
     if ($LASTEXITCODE -ne 0) { throw 'pkgconf differential checks failed.' }

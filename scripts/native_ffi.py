@@ -109,6 +109,42 @@ def temporary_directory(prefix):
     return tempfile.TemporaryDirectory(prefix=prefix, dir=temporary_root)
 
 
+def msvc_environment():
+    """Discover the x64 MSVC environment in this process and its children only."""
+    if (shutil.which("cl") and os.environ.get("INCLUDE") and os.environ.get("LIB")
+            and os.environ.get("VSCMD_ARG_TGT_ARCH") == "x64"):
+        return
+    vswhere = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / (
+        "Microsoft Visual Studio/Installer/vswhere.exe"
+    )
+    if not vswhere.is_file():
+        raise RuntimeError("MSVC not found; install Visual Studio C++ tools and Windows SDK")
+    installation = run([
+        str(vswhere), "-latest", "-products", "*", "-requires",
+        "Microsoft.VisualStudio.Component.VC.Tools.x86.x64", "-property", "installationPath",
+    ], ROOT)
+    devcmd = Path(installation) / "Common7/Tools/VsDevCmd.bat"
+    if not installation or not devcmd.is_file():
+        raise RuntimeError("no Visual Studio installation with x64 C++ tools was found")
+    if any(character in str(devcmd) for character in ('"', '%', '\n', '\r')):
+        raise RuntimeError("unsupported Visual Studio installation path")
+    # Never print the environment captured from this trusted installation script.
+    # Metadata and user flags never pass through cmd.
+    result = subprocess.run(
+        f'"{os.environ.get("COMSPEC", "cmd.exe")}" /d /u /s /c '
+        f'""{devcmd}" -no_logo -arch=x64 -host_arch=x64 >nul && set"',
+        cwd=ROOT, text=True, encoding="utf-16-le", errors="replace", capture_output=True,
+    )
+    if result.returncode:
+        raise RuntimeError("initializing the Visual Studio x64 environment failed")
+    for line in result.stdout.splitlines():
+        name, separator, value = line.partition("=")
+        if separator and name and not name.startswith("="):
+            os.environ[name] = value
+    if not shutil.which("cl") or not shutil.which("nmake"):
+        raise RuntimeError("Visual Studio did not provide cl and nmake")
+
+
 def msvc_flags(flags, prefixes, library_names=None):
     """Translate only understood metadata options; never guess at opaque flags."""
     translated = []
@@ -141,7 +177,7 @@ def msvc_flags(flags, prefixes, library_names=None):
     return translated
 
 
-def build_example(moon, compiler, example, stub, cflags, libs, success, msvc_libs=None):
+def build_example(moon, compiler, example, stub, cflags, libs, success, msvc_libs=None, imports=()):
     with temporary_directory(example + "-") as name:
         consumer = Path(name)
         for filename in ("moon.mod", "main.mbt", stub):
@@ -173,10 +209,14 @@ def build_example(moon, compiler, example, stub, cflags, libs, success, msvc_lib
             f'  "native-stub": [ {json.dumps(stub)} ],\n'
             f'  link: {json.dumps({"native": native}, indent=2)},\n)\n'
         )
+        if imports:
+            manifest = 'import {\n' + ''.join('  ' + json.dumps(name) + ',\n' for name in imports) + '}\n\n' + manifest
         (consumer / "moon.pkg").write_text(manifest, encoding="utf-8")
         command = [moon, "run", "--target", "native", "--deny-warn", "."]
         run([*command[:-1], "--build-only", "."], consumer)
         output = run(command, consumer)
-        if output != success:
-            raise RuntimeError(f"Unexpected FFI program output:\n{output}")
-        print(output)
+        if success is not None:
+            if output != success:
+                raise RuntimeError(f"Unexpected FFI program output:\n{output}")
+            print(output)
+        return output

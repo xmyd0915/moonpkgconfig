@@ -63,6 +63,22 @@ test "installed core handles deep directory checks" {
 '''
 
 
+STATIC_SMOKE = r'''
+///|
+test "installed static compiler fields retain dependency order and sources" {
+  let packages = @pc.PackageSet::new()
+  packages.add("root", fixture_document("root", "helper", "", "Cflags: -I/root\nCflags.private: -DROOT_STATIC")) |> ignore
+  packages.add("helper", fixture_document("helper", "", "", "Cflags: -I/helper\nCflags.private: -DHELPER_STATIC")) |> ignore
+  @debug.assert_eq(packages.collect_cflags("root").flags.map(f => f.value), ["-I/root", "-I/helper"])
+  let selected = packages.collect_cflags("root", static_linking=true).select(@pc.OtherCflags)
+  @debug.assert_eq(selected.diagnostics, [])
+  @debug.assert_eq(selected.flags.map(f => f.value), ["-DROOT_STATIC", "-DHELPER_STATIC"])
+  @debug.assert_eq(selected.flags[0].field, "Cflags.private")
+  @debug.assert_eq(selected.flags[0].location.source, "root.pc")
+}
+'''
+
+
 def version_from(directory):
     text = (directory / "moon.mod").read_text(encoding="utf-8")
     name = re.search(r'^name\s*=\s*"([^"]+)"', text, re.MULTILINE)
@@ -135,7 +151,10 @@ def main():
     if archive:
         (consumer / "moon.mod").write_text('name = "verification/moonpkgconfig-consumer"\nimport { "' + MODULE + '@' + args.version + '" }\n', encoding="utf-8")
     (consumer / "moon.pkg").write_text('import { "' + MODULE + '" @pc, "moonbitlang/core/debug", } for "test"\n', encoding="utf-8")
-    (consumer / "consumer_test.mbt").write_text(SMOKE, encoding="utf-8")
+    has_static = tuple(int(part) for part in args.version.split("-")[0].split("+")[0].split(".")) >= (0, 3, 0)
+    smoke = SMOKE + (STATIC_SMOKE if has_static else "")
+    count = 4 if has_static else 3
+    (consumer / "consumer_test.mbt").write_text(smoke, encoding="utf-8")
     run([moon, "fmt"], consumer)
     run([moon, "check", "--target", "all", "--deny-warn"], consumer)
     if not archive:
@@ -144,7 +163,7 @@ def main():
             raise RuntimeError("Installed version differs from requested release")
     run([moon, "test", "--target", "all", "--deny-warn"], consumer)
     origin = "packaged archive" if archive else "MoonCakes registry"
-    print(f"Installed public API: {MODULE}@{args.version}; {origin}; 3 tests on 4 targets passed")
+    print(f"Installed public API: {MODULE}@{args.version}; {origin}; {count} tests on 4 targets passed")
     print(f"Consumer project: {consumer}")
 
 
