@@ -1,6 +1,6 @@
 # 验证记录
 
-最近验证：2026-10-17；核心回归平台：Windows x64 与 Ubuntu CI；真实 zlib FFI 平台：Ubuntu CI 与 Windows x64 MSVC；libpng FFI 平台：Ubuntu CI。
+最近验证：2026-10-17；核心回归平台：Windows x64 与 Ubuntu CI；真实 zlib、Expat FFI 平台：Ubuntu CI 与 Windows x64 MSVC；libpng FFI 平台：Ubuntu CI。
 
 工具链：`moon 0.1.20260915 (2e1a46d 2026-09-15)`，`moonc v0.10.14+7d59c7ec9 (2026-09-18)`。
 
@@ -15,7 +15,7 @@
 | `scripts/review-demo.*` | 来源解释、错误目录、sysroot与虚拟包范围四步演示均通过；成功/失败退出码均有断言 |
 | `moon package --list` | 成功，包含核心源码、README、许可证与来源说明，不包含构建、工具或凭据文件 |
 | 0.2.0 发布归档消费者 | 实际 ZIP 包含分类、路径、查询上下文与目录检查源码；在独立工作区四目标执行78项归档源码测试和3项消费者测试，验证公开 API 可导入并运行 |
-| 主分支归档复验 | 0.3.0候选归档在独立工作区四目标执行81项源码测试和4项消费者测试；新增消费者直接导入并检查静态编译字段、依赖顺序及来源。已发布0.2.0归档保持原内容 |
+| 主分支归档复验 | 0.3.0候选归档在独立工作区四目标执行81项源码测试和4项消费者测试，每目标85项通过；新增消费者直接导入并检查静态编译字段、依赖顺序及来源。已发布0.2.0归档保持原内容 |
 | MoonCakes 0.1.0 历史复验 | 2026-09-28：`xmyd0915/moonpkgconfig@0.1.0` 可在全新临时模块中下载并通过 `moon check --target all --deny-warn` |
 | MoonCakes 0.2.0 安装复验 | 2026-10-17：正式发布返回 `200 OK`；全新模块实际下载0.2.0，无本地源码覆盖，四目标检查和每目标3项公开接口消费者测试均通过；归档 SHA-256 与公开索引一致 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
@@ -61,6 +61,8 @@
 独立文件消费者的机器可读报告保存于 `_build/verification/zlib-consumer.json`；双平台 CI 分别上传 `ubuntu-published-consumer` 和 `windows-published-consumer` 附件，包含两种失败诊断、修复后的参数来源、依赖路径和文件摘要。
 
 ## 对照工具与记录
+
+0.3.0候选提交 `c372debb81b5a4b7447bc5a78d16bdbb7101b9ba` 的双平台 [CI 39025581516](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39025581516) 成功：Ubuntu 包含81项四目标核心测试、4项四目标归档消费者测试、162项固定 pkgconf 差分、158个生成输入、真实 C/C++、zlib、libpng 和 Expat；Windows 通过 zlib、发布包文件消费者及 Expat 正/负对照。附件包含 `ubuntu-expat`、`windows-expat` 及既有兼容性和消费者报告。候选版本仍未正式发布。
 
 已下载并校验官方 pkgconf 3.0.7 Windows x64 MSI，发布资产 SHA-256 为 `7a316dba4a4498ea952b746c82deed41c597657095a0f776b75654191b45ae44`。对照结果和已知差异见 `docs/pkgconf-comparison.md`。
 
