@@ -16,6 +16,10 @@ try {
     $env:PATH = "$MoonHome\bin;$env:PATH"
     & "$MoonHome\bin\moon.exe" fmt
     if ($LASTEXITCODE -ne 0) { throw 'Formatting failed.' }
+    & "$MoonHome\bin\moon.exe" -C examples/zlib-consumer fmt
+    if ($LASTEXITCODE -ne 0) { throw 'Consumer formatting failed.' }
+    & "$MoonHome\bin\moon.exe" -C examples/zlib-consumer/app fmt
+    if ($LASTEXITCODE -ne 0) { throw 'Compressor formatting failed.' }
     & "$MoonHome\bin\moon.exe" check --target all --deny-warn
     if ($LASTEXITCODE -ne 0) { throw 'Type checking failed.' }
     & "$MoonHome\bin\moon.exe" test --target all --deny-warn
@@ -100,7 +104,7 @@ try {
     & python "$PSScriptRoot\test-native-ffi.py"
     if ($LASTEXITCODE -ne 0) { throw 'Native FFI adapter checks failed.' }
     if ($WithWindowsZlib) {
-        & python "$PSScriptRoot\verify-zlib-windows.py" --cmake $CMake
+        & python "$PSScriptRoot\verify-zlib-windows.py" --cmake $CMake --with-consumer
         if ($LASTEXITCODE -ne 0) { throw 'Windows MSVC zlib integration failed.' }
     }
     & "$PSScriptRoot\compare-pkgconf.ps1"

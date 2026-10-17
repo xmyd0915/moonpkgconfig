@@ -35,6 +35,8 @@ jobs:
           moon fmt
           moon -C examples/zlib-ffi fmt
           moon -C examples/libpng-ffi fmt
+          moon -C examples/zlib-consumer fmt
+          moon -C examples/zlib-consumer/app fmt
           git diff --exit-code
 
       - name: Type-check all targets
@@ -171,6 +173,7 @@ jobs:
           make install
           cd "$GITHUB_WORKSPACE"
           python3 scripts/verify-zlib-ffi.py --pc-dir "$install_dir/lib/pkgconfig"
+          python3 scripts/verify-zlib-consumer.py --pc-dir "$install_dir/lib/pkgconfig"
 
       - name: Build pinned libpng and verify private zlib dependency
         shell: bash
@@ -244,7 +247,7 @@ jobs:
         run: python scripts/test-native-ffi.py
 
       - name: Build pinned MSVC zlib and run MoonBit FFI
-        run: python scripts/verify-zlib-windows.py
+        run: python scripts/verify-zlib-windows.py --with-consumer
 
       - name: Retain zlib build logs on failure
         if: failure()

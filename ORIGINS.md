@@ -19,6 +19,8 @@
 
 `examples/zlib-ffi` 中的 MoonBit 程序、C 包装和运行脚本为本项目编写，API 用法参考 <https://zlib.net/manual.html>。CI 在临时目录构建官方 zlib 1.3.1 发行包；不把 zlib 实现或编译产物纳入本仓库。
 
+`examples/zlib-consumer` 是本项目维护的独立消费示例，直接依赖 MoonCakes 0.2.0 公开接口。文件工具的 C 包装复用上述示例的压缩/解压入口；真实安装元数据不作修改，项目自己的依赖声明副本用于故障演示。Python 标准库 zlib 仅在互操作检查中作为独立对照，不实现应用程序或元数据查询。
+
 `examples/libpng-ffi` 中的 MoonBit 程序与 C 包装同样为本项目编写，API 用法参考 <https://www.libpng.org/pub/png/libpng-manual.txt>。CI 从官方发行包安装 libpng 1.6.59，使用安装生成的元数据检查其对 zlib 的私有依赖，再运行 PNG 编解码。库源码和编译产物不纳入本仓库；固定下载及校验值见示例 README。
 
 ## 非代码验证工具

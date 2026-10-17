@@ -20,6 +20,8 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 
 `python scripts/test-native-ffi.py` 在 Windows 本地验证及两个 CI 平台执行。MSVC 参数适配仅属于示例脚本：保留 JSON 参数和来源边界，未知选项必须报错，静态库名差异由调用方显式映射。不能把示例成功表述为核心库已实现完整的 Windows 参数转换或自动重定位。
 
+`examples/zlib-consumer` 是自包含的消费项目，固定依赖 MoonCakes 0.2.0。`python scripts/verify-zlib-consumer.py --pc-dir <目录>` 将它复制到仓库之外，检查缺失/版本错误和修复后的文件工具；Windows CMake 安装另传 `--msvc-lib z=zlibstatic.lib`。不要通过 `moon.work` 或本地主分支替换来让该检查通过。Windows zlib 准备脚本加 `--with-consumer` 可复用安装执行此检查；完整验证的 `-WithWindowsZlib` 已包含它。构建程序与演示可使用本地包缓存，但必须是指定的已发布版本。
+
 仓库只保留与 MoonPkgConfig 有关的源码、测试和开发记录。提交应说明实际改动，不为数量拆分无意义修改。
 
 后续兼容性测试必须有独立预期值或官方工具依据；不能仅对实现输出生成快照并称之为正确性证明。遇到 pkgconf 与 pkg-config 差异时，记录所选兼容策略。

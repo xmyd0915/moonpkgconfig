@@ -1,5 +1,5 @@
 param(
-    [string]$Reference = 'F:\jav\moonpkgconfig\.tools\pkgconf\extracted\PFiles64\pkgconf-3.0.7\pkgconf.exe'
+    [string]$Reference = (Join-Path (Split-Path -Parent $PSScriptRoot) '.tools/pkgconf/extracted/PFiles64/pkgconf-3.0.7/pkgconf.exe')
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot

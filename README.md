@@ -33,6 +33,7 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 | 真实私有依赖 | libpng 1.6.59 → zlib 1.3.1 跨目录查询、普通/静态参数区分、缺失依赖诊断与 MoonBit PNG 像素往返验证 |
 | 大图与边界 | 四种1,000包图、5,000包长链解析/目录检查、缺失依赖图及展开边界；保留耗时和峰值内存记录 |
 | 打包消费者 | 从实际发布归档提取源码，独立项目验证参数分类、路径索引和深图检查，四目标成功 |
+| 发布包实际使用 | 独立消费者使用 MoonCakes 0.2.0 计算真实 zlib 构建参数，演示缺失依赖、版本错误及修复，再构建文件压缩工具并检查双向互操作 |
 
 详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
 
@@ -110,6 +111,8 @@ Windows 可运行 `./scripts/verify.ps1`。它默认使用用户目录中的 `.m
 [zlib FFI 示例](examples/zlib-ffi) 则使用真实安装的 `zlib.pc`：查询参数后生成 MoonBit 原生构建配置，在 MoonBit 程序中调用 zlib 完成 CRC-32、压缩和解压，并检查损坏输入及缓冲区错误。Linux 或 macOS 可运行 `python3 scripts/verify-zlib-ffi.py --pc-dir /path/to/zlib/lib/pkgconfig`；CI 使用固定版本 zlib 1.3.1 构建并运行这一流程。核心库不依赖 zlib，示例单独构建。
 
 Windows 安装 MoonBit、Python 3.9+、CMake 3.15+、Visual Studio C++ 工具及 Windows SDK 后，可运行 `python scripts/verify-zlib-windows.py`。脚本校验并构建固定 zlib 源码，显式将 `-lz` 映射到 MSVC 静态库，验证原始安装和正确引用空格路径的副本；构建日志保留在忽略的 `.tmp` 中。参数转换位于示例脚本，支持范围见 [zlib 示例说明](examples/zlib-ffi/README.md)。
+
+[独立文件压缩消费者](examples/zlib-consumer) 可单独复制运行，直接导入 MoonCakes 0.2.0 的接口。它读取应用依赖声明和已安装的 `zlib.pc`，先展示缺失依赖与版本不满足的定位，修复后构建可处理实际文件的压缩工具。`python scripts/verify-zlib-consumer.py --pc-dir /path/to/zlib/lib/pkgconfig` 会在仓库之外复制并验证整个流程；Windows 上游 CMake 安装另加 `--msvc-lib z=zlibstatic.lib`。该例由本项目维护，不代表第三方采用。
 
 [libpng FFI 示例](examples/libpng-ffi) 接着验证真实的 `libpng → zlib` 私有依赖：跨安装目录解析参数，区分普通与静态查询，检查缺失依赖，再用完整参数构建 MoonBit 程序完成 PNG 编解码和像素核对。
 

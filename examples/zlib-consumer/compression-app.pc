@@ -1,0 +1,4 @@
+Name: compression-app
+Description: Native file compressor using zlib
+Version: 0.1.0
+Requires.private: zlib >= 1.2.13
