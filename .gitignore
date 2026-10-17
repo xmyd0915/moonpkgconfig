@@ -14,4 +14,6 @@
 /examples/zlib-consumer/.mooncakes/
 /examples/zlib-consumer/app/_build/
 /examples/zlib-consumer/app/.mooncakes/
+/examples/native-consumer/**/_build/
+/examples/native-consumer/**/.mooncakes/
 __pycache__/

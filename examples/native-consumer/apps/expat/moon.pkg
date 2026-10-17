@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/encoding/utf8",
+}
+
+pkgtype(kind: "executable")
+
+options(
+  "native-stub": [ "expat_stub.c" ],
+)

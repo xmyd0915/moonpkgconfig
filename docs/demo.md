@@ -9,7 +9,9 @@ moon check --target all --deny-warn
 moon test --target all --deny-warn
 ```
 
-预期四个目标均通过。目前每个目标运行 81 个逻辑测试。
+预期四个目标均通过。当前主分支每个目标运行89个逻辑测试；0.3.0发行源码为81项。
+
+已有真实 zlib 和 Expat 安装时，可继续运行 [完整原生演示](native-walkthrough.md)，串联损坏依赖的原始错误定位、修复和两个发布包消费者的真实构建。
 
 ## 2. 检查正常文件
 

@@ -1,0 +1,6 @@
+{
+  "package": "native-app",
+  "static": true,
+  "stubs": ["expat_stub.c"],
+  "imports": ["moonbitlang/core/encoding/utf8"]
+}

@@ -6,20 +6,40 @@ priv struct QueryContext {
   include_private : Bool
   mut providers : Map[String, Array[(String, Requirement)]]?
   steps : Map[String, Array[ResolveStep]]
+  unavailable : Map[String, Array[Diagnostic]]
 }
 
 ///|
 fn QueryContext::new(
   packages : PackageSet,
   include_private : Bool,
+  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
 ) -> QueryContext {
-  { packages, include_private, providers: None, steps: Map([]), }
+  { packages, include_private, providers: None, steps: Map([]), unavailable, }
+}
+
+///|
+// Only excluded identifiers carry load failures. A valid exact package wins;
+// empty error arrays do not block virtual providers.
+fn QueryContext::unavailable_diagnostics(
+  self : QueryContext,
+  id : String,
+) -> Array[Diagnostic]? {
+  if self.packages.packages.contains(id) {
+    return None
+  }
+  match self.unavailable.get(id) {
+    Some(problems) if !problems.is_empty() => Some(problems)
+    _ => None
+  }
 }
 
 ///|
 fn QueryContext::root_id(self : QueryContext, root : String) -> String? {
   if self.packages.packages.contains(root) {
     Some(root)
+  } else if self.unavailable_diagnostics(root) is Some(_) {
+    None
   } else {
     self.find_provider({ name: root, op: Any, version: "", })
   }

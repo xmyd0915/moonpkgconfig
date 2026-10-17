@@ -39,6 +39,7 @@ def main():
     parser.add_argument("--cmake", default="cmake", help="CMake executable (3.15 or newer)")
     parser.add_argument("--archive", type=Path, help="optional local pinned zlib archive; checksum is still checked")
     parser.add_argument("--with-consumer", action="store_true", help="also verify the standalone MoonCakes consumer")
+    parser.add_argument("--with-native-consumer", action="store_true", help="also verify the generic MoonCakes 0.3.0 template")
     args = parser.parse_args()
     if os.name != "nt":
         parser.error("this verification requires Windows x64 and MSVC")
@@ -101,6 +102,11 @@ def main():
     if args.with_consumer:
         command = [sys.executable, str(ROOT / "scripts/verify-zlib-consumer.py"),
                    "--moon", moon, "--pc-dir", str(spaced / "share/pkgconfig"),
+                   "--msvc-lib", "z=zlibstatic.lib"]
+        print(run(command, ROOT), flush=True)
+    if args.with_native_consumer:
+        command = [sys.executable, str(ROOT / "scripts/verify-native-consumer.py"),
+                   "--library", "zlib", "--moon", moon, "--pc-dir", str(spaced / "share/pkgconfig"),
                    "--msvc-lib", "z=zlibstatic.lib"]
         print(run(command, ROOT), flush=True)
 

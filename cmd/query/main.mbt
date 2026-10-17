@@ -59,10 +59,11 @@ fn print_flags(
   packages : @pc.PackageSet,
   root : String,
   include_private : Bool,
+  unavailable : Map[String, Array[@pc.Diagnostic]],
 ) -> Unit {
   println(result.shell_text())
   if explain {
-    let paths = packages.dependency_paths(root, include_private~)
+    let paths = packages.dependency_paths(root, include_private~, unavailable~)
     for flag in result.flags {
       let path = paths.path_to(flag.package_id)
       let path_text = if path.is_empty() {
@@ -277,9 +278,17 @@ fn main {
     match mode.unwrap() {
       Cflags(selection) | Libs(selection) => {
         let collected = if cflags_mode {
-          loaded.packages.collect_cflags(root, static_linking~)
+          loaded.packages.collect_cflags(
+            root,
+            static_linking~,
+            unavailable=loaded.diagnostics_by_package,
+          )
         } else {
-          loaded.packages.collect_libs(root, static_linking~)
+          loaded.packages.collect_libs(
+            root,
+            static_linking~,
+            unavailable=loaded.diagnostics_by_package,
+          )
         }
         let rooted = collected.with_sysroot(sysroot)
         let filtered = rooted.filter_system_search_paths(
@@ -303,6 +312,7 @@ fn main {
             loaded.packages,
             root,
             cflags_mode || static_linking,
+            loaded.diagnostics_by_package,
           )
         }
         if !result.diagnostics.is_empty() {
@@ -315,7 +325,10 @@ fn main {
       | AtLeastVersion(_)
       | ExactVersion(_)
       | MaxVersion(_) as metadata_query => {
-        let resolution = loaded.packages.resolve(root)
+        let resolution = loaded.packages.resolve(
+          root,
+          unavailable=loaded.diagnostics_by_package,
+        )
         if !resolution.diagnostics.is_empty() {
           print_diagnostics(resolution.diagnostics)
           @sys.exit(1)

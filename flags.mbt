@@ -248,14 +248,17 @@ fn same_flag_origin(left : ResolvedFlag, right : ResolvedFlag) -> Bool {
 ///|
 /// Collect compiler flags in dependant-first order. Static queries also
 /// include each package's `Cflags.private` field.
+/// `unavailable` retains original diagnostics for excluded dependencies, as
+/// in `resolve`. Private dependency failures affect compiler queries too.
 pub fn PackageSet::collect_cflags(
   self : PackageSet,
   root : String,
   static_linking? : Bool = false,
+  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
 ) -> FlagResult {
   // Private dependencies still contribute headers and compile definitions.
   // Their linker flags are restricted to static linking in collect_libs.
-  let context = QueryContext::new(self, true)
+  let context = QueryContext::new(self, true, unavailable~)
   let resolution = context.resolve(root, "query")
   let flags : Array[ResolvedFlag] = []
   let diagnostics = resolution.diagnostics.copy()
@@ -275,12 +278,15 @@ pub fn PackageSet::collect_cflags(
 ///|
 /// Collect linker flags in dependant-first order. Static queries also include
 /// private dependency edges and each package's `Libs.private` field.
+/// `unavailable` retains original diagnostics for excluded dependencies, as
+/// in `resolve`, following the selected public/private edge mode.
 pub fn PackageSet::collect_libs(
   self : PackageSet,
   root : String,
   static_linking? : Bool = false,
+  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
 ) -> FlagResult {
-  let context = QueryContext::new(self, static_linking)
+  let context = QueryContext::new(self, static_linking, unavailable~)
   let resolution = context.resolve(root, "query")
   let flags : Array[ResolvedFlag] = []
   let diagnostics = resolution.diagnostics.copy()
@@ -298,14 +304,16 @@ pub fn PackageSet::collect_libs(
 ///
 /// Public edges are always considered; private edges participate only when
 /// `include_private` is true. An empty array means the target is not reachable.
+/// `unavailable` blocks fallback through excluded exact ids, as in `resolve`.
 pub fn PackageSet::dependency_path(
   self : PackageSet,
   root : String,
   target : String,
   include_private? : Bool = false,
+  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
 ) -> Array[String] {
   self
-  .build_dependency_paths(root, include_private, Some(target))
+  .build_dependency_paths(root, include_private, Some(target), unavailable)
   .path_to(target)
 }
 

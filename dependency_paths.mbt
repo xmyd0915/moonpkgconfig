@@ -33,12 +33,14 @@ pub fn DependencyPaths::path_to(
 ///
 /// Public edges precede private edges; equal-length routes follow declaration
 /// order. Later additions to PackageSet do not change this snapshot.
+/// `unavailable` blocks fallback through excluded exact ids, as in `resolve`.
 pub fn PackageSet::dependency_paths(
   self : PackageSet,
   root : String,
   include_private? : Bool = false,
+  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
 ) -> DependencyPaths {
-  self.build_dependency_paths(root, include_private, None)
+  self.build_dependency_paths(root, include_private, None, unavailable)
 }
 
 ///|
@@ -47,9 +49,10 @@ fn PackageSet::build_dependency_paths(
   root : String,
   include_private : Bool,
   target : String?,
+  unavailable : Map[String, Array[Diagnostic]],
 ) -> DependencyPaths {
   let parents : Map[String, String] = Map([])
-  let context = QueryContext::new(self, include_private)
+  let context = QueryContext::new(self, include_private, unavailable~)
   let root_id = context.root_id(root)
   guard root_id is Some(start) else { return { root, parents, } }
   let queue : Array[String] = [start]

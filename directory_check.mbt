@@ -31,7 +31,7 @@ fn QueryContext::clean_subgraphs(self : QueryContext) -> Map[String, Int] {
       let step = frame.steps[frame.next]
       frame.next = frame.next + 1
       match step {
-        Problem(_) => frame.clean = false
+        Problem(_) | Unavailable(_) => frame.clean = false
         Visit(id) =>
           match states.get(id) {
             Some(2) => ()

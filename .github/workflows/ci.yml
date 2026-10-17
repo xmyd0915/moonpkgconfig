@@ -38,6 +38,9 @@ jobs:
           moon -C examples/expat-ffi fmt
           moon -C examples/zlib-consumer fmt
           moon -C examples/zlib-consumer/app fmt
+          moon -C examples/native-consumer fmt
+          moon -C examples/native-consumer/apps/zlib fmt
+          moon -C examples/native-consumer/apps/expat fmt
           git diff --exit-code
 
       - name: Type-check all targets
@@ -150,6 +153,9 @@ jobs:
       - name: Verify flag selection CLI
         run: python3 scripts/verify-flag-selection.py
 
+      - name: Verify filesystem dependency diagnostics
+        run: python3 scripts/verify-load-diagnostics.py
+
       - name: Verify graph and expansion workloads
         run: python3 scripts/verify-performance.py
 
@@ -175,6 +181,7 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           python3 scripts/verify-zlib-ffi.py --pc-dir "$install_dir/lib/pkgconfig"
           python3 scripts/verify-zlib-consumer.py --pc-dir "$install_dir/lib/pkgconfig"
+          python3 scripts/verify-native-consumer.py --library zlib --pc-dir "$install_dir/lib/pkgconfig"
 
       - name: Build pinned libpng and verify private zlib dependency
         shell: bash
@@ -214,7 +221,17 @@ jobs:
           "$install_dir/bin/pkgconf" --version
 
       - name: Build pinned Expat and verify static compiler definition
-        run: python3 scripts/verify-expat.py
+        run: python3 scripts/verify-expat.py --with-native-consumer
+
+      - name: Retain generic template and dependency diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-native-consumer
+          path: |
+            _build/verification/native-consumer-*.json
+            _build/verification/load-diagnostics.json
+          if-no-files-found: ignore
 
       - name: Retain Expat integration evidence
         uses: actions/upload-artifact@v4
@@ -284,11 +301,24 @@ jobs:
       - name: Verify native FFI adapter boundaries
         run: python scripts/test-native-ffi.py
 
+      - name: Verify filesystem dependency diagnostics
+        run: python scripts/verify-load-diagnostics.py
+
       - name: Build pinned MSVC zlib and run MoonBit FFI
-        run: python scripts/verify-zlib-windows.py --with-consumer
+        run: python scripts/verify-zlib-windows.py --with-consumer --with-native-consumer
 
       - name: Build pinned Expat and verify static compiler definition
-        run: python scripts/verify-expat.py
+        run: python scripts/verify-expat.py --with-native-consumer
+
+      - name: Retain generic template and dependency diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-consumer
+          path: |
+            _build/verification/native-consumer-*.json
+            _build/verification/load-diagnostics.json
+          if-no-files-found: ignore
 
       - name: Retain Expat integration evidence
         uses: actions/upload-artifact@v4

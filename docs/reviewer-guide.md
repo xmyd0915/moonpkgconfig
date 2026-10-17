@@ -30,7 +30,7 @@ Windows PowerShell：
 
 | 关注点 | 仓库证据 |
 | --- | --- |
-| MoonBit 实现与多目标可用性 | 81 个逻辑测试分别在 wasm、wasm-gc、JavaScript、native 运行，含5,000包长链及目录检查 |
+| MoonBit 实现与多目标可用性 | 主分支89个逻辑测试分别在 wasm、wasm-gc、JavaScript、native 运行，含5,000包长链及目录检查；0.3.0发行源码为81项 |
 | 与既有工具的行为关系 | 原38项加六项目模板120项、静态字段顺序4项，共162项固定 pkgconf 3.0.7 差分 |
 | 真实输入 | zlib、libffi、libuv、libpng、PCRE2、Expat 六项目模板及11个官方 pkgconf 测试文件；默认种子另验证158个生成输入 |
 | 原生使用闭环 | 查询参数后编译 C 静态库、链接并运行 C++ 调用程序 |
@@ -39,6 +39,8 @@ Windows PowerShell：
 | 静态编译要求 | `examples/expat-ffi` 从真实安装的 `Cflags.private` 取得 `XML_STATIC`，验证 XML 分块解析、错误与 Python 独立安装对照；MSVC 移除/恢复该字段验证实际链接影响 |
 | 已发布库的独立使用 | `examples/zlib-consumer` 直接依赖 MoonCakes 0.2.0，读取真实 zlib 安装，重现缺失依赖和版本错误，再构建文件压缩程序并进行双向互操作检查；验证副本放在仓库之外 |
 | 来源与许可证 | `ORIGINS.md`、MIT许可证以及随样本保存的上游许可证 |
+| 复用同一接入代码 | `examples/native-consumer` 固定依赖 MoonCakes 0.3.0，在仓库外通过配置和应用源码分别构建 zlib、Expat；验证依赖故障、修复、真实运行和来源 |
+| 损坏依赖定位 | 主分支新增22个文件加载 CLI 场景，保留依赖的原始文件错误；此修复尚未发布 |
 | 独立环境复现 | `.github/workflows/ci.yml` 与 `docs/verification.md` 中的公开运行记录 |
 
 真实原生库示例的前置条件和命令见 [zlib](../examples/zlib-ffi)、[libpng](../examples/libpng-ffi)、[Expat](../examples/expat-ffi) 与 [发布包消费者](../examples/zlib-consumer)。四个场景均在 Ubuntu CI 验证，zlib、Expat 与发布包消费者另有 Windows MSVC CI；示例使用独立原生模块，不增加核心库的外部依赖。
@@ -46,5 +48,7 @@ Windows PowerShell：
 已有 zlib 开发安装时，运行 `python scripts/verify-zlib-consumer.py --pc-dir <安装元数据目录>` 可看到故障、来源解释、修复和实际文件操作。Windows 的 zlib CMake 静态库另加 `--msvc-lib z=zlibstatic.lib`。需要自动准备固定 zlib 的 Windows 环境可用 `python scripts/verify-zlib-windows.py --with-consumer`，详细前置条件见 zlib 示例。
 
 ## 边界
+
+有真实 zlib 和 Expat 安装时，使用 [完整原生演示](native-walkthrough.md) 可串联损坏依赖定位、修复和两个已发布版本消费者的构建。新增诊断映射只在主分支，通用模板使用已发布0.3.0接口。
 
 项目当前是面向常用 `.pc` 解析、检查和参数查询的 0.3.0 实现，不宣称完整替代 pkg-config/pkgconf。目录、系统路径和 sysroot 由调用方显式提供；尚不自动读取系统搜索路径，不实现 Windows 自动重定位及全部 pkgconf 扩展。

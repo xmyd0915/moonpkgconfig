@@ -10,13 +10,18 @@ pub(all) struct Resolution {
 /// Resolve the dependency graph rooted at `root`.
 ///
 /// `Requires.private` participates only when `include_private` is true.
+/// `unavailable` supplies original diagnostics for excluded package ids. It
+/// blocks provider fallback for those ids without introducing filesystem IO.
+/// Empty entries are ignored; a valid exact package in this set wins. Only
+/// reachable failures are returned, with identical original diagnostics once.
 pub fn PackageSet::resolve(
   self : PackageSet,
   root : String,
   include_private? : Bool = false,
   source? : String = "query",
+  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
 ) -> Resolution {
-  QueryContext::new(self, include_private).resolve(root, source)
+  QueryContext::new(self, include_private, unavailable~).resolve(root, source)
 }
 
 ///|
@@ -34,13 +39,17 @@ fn QueryContext::resolve(
     Some(id) =>
       resolve_graph(self, id, source, states, order, stack, diagnostics)
     None =>
-      diagnostics.push(
-        diag("PC015", "Required package not found: " + root, {
-          source,
-          line: 1,
-          column: 1,
-        }),
-      )
+      match self.unavailable_diagnostics(root) {
+        Some(problems) => append_unavailable(problems, diagnostics)
+        None =>
+          diagnostics.push(
+            diag("PC015", "Required package not found: " + root, {
+              source,
+              line: 1,
+              column: 1,
+            }),
+          )
+      }
   }
   append_selected_conflicts(self.packages, order, diagnostics)
   { order, diagnostics, }
@@ -50,11 +59,14 @@ fn QueryContext::resolve(
 /// Check every package as a possible root and return each distinct diagnostic
 /// once. Private dependencies participate by default because a directory check
 /// should also catch problems that only affect static linking.
+/// Pass `unavailable` as in `resolve`; unrelated loader failures remain the
+/// caller's responsibility because they are not roots in this package set.
 pub fn PackageSet::check_all(
   self : PackageSet,
   include_private? : Bool = true,
+  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
 ) -> Array[Diagnostic] {
-  let context = QueryContext::new(self, include_private)
+  let context = QueryContext::new(self, include_private, unavailable~)
   let clean = context.clean_subgraphs()
   let diagnostics : Array[Diagnostic] = []
   for id in self.package_ids {
@@ -124,6 +136,19 @@ fn append_selected_conflicts(
 priv enum ResolveStep {
   Visit(String)
   Problem(Diagnostic)
+  Unavailable(Array[Diagnostic])
+}
+
+///|
+fn append_unavailable(
+  problems : Array[Diagnostic],
+  diagnostics : Array[Diagnostic],
+) -> Unit {
+  for problem in problems {
+    if !diagnostics.any(existing => existing == problem) {
+      diagnostics.push(problem)
+    }
+  }
 }
 
 ///|
@@ -162,6 +187,7 @@ fn resolve_graph(
     frame.next = frame.next + 1
     match step {
       Problem(problem) => diagnostics.push(problem)
+      Unavailable(problems) => append_unavailable(problems, diagnostics)
       Visit(next) =>
         match states.get(next) {
           Some(2) => ()
@@ -210,22 +236,26 @@ fn append_resolve_steps(
       for requirement in requirements {
         match context.packages.packages.get(requirement.name) {
           None =>
-            match context.find_provider(requirement) {
+            match context.unavailable_diagnostics(requirement.name) {
+              Some(problems) => steps.push(Unavailable(problems))
               None =>
-                steps.push(
-                  Problem(
-                    diag(
-                      "PC015",
-                      "Required package not found: " + requirement.name,
-                      {
-                        source: field.location.source,
-                        line: field.location.line,
-                        column: field.location.column,
-                      },
-                    ),
-                  ),
-                )
-              Some(provider) => steps.push(Visit(provider))
+                match context.find_provider(requirement) {
+                  None =>
+                    steps.push(
+                      Problem(
+                        diag(
+                          "PC015",
+                          "Required package not found: " + requirement.name,
+                          {
+                            source: field.location.source,
+                            line: field.location.line,
+                            column: field.location.column,
+                          },
+                        ),
+                      ),
+                    )
+                  Some(provider) => steps.push(Visit(provider))
+                }
             }
           Some(dependency) => {
             let version = dependency.document.field("Version").unwrap().value

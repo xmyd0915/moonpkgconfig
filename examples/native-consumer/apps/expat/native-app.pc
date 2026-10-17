@@ -1,0 +1,4 @@
+Name: native-app
+Description: A MoonBit native application using Expat
+Version: 1
+Requires.private: expat >= 2.6.2

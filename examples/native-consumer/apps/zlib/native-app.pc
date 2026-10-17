@@ -1,0 +1,4 @@
+Name: native-app
+Description: A MoonBit native application using zlib
+Version: 1
+Requires.private: zlib >= 1.2.13

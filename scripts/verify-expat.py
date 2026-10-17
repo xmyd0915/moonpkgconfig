@@ -38,6 +38,7 @@ def main():
     parser.add_argument("--cmake", default="cmake")
     parser.add_argument("--moon", default="moon")
     parser.add_argument("--archive", type=Path, help="local pinned archive; checksum is still checked")
+    parser.add_argument("--with-native-consumer", action="store_true", help="also verify the generic MoonCakes 0.3.0 template")
     args = parser.parse_args()
     cmake, moon = shutil.which(args.cmake), shutil.which(args.moon)
     if not cmake or not moon:
@@ -85,6 +86,10 @@ def main():
                      "static_library": str(library), "library_sha256": hashlib.sha256(library.read_bytes()).hexdigest()})
     destination.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("Static Expat build and MoonBit integration: passed", flush=True)
+    if args.with_native_consumer:
+        command = [sys.executable, str(ROOT / "scripts/verify-native-consumer.py"),
+                   "--library", "expat", "--moon", moon, "--pc-dir", str(pc.parent)]
+        print(run(command, ROOT), flush=True)
 
 
 if __name__ == "__main__":

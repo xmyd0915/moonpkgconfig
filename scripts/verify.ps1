@@ -23,6 +23,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Compressor formatting failed.' }
     & "$MoonHome\bin\moon.exe" -C examples/expat-ffi fmt
     if ($LASTEXITCODE -ne 0) { throw 'Expat formatting failed.' }
+    foreach ($templateModule in @('examples/native-consumer', 'examples/native-consumer/apps/zlib', 'examples/native-consumer/apps/expat')) {
+        & "$MoonHome\bin\moon.exe" -C $templateModule fmt
+        if ($LASTEXITCODE -ne 0) { throw 'Native consumer template formatting failed.' }
+    }
     & "$MoonHome\bin\moon.exe" check --target all --deny-warn
     if ($LASTEXITCODE -ne 0) { throw 'Type checking failed.' }
     & "$MoonHome\bin\moon.exe" test --target all --deny-warn
@@ -100,6 +104,8 @@ try {
     if ($LASTEXITCODE -ne 0 -or $realWorldDirectory -ne 'Checked 2 packages from 2 .pc files; 0 diagnostics.') { throw 'Real-world upstream templates check failed.' }
     & python "$PSScriptRoot\verify-flag-selection.py"
     if ($LASTEXITCODE -ne 0) { throw 'Flag selection CLI checks failed.' }
+    & python "$PSScriptRoot\verify-load-diagnostics.py"
+    if ($LASTEXITCODE -ne 0) { throw 'Filesystem dependency diagnostic checks failed.' }
     & python "$PSScriptRoot\verify-performance.py"
     if ($LASTEXITCODE -ne 0) { throw 'Graph and expansion workloads failed.' }
     & "$PSScriptRoot\verify-native-example.ps1"
@@ -107,11 +113,11 @@ try {
     & python "$PSScriptRoot\test-native-ffi.py"
     if ($LASTEXITCODE -ne 0) { throw 'Native FFI adapter checks failed.' }
     if ($WithWindowsZlib) {
-        & python "$PSScriptRoot\verify-zlib-windows.py" --cmake $CMake --with-consumer
+        & python "$PSScriptRoot\verify-zlib-windows.py" --cmake $CMake --with-consumer --with-native-consumer
         if ($LASTEXITCODE -ne 0) { throw 'Windows MSVC zlib integration failed.' }
     }
     if ($WithExpat) {
-        & python "$PSScriptRoot\verify-expat.py" --cmake $CMake
+        & python "$PSScriptRoot\verify-expat.py" --cmake $CMake --with-native-consumer
         if ($LASTEXITCODE -ne 0) { throw 'Expat static integration failed.' }
     }
     & "$PSScriptRoot\compare-pkgconf.ps1"

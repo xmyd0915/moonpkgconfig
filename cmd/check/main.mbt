@@ -28,7 +28,10 @@ fn main {
   try {
     let loaded = @loader.load_directory(directory)
     let diagnostics = loaded.diagnostics.copy()
-    for problem in loaded.packages.check_all() {
+    for
+      problem in loaded.packages.check_all(
+        unavailable=loaded.diagnostics_by_package,
+      ) {
       if !diagnostics.any(existing => existing == problem) {
         diagnostics.push(problem)
       }
