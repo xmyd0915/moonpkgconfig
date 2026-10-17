@@ -85,4 +85,4 @@ MoonPkgConfig 查询结果：
 
 `scripts/verify-compatibility.py` 另对六个真实项目模板执行120项查询，与声明预期及 pkgconf 3.0.7 对照；4项自编跨包查询核对静态编译字段顺序。连同原38项，默认完整验证为162项差分。来源、配置值、种子、机器报告和重现方式见 [兼容性检查](compatibility.md)。
 
-Expat 2.6.2 的原始模板声明 `Cflags.private: -DXML_STATIC`。普通查询不输出该宏，静态查询会输出。主分支补齐该扩展及静态编译分类：先输出所有普通 `Cflags`，再追加所有 `Cflags.private`，不按每个包交错混合；参数继续保留字段来源。核心公开接口增量尚未发布到 MoonCakes 0.2.0。
+Expat 2.6.2 的原始模板声明 `Cflags.private: -DXML_STATIC`。普通查询不输出该宏，静态查询会输出。0.3.0补齐该扩展及静态编译分类：先输出所有普通 `Cflags`，再追加所有 `Cflags.private`，不按每个包交错混合；参数继续保留字段来源。0.2.0不提供该增量接口。

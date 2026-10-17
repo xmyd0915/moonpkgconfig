@@ -10,7 +10,7 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 
 发行验证使用 `python scripts/verify-install.py --package`：提取实际 ZIP，以独立 `moon.work` 连接归档源码和消费者，执行公开接口测试。默认不传参数时从 MoonCakes 安装当前模块版本，不设置本地依赖覆盖；此模式仅在版本已发布后运行。消费者目录保留在忽略的 `.tmp` 中，便于核对下载内容。
 
-当前 `moon.mod` 为未发布0.3.0候选版本，发布前只运行归档模式；注册表复验旧版本需显式指定 `--version 0.2.0`。0.3.0消费者增加静态编译字段测试，四目标各运行4项消费者测试；已发布0.2.0仍运行原3项。
+`moon.mod` 当前版本为0.3.0。发行前运行归档模式，上传成功后运行注册表模式；复验旧版本需显式指定 `--version 0.2.0`。0.3.0消费者增加静态编译字段测试，四目标各运行4项消费者测试；0.2.0仍运行原3项。
 
 参数分类的端到端检查为 `python scripts/verify-flag-selection.py`，需要 Python 3；Windows 验证脚本和 Ubuntu CI 均会执行。它检查 JSON 与文本参数边界、来源解释、静态参数及诊断退出码，独立工具对照由 `scripts/compare-pkgconf.*` 执行。
 

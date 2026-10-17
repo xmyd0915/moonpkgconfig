@@ -8,9 +8,9 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 这个选题来自维护者较多的 C++ 开发实践：接入原生库时，最终参数通常能查到，但参数为什么出现、经过哪条依赖路径以及错误应回到哪里修改并不直观。MoonPkgConfig 尝试把这层过程变成可检查的数据。
 
-[MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) 是 MoonBit 的模块仓库，本项目在其中的名称为 `xmyd0915/moonpkgconfig`。安装0.2.0可执行 `moon add xmyd0915/moonpkgconfig@0.2.0`；项目名称为 MoonPkgConfig。下面的命令行演示需要克隆本仓库运行。
+[MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) 是 MoonBit 的模块仓库，本项目在其中的名称为 `xmyd0915/moonpkgconfig`。安装可执行 `moon add xmyd0915/moonpkgconfig`；项目名称为 MoonPkgConfig。下面的命令行演示需要克隆本仓库运行。
 
-当前主分支为0.3.0候选版本，包含静态编译字段与真实 Expat 接入，尚未发布到 MoonCakes。候选范围见 [0.3.0发行说明](docs/release-notes-0.3.0.md)；已发布0.2.0仍可按上面的命令安装。
+0.3.0新增静态编译字段与真实 Expat 接入，完整范围见 [0.3.0发行说明](docs/release-notes-0.3.0.md)。
 
 ## 项目亮点
 
@@ -35,12 +35,12 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 | 真实 MoonBit FFI | 从 zlib 1.3.1 安装生成的 `.pc` 查询参数，在 Ubuntu 与 Windows MSVC 构建 MoonBit 程序并验证 CRC-32、压缩/解压和错误返回 |
 | 真实私有依赖 | libpng 1.6.59 → zlib 1.3.1 跨目录查询、普通/静态参数区分、缺失依赖诊断与 MoonBit PNG 像素往返验证 |
 | 大图与边界 | 四种1,000包图、5,000包长链解析/目录检查、缺失依赖图及展开边界；保留耗时和峰值内存记录 |
-| 打包消费者 | 从实际候选归档提取源码，独立项目验证参数分类、路径索引、深图及静态编译字段，四目标执行公开接口测试 |
+| 打包消费者 | 从实际发行归档提取源码，独立项目验证参数分类、路径索引、深图及静态编译字段，四目标执行公开接口测试 |
 | 发布包实际使用 | 独立消费者使用 MoonCakes 0.2.0 计算真实 zlib 构建参数，演示缺失依赖、版本错误及修复，再构建文件压缩工具并检查双向互操作 |
 
 详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
 
-真实模板的配置、固定种子与报告重现见 [兼容性检查](docs/compatibility.md)。主分支另支持 `Cflags.private` 静态编译字段；此增量尚未发布，MoonCakes 当前仍为0.2.0。
+真实模板的配置、固定种子与报告重现见 [兼容性检查](docs/compatibility.md)。`Cflags.private` 静态编译字段从0.3.0起提供。
 
 大型图测量见 [首次性能记录](docs/performance.md) 和 [查询优化记录](docs/query-performance.md)。0.2.0优化路径解释、虚拟包候选查找和有效子图的目录检查，并修复原生深链解析的进程异常退出；数据注明平台、计时范围和问题图的剩余开销。
 
@@ -161,7 +161,7 @@ let libs = doc.field("Libs")
 
 `collect_cflags` 与 `collect_libs` 聚合依赖图中的参数，每个参数保留包名、字段和来源位置。Cflags 会包含公开与私有依赖需要的编译参数；动态 Libs 只使用公开依赖，静态 Libs 会加入私有依赖与 `Libs.private`。`FlagResult::shell_text` 提供可复制到 POSIX shell 的文本表示；直接集成时应使用 `flags` 数组，避免再次解析展示文本。
 
-0.3.0候选版本的 `collect_cflags(root, static_linking=true)` 在所有普通编译参数之后，按同一包顺序追加 `Cflags.private`，适用于 Expat 的 `-DXML_STATIC` 等静态构建要求。CLI 可使用 `--cflags --static`，两种编译分类也可加 `--static`；默认查询不加入私有字段。该增量尚未发布，已发布0.2.0不提供此选项。
+0.3.0的 `collect_cflags(root, static_linking=true)` 在所有普通编译参数之后，按同一包顺序追加 `Cflags.private`，适用于 Expat 的 `-DXML_STATIC` 等静态构建要求。CLI 可使用 `--cflags --static`，两种编译分类也可加 `--static`；默认查询不加入私有字段。0.2.0不提供此选项。
 
 0.2.0新增 `PackageSet::dependency_paths(root, include_private=...)`，一次建立最短路径的前驱索引，返回的 `DependencyPaths::path_to(package_id)` 按需生成独立路径数组。适合解释同一根包的多个参数；已有 `dependency_path` 仍可用于单个目标。索引为调用时的快照，后续添加包时应重新建立。
 

@@ -38,6 +38,6 @@ Windows 完整验证与 Ubuntu CI 均执行此检查。CI 上传 `ubuntu-compati
 
 ## 本次修复及边界
 
-Expat 模板中的 `Cflags.private: -DXML_STATIC` 暴露了静态编译查询缺口。主分支新增 `collect_cflags(root, static_linking=true)` 和 `--cflags --static`、静态编译分类查询；默认查询保持原行为，新增结果继续保留包、字段与源码位置。该接口尚未发布到 MoonCakes，已发布版本仍为0.2.0。
+Expat 模板中的 `Cflags.private: -DXML_STATIC` 暴露了静态编译查询缺口。0.3.0新增 `collect_cflags(root, static_linking=true)` 和 `--cflags --static`、静态编译分类查询；默认查询保持原行为，新增结果继续保留包、字段与源码位置。该接口从0.3.0起提供。
 
 `Cflags.private` 是 pkgconf 扩展。当前仍不处理 `Cflags.shared`、完整片段去重、Windows 自动重定位或全部 pkgconf 扩展。模板配置不覆盖每个操作系统、构建开关与可选依赖；库的真实 ABI 和链接正确性需要集成测试验证。
