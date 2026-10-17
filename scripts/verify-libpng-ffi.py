@@ -17,7 +17,7 @@ SUCCESS = "MoonBit libpng FFI: 3 RGBA round trips and 4 error cases passed"
 
 
 def main():
-    moon, compiler, directories = arguments(__doc__)
+    moon, compiler, directories, _ = arguments(__doc__)
     root_pc = directories[0] / (PACKAGE + ".pc")
     if not root_pc.is_file():
         raise RuntimeError(f"no installed {PACKAGE}.pc in {directories[0]}")

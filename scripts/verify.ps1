@@ -1,5 +1,7 @@
 param(
-    [string]$MoonHome = (Join-Path $env:USERPROFILE '.moon')
+    [string]$MoonHome = (Join-Path $env:USERPROFILE '.moon'),
+    [switch]$WithWindowsZlib,
+    [string]$CMake = 'cmake'
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -95,6 +97,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Graph and expansion workloads failed.' }
     & "$PSScriptRoot\verify-native-example.ps1"
     if ($LASTEXITCODE -ne 0) { throw 'Native C/C++ integration failed.' }
+    & python "$PSScriptRoot\test-native-ffi.py"
+    if ($LASTEXITCODE -ne 0) { throw 'Native FFI adapter checks failed.' }
+    if ($WithWindowsZlib) {
+        & python "$PSScriptRoot\verify-zlib-windows.py" --cmake $CMake
+        if ($LASTEXITCODE -ne 0) { throw 'Windows MSVC zlib integration failed.' }
+    }
     & "$PSScriptRoot\compare-pkgconf.ps1"
     if ($LASTEXITCODE -ne 0) { throw 'pkgconf differential checks failed.' }
 } finally {

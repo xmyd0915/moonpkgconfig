@@ -24,12 +24,12 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 | 证据 | 当前结果 |
 | --- | --- |
 | 自动化测试 | 78 个逻辑测试 × 4 个目标，全部通过 |
-| 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言 |
+| 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言；Windows 上构建真实 MSVC zlib 并运行 MoonBit FFI |
 | 上游兼容语料 | 11 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
 | 真实项目模板 | 固定版本、提交和许可证的 zlib 1.3.1 与 libffi 3.4.6 官方 `.pc.in` 内容 |
 | 自动差分对照 | CI 对 38 项参数、分类查询、顺序、路径策略、虚拟包、变量和退出码行为逐项比较 MoonPkgConfig 与固定的 pkgconf 3.0.7 |
 | 原生闭环 | 使用查询得到的 Cflags/Libs 编译 C 静态库和 C++ 调用程序，并运行核对结果 |
-| 真实 MoonBit FFI | 从 zlib 1.3.1 安装生成的 `.pc` 查询参数，构建 MoonBit 程序并验证 CRC-32、压缩/解压和错误返回 |
+| 真实 MoonBit FFI | 从 zlib 1.3.1 安装生成的 `.pc` 查询参数，在 Ubuntu 与 Windows MSVC 构建 MoonBit 程序并验证 CRC-32、压缩/解压和错误返回 |
 | 真实私有依赖 | libpng 1.6.59 → zlib 1.3.1 跨目录查询、普通/静态参数区分、缺失依赖诊断与 MoonBit PNG 像素往返验证 |
 | 大图与边界 | 四种1,000包图、5,000包长链解析/目录检查、缺失依赖图及展开边界；保留耗时和峰值内存记录 |
 | 打包消费者 | 从实际发布归档提取源码，独立项目验证参数分类、路径索引和深图检查，四目标成功 |
@@ -108,6 +108,8 @@ Windows 可运行 `./scripts/verify.ps1`。它默认使用用户目录中的 `.m
 `scripts/verify-native-example.sh`（Windows 可用对应的 `.ps1`）先编译一个小型 C 静态库，再让 MoonPkgConfig 从 `moonpkg-demo.pc` 算出编译和链接参数，最后构建并运行 C++ 调用程序。这个闭环需要系统提供 C/C++ 编译器和 `ar`。
 
 [zlib FFI 示例](examples/zlib-ffi) 则使用真实安装的 `zlib.pc`：查询参数后生成 MoonBit 原生构建配置，在 MoonBit 程序中调用 zlib 完成 CRC-32、压缩和解压，并检查损坏输入及缓冲区错误。Linux 或 macOS 可运行 `python3 scripts/verify-zlib-ffi.py --pc-dir /path/to/zlib/lib/pkgconfig`；CI 使用固定版本 zlib 1.3.1 构建并运行这一流程。核心库不依赖 zlib，示例单独构建。
+
+Windows 安装 MoonBit、Python 3.9+、CMake 3.15+、Visual Studio C++ 工具及 Windows SDK 后，可运行 `python scripts/verify-zlib-windows.py`。脚本校验并构建固定 zlib 源码，显式将 `-lz` 映射到 MSVC 静态库，验证原始安装和正确引用空格路径的副本；构建日志保留在忽略的 `.tmp` 中。参数转换位于示例脚本，支持范围见 [zlib 示例说明](examples/zlib-ffi/README.md)。
 
 [libpng FFI 示例](examples/libpng-ffi) 接着验证真实的 `libpng → zlib` 私有依赖：跨安装目录解析参数，区分普通与静态查询，检查缺失依赖，再用完整参数构建 MoonBit 程序完成 PNG 编解码和像素核对。
 

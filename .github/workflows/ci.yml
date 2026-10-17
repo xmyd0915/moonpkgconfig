@@ -153,6 +153,9 @@ jobs:
       - name: Build and run native C/C++ example
         run: sh scripts/verify-native-example.sh
 
+      - name: Verify native FFI adapter boundaries
+        run: python3 scripts/test-native-ffi.py
+
       - name: Build pinned zlib and run MoonBit FFI example
         shell: bash
         run: |
@@ -208,3 +211,46 @@ jobs:
 
       - name: Compare supported queries with pkgconf
         run: sh scripts/compare-pkgconf.sh
+
+  windows-zlib:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Install pinned MoonBit
+        shell: pwsh
+        run: |
+          $env:MOONBIT_INSTALL_VERSION = '0.10.14+7d59c7ec9'
+          $installerPath = Join-Path $env:RUNNER_TEMP 'install-moonbit.ps1'
+          Invoke-WebRequest -Uri 'https://cli.moonbitlang.com/install/powershell.ps1' -OutFile $installerPath
+          & $installerPath
+          if ($LASTEXITCODE -ne 0) { throw 'MoonBit installation failed.' }
+          $moonHomePath = Join-Path $env:USERPROFILE '.moon'
+          "MOON_HOME=$moonHomePath" >> $env:GITHUB_ENV
+          "MOONC_OVERRIDE=$moonHomePath\bin\moonc.exe" >> $env:GITHUB_ENV
+          "$moonHomePath\bin" >> $env:GITHUB_PATH
+
+      - name: Show toolchain versions
+        run: |
+          moon version --all
+          cmake --version
+
+      - name: Download dependencies
+        run: moon update
+
+      - name: Verify native FFI adapter boundaries
+        run: python scripts/test-native-ffi.py
+
+      - name: Build pinned MSVC zlib and run MoonBit FFI
+        run: python scripts/verify-zlib-windows.py
+
+      - name: Retain zlib build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-zlib-build-logs
+          path: .tmp/windows-zlib-*/build.log
+          if-no-files-found: ignore
+          include-hidden-files: true

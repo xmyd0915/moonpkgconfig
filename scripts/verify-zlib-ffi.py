@@ -10,7 +10,7 @@ SUCCESS = "MoonBit zlib FFI: CRC-32, 3 round trips and 3 error cases passed"
 
 
 def main():
-    moon, compiler, directories = arguments(__doc__)
+    moon, compiler, directories, mappings = arguments(__doc__, allow_windows=True)
     if not (directories[0] / "zlib.pc").is_file():
         raise RuntimeError(f"no installed zlib.pc in {directories[0]}")
     version = query(moon, directories, "zlib", "--modversion")
@@ -19,7 +19,7 @@ def main():
     print(f"Installed zlib: {version}")
     print(f"Cflags from MoonPkgConfig: {json.dumps(values(cflags))}")
     print(f"Static Libs from MoonPkgConfig: {json.dumps(values(libs))}")
-    build_example(moon, compiler, "zlib-ffi", "zlib_stub.c", cflags, libs, SUCCESS)
+    build_example(moon, compiler, "zlib-ffi", "zlib_stub.c", cflags, libs, SUCCESS, mappings)
 
 
 if __name__ == "__main__":

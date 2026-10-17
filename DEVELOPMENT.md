@@ -16,7 +16,9 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 
 查询期间的提供者索引和依赖步骤放在内部 `QueryContext`，不得跨公开调用复用，因为 `PackageSet` 和文档由调用方持有。目录优化仅复用能够证明无诊断且无冲突字段的子图；问题根保持完整遍历。提供者顺序、精确包优先、文档修改可见性和每根冲突范围由回归测试保护。后续测量及剩余边界见 `docs/query-performance.md`。
 
-真实 zlib 和 libpng 的 MoonBit FFI 示例使用独立模块，在 Linux CI 中构建和运行。命令及前置条件见各自示例的 README；它们不加入核心库的四目标依赖。两个运行脚本共用 `scripts/native_ffi.py`，修改共用代码时必须重跑两条集成流程。
+真实 zlib 和 libpng 的 MoonBit FFI 示例使用独立模块，在 Linux CI 中构建和运行。zlib 另有 Windows MSVC CI，执行 `python scripts/verify-zlib-windows.py`；本地完整检查可加 `scripts/verify.ps1 -WithWindowsZlib -CMake <路径>`。命令及前置条件见各自示例的 README；它们不加入核心库的四目标依赖。两个运行脚本共用 `scripts/native_ffi.py`，修改共用代码时必须重跑 Linux 的两条集成流程以及 Windows zlib。
+
+`python scripts/test-native-ffi.py` 在 Windows 本地验证及两个 CI 平台执行。MSVC 参数适配仅属于示例脚本：保留 JSON 参数和来源边界，未知选项必须报错，静态库名差异由调用方显式映射。不能把示例成功表述为核心库已实现完整的 Windows 参数转换或自动重定位。
 
 仓库只保留与 MoonPkgConfig 有关的源码、测试和开发记录。提交应说明实际改动，不为数量拆分无意义修改。
 
