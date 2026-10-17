@@ -6,6 +6,8 @@
 
 当前主分支增加损坏依赖诊断修复，尚未发布。89项核心测试与22个文件加载场景通过；两个通用模板消费者实际使用 MoonCakes 0.3.0，保持发行版本和开发版本的证据分开。
 
+0.3.1发行候选已在 Windows 本机通过实际归档验证：四目标各通过89项源码测试及6项独立消费者测试，共95项；归档内另执行22个文件加载场景。版本与归档 SHA-256、命令结果写入 `_build/verification/package-install.json`。错误归档版本、与当前模块不一致的打包版本均被拒绝，旧成功报告会重置为失败状态。新增构建产物定位同时通过普通目录和独立工作区布局；已发布0.3.0仍在新项目中通过四目标各4项消费者测试。
+
 通过 `scripts/verify.ps1` 执行：
 
 | 检查 | 结果 |
@@ -70,6 +72,8 @@
 0.3.0候选提交 `c372debb81b5a4b7447bc5a78d16bdbb7101b9ba` 的双平台 [CI 39025581516](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39025581516) 成功：Ubuntu 包含81项四目标核心测试、4项四目标归档消费者测试、162项固定 pkgconf 差分、158个生成输入、真实 C/C++、zlib、libpng 和 Expat；Windows 通过 zlib、发布包文件消费者及 Expat 正/负对照。附件包含 `ubuntu-expat`、`windows-expat` 及既有兼容性和消费者报告。此为发布前候选验证记录。
 
 正式发行提交 `19aa710b356fa33406e9ed8345b3143d4022e77f` 的双平台 [CI 39032073532](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39032073532) 同样通过。0.3.0上传、标签、注册表下载安装和归档校验值见 [发布记录](release.md)。
+
+诊断修复与通用模板提交 `3b997f698c2e4c8bbb48c7030f50181cf5701d02` 的双平台 [CI 39034141546](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39034141546) 全部通过；已核对两个平台的附件，各含22个诊断场景及两个0.3.0消费者的缺失、版本失败、修复和真实构建结果。该记录早于0.3.1候选打包接口验证。
 
 已下载并校验官方 pkgconf 3.0.7 Windows x64 MSI，发布资产 SHA-256 为 `7a316dba4a4498ea952b746c82deed41c597657095a0f776b75654191b45ae44`。对照结果和已知差异见 `docs/pkgconf-comparison.md`。
 

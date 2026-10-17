@@ -18,10 +18,14 @@ def run(command, status=0):
 
 
 def build(moon, name):
-    run([moon, "build", "--target", "native", "--release", "cmd/" + name])
-    directory = ROOT / "_build/native/release/build/cmd" / name
-    return str(next(path for path in (directory / (name + ".exe"), directory / name)
-                    if path.is_file()))
+    target = ROOT / "_build/diagnostic-cli"
+    run([moon, "build", "--target", "native", "--release", "--target-dir", str(target), "cmd/" + name])
+    directory = target / "native/release/build"
+    candidates = [path for filename in (name + ".exe", name) for path in directory.rglob(filename)
+                  if path.is_file() and path.parent.name == name and path.parent.parent.name == "cmd"]
+    if len(candidates) != 1:
+        raise AssertionError(f"Expected one {name} executable in {directory}, found {candidates}")
+    return str(candidates[0])
 
 
 def main():

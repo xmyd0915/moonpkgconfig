@@ -12,7 +12,7 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 0.3.0新增静态编译字段与真实 Expat 接入，完整范围见 [0.3.0发行说明](docs/release-notes-0.3.0.md)。
 
-当前主分支另修复损坏依赖被误报为缺包的诊断，尚未发布。[通用原生接入模板](examples/native-consumer/README.md) 则直接使用已发布的0.3.0，同一套规划与构建代码支持 zlib、Expat 两个应用；完整演示见 [故障定位与真实构建](docs/native-walkthrough.md)。
+当前主分支准备 [0.3.1发行候选](docs/release-notes-0.3.1.md)，修复损坏依赖被误报为缺包的诊断，尚未发布。[通用原生接入模板](examples/native-consumer/README.md) 则直接使用已发布的0.3.0，同一套规划与构建代码支持 zlib、Expat 两个应用；完整演示见 [故障定位与真实构建](docs/native-walkthrough.md)。
 
 ## 项目亮点
 

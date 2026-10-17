@@ -42,7 +42,7 @@ try {
         if ($requiredFile -notin $packageFileLines) { throw "Package is missing $requiredFile." }
     }
     if ($packageFileLines -match '(^|[\\/])(_build|\.tools)([\\/]|$)' -or $packageFileLines -match 'credentials\.json') { throw 'Package contains a build, tool, or credential artifact.' }
-    & python "$PSScriptRoot\verify-install.py" --package
+    & python "$PSScriptRoot\verify-install.py" --package --report _build/verification/package-install.json
     if ($LASTEXITCODE -ne 0) { throw 'Packaged public API consumer checks failed.' }
     & "$MoonHome\bin\moon.exe" run --target native cmd/inspect examples/valid/imagekit.pc
     if ($LASTEXITCODE -ne 0) { throw 'File inspector failed.' }
