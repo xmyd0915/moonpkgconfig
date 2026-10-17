@@ -49,7 +49,7 @@ def main():
     directory = args.pc_dir.resolve()
     installed_pc = directory / (args.library + ".pc")
     before = hashlib.sha256(installed_pc.read_bytes()).hexdigest()
-    working = Path(tempfile.mkdtemp(prefix="native-consumer-"))
+    working = Path(tempfile.mkdtemp(prefix="native-consumer-")).resolve()
     consumer = working / "consumer"
     shutil.copytree(ROOT / "examples/native-consumer", consumer,
                     ignore=shutil.ignore_patterns("_build", ".mooncakes", "__pycache__"))
@@ -95,7 +95,7 @@ def main():
             for section in ("cflags", "libs"):
                 problems = result["plan"][section]["diagnostics"]
                 if (len(problems) != 1 or problems[0]["code"] != code
-                        or Path(problems[0]["location"]["source"]) != metadata
+                        or not Path(problems[0]["location"]["source"]).samefile(metadata)
                         or problems[0]["location"]["line"] != 4
                         or problems[0]["location"]["column"] != 1 or result["built"]):
                     raise RuntimeError(f"Wrong failure location or unexpected build: {result}")
