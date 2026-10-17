@@ -14,6 +14,7 @@
 | `moon run cmd/demo` | 成功，输出六项字段及来源，无解析诊断 |
 | `scripts/review-demo.*` | 来源解释、错误目录、sysroot与虚拟包范围四步演示均通过；成功/失败退出码均有断言 |
 | `moon package --list` | 成功，包含核心源码、README、许可证与来源说明，不包含构建、工具或凭据文件 |
+| 0.2.0 发布归档消费者 | 实际 ZIP 包含分类、路径、查询上下文与目录检查源码；在独立工作区四目标执行78项归档源码测试和3项消费者测试，验证公开 API 可导入并运行 |
 | MoonCakes 安装复验 | 2026-09-28：`xmyd0915/moonpkgconfig@0.1.0` 可在全新临时模块中下载并通过 `moon check --target all --deny-warn` |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc --json` | 成功，输出完整条目与空诊断数组 |

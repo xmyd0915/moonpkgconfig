@@ -8,7 +8,7 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 这个选题来自维护者较多的 C++ 开发实践：接入原生库时，最终参数通常能查到，但参数为什么出现、经过哪条依赖路径以及错误应回到哪里修改并不直观。MoonPkgConfig 尝试把这层过程变成可检查的数据。
 
-核心库已发布在 [MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig)，可以在 MoonBit 项目中执行 `moon add xmyd0915/moonpkgconfig@0.1.0` 添加依赖。下面的命令行演示需要克隆本仓库运行。
+[MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) 是 MoonBit 的模块仓库，本项目在其中的名称为 `xmyd0915/moonpkgconfig`。安装0.2.0可执行 `moon add xmyd0915/moonpkgconfig@0.2.0`；项目名称为 MoonPkgConfig。下面的命令行演示需要克隆本仓库运行。
 
 ## 项目亮点
 
@@ -32,10 +32,11 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 | 真实 MoonBit FFI | 从 zlib 1.3.1 安装生成的 `.pc` 查询参数，构建 MoonBit 程序并验证 CRC-32、压缩/解压和错误返回 |
 | 真实私有依赖 | libpng 1.6.59 → zlib 1.3.1 跨目录查询、普通/静态参数区分、缺失依赖诊断与 MoonBit PNG 像素往返验证 |
 | 大图与边界 | 四种1,000包图、5,000包长链解析/目录检查、缺失依赖图及展开边界；保留耗时和峰值内存记录 |
+| 打包消费者 | 从实际发布归档提取源码，独立项目验证参数分类、路径索引和深图检查，四目标成功 |
 
 详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
 
-大型图测量见 [首次性能记录](docs/performance.md) 和 [查询优化记录](docs/query-performance.md)。主分支已优化路径解释、虚拟包候选查找和有效子图的目录检查，并修复原生深链解析的进程异常退出；数据注明平台、计时范围和问题图的剩余开销。
+大型图测量见 [首次性能记录](docs/performance.md) 和 [查询优化记录](docs/query-performance.md)。0.2.0优化路径解释、虚拟包候选查找和有效子图的目录检查，并修复原生深链解析的进程异常退出；数据注明平台、计时范围和问题图的剩余开销。
 
 如果只想快速判断项目是否可运行，可从 [评审快速入口](docs/reviewer-guide.md) 开始；它用一个脚本依次展示来源解释、错误诊断、sysroot 和虚拟依赖范围。
 
@@ -142,13 +143,13 @@ let libs = doc.field("Libs")
 
 `PackageSet::check_all` 把集合中的每个包作为根节点检查，并默认包含私有依赖；重复出现的同一诊断只报告一次，适合 CI 或目录级检查。
 
-主分支在单次操作中复用依赖字段和虚拟包候选索引；有效且不涉及冲突字段的子图可复用目录检查结果。问题根仍执行完整诊断遍历，保持每根的冲突语义和错误顺序。每次公开调用重新建立上下文，添加包或修改文档后的下一次查询不会使用旧缓存。这些优化尚未包含在 MoonCakes 0.1.0 中。
+0.2.0在单次操作中复用依赖字段和虚拟包候选索引；有效且不涉及冲突字段的子图可复用目录检查结果。问题根仍执行完整诊断遍历，保持每根的冲突语义和错误顺序。每次公开调用重新建立上下文，添加包或修改文档后的下一次查询不会使用旧缓存。
 
 `collect_cflags` 与 `collect_libs` 聚合依赖图中的参数，每个参数保留包名、字段和来源位置。Cflags 会包含公开与私有依赖需要的编译参数；动态 Libs 只使用公开依赖，静态 Libs 会加入私有依赖与 `Libs.private`。`FlagResult::shell_text` 提供可复制到 POSIX shell 的文本表示；直接集成时应使用 `flags` 数组，避免再次解析展示文本。
 
-主分支的 `PackageSet::dependency_paths(root, include_private=...)` 一次建立最短路径的前驱索引，返回的 `DependencyPaths::path_to(package_id)` 按需生成独立路径数组。适合解释同一根包的多个参数；已有 `dependency_path` 仍可用于单个目标。索引为调用时的快照，后续添加包时应重新建立。这个接口尚未包含在 MoonCakes 0.1.0 中。
+0.2.0新增 `PackageSet::dependency_paths(root, include_private=...)`，一次建立最短路径的前驱索引，返回的 `DependencyPaths::path_to(package_id)` 按需生成独立路径数组。适合解释同一根包的多个参数；已有 `dependency_path` 仍可用于单个目标。索引为调用时的快照，后续添加包时应重新建立。
 
-主分支新增 `FlagResult::select(FlagSelection)`，可选 `IncludePaths`、`OtherCflags`、`LibraryPaths`、`Libraries` 或 `OtherLibs`，对应下面五种 CLI 模式。它保留参数顺序、重复库、诊断和来源，分离式选项与操作数成对选择，GNU 链接器分组整体保留在其他链接参数中。此接口尚未包含在 MoonCakes 0.1.0 中。
+0.2.0新增 `FlagResult::select(FlagSelection)`，可选 `IncludePaths`、`OtherCflags`、`LibraryPaths`、`Libraries` 或 `OtherLibs`，对应下面五种 CLI 模式。它保留参数顺序、重复库、诊断和来源，分离式选项与操作数成对选择，GNU 链接器分组整体保留在其他链接参数中。
 
 | 分类模式 | 输出内容 |
 | --- | --- |
@@ -177,4 +178,4 @@ let libs = doc.field("Libs")
 - 核心库仅解析和查询元数据，不查找系统包、不修改构建配置、不运行编译器或安装依赖；原生集成示例会显式调用编译器。
 - sysroot 与系统目录由调用方显式提供；尚不读取 `PKG_CONFIG_SYSROOT_DIR` 等环境变量，不实现 Windows 自动重定位、完整片段去重或全部 pkgconf 3 扩展。
 
-可复制的演示步骤见 [docs/demo.md](docs/demo.md)，评审入口见 [docs/reviewer-guide.md](docs/reviewer-guide.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，0.1.0发布说明见 [docs/release-notes-0.1.0.md](docs/release-notes-0.1.0.md)，发布记录见 [docs/release.md](docs/release.md)，上游兼容样本见 [testdata/pkgconf-3.0.7](testdata/pkgconf-3.0.7)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。
+可复制的演示步骤见 [docs/demo.md](docs/demo.md)，评审入口见 [docs/reviewer-guide.md](docs/reviewer-guide.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，0.2.0发行说明见 [docs/release-notes-0.2.0.md](docs/release-notes-0.2.0.md)，发布记录见 [docs/release.md](docs/release.md)，上游兼容样本见 [testdata/pkgconf-3.0.7](testdata/pkgconf-3.0.7)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。

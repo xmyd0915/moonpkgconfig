@@ -8,6 +8,8 @@ CI 固定使用 `0.10.14+7d59c7ec9` 工具链，避免滚动下载改变格式�
 
 Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使用用户目录中的 `.moon` 安装。脚本遇到第一个失败立即退出，不修改全局 PATH。
 
+发行验证使用 `python scripts/verify-install.py --package`：提取实际 ZIP，以独立 `moon.work` 连接归档源码和消费者，执行公开接口测试。默认不传参数时从 MoonCakes 安装当前模块版本，不设置本地依赖覆盖；此模式仅在版本已发布后运行。消费者目录保留在忽略的 `.tmp` 中，便于核对下载内容。
+
 参数分类的端到端检查为 `python scripts/verify-flag-selection.py`，需要 Python 3；Windows 验证脚本和 Ubuntu CI 均会执行。它检查 JSON 与文本参数边界、来源解释、静态参数及诊断退出码，独立工具对照由 `scripts/compare-pkgconf.*` 执行。
 
 `python scripts/verify-performance.py` 构建原生 release 基准并验证大图及展开边界，不设机器相关的耗时门槛。详细测量使用 `scripts/benchmark.py`，范围、命令和原始记录见 `docs/performance.md`。修改遍历时必须保留深图安全性、最短路径选择以及诊断顺序；批量解释应复用一次 `dependency_paths` 快照。

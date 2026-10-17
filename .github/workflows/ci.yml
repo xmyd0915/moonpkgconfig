@@ -57,6 +57,9 @@ jobs:
           grep -qx "scripts/review-demo.sh" <<< "$listed_files"
           ! grep -Eq '(^|[/\\])(_build|\.tools)([/\\]|$)|credentials\.json' <<< "$listed_files"
 
+      - name: Verify packaged public API
+        run: python3 scripts/verify-install.py --package
+
       - name: Run library API demo
         run: moon run cmd/demo
 
