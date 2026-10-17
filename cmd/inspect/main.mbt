@@ -9,7 +9,7 @@ fn print_summary(document : @pc.Document) -> Unit {
   for
     field_name in [
       "Name", "Description", "Version", "Requires", "Requires.private", "Provides",
-      "Conflicts", "Cflags", "Libs", "Libs.private",
+      "Conflicts", "Cflags", "Cflags.private", "Libs", "Libs.private",
     ] {
     match document.field(field_name) {
       Some(entry) =>

@@ -1,6 +1,6 @@
 # pkgconf 对照记录
 
-最近复核：2026-10-16；平台：Windows x64 与 Ubuntu CI。
+最近复核：2026-10-17；平台：Windows x64 与 Ubuntu CI。
 
 对照工具为 pkgconf 3.0.7 官方 Windows x64 MSI：
 
@@ -80,3 +80,9 @@ MoonPkgConfig 查询结果：
 仓库另包含11个未经修改的pkgconf 3.0.7官方测试文件，固定到提交 `0c9e506b64124d8727b68d8af0ed73739e66e2ba`。它们在Windows本地验证和Ubuntu CI中通过整目录检查，覆盖变量空白、续行、CRLF、无末尾换行、反斜杠、引号、美元转义、分离式参数和虚拟包范围等输入。
 
 样本清单、原始路径与ISC许可证见 [`testdata/pkgconf-3.0.7`](../testdata/pkgconf-3.0.7)。这是选定语料的兼容证据，不等同于完整pkgconf一致性。
+
+## 真实模板与静态编译字段
+
+`scripts/verify-compatibility.py` 另对六个真实项目模板执行120项查询，与声明预期及 pkgconf 3.0.7 对照；4项自编跨包查询核对静态编译字段顺序。连同原38项，默认完整验证为162项差分。来源、配置值、种子、机器报告和重现方式见 [兼容性检查](compatibility.md)。
+
+Expat 2.6.2 的原始模板声明 `Cflags.private: -DXML_STATIC`。普通查询不输出该宏，静态查询会输出。主分支补齐该扩展及静态编译分类：先输出所有普通 `Cflags`，再追加所有 `Cflags.private`，不按每个包交错混合；参数继续保留字段来源。核心公开接口增量尚未发布到 MoonCakes 0.2.0。

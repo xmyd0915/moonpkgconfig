@@ -70,7 +70,7 @@ for package, directory in [("broken", "examples/mixed"), ("missing-dependency", 
         raise AssertionError("Selection suppressed dependency or parse diagnostics")
 
 for options in [
-    ["--cflags-only-I", "--static"],
+    ["--modversion", "--static"],
     ["--libs-only-l", "--libs"],
     ["--cflags-only-I", "--cflags-only-other"],
     ["--modversion", "--json"],

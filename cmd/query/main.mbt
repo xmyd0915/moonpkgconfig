@@ -25,6 +25,7 @@ fn print_usage() -> Unit {
     "Options: --define-variable=<name>=<value>, --path <directory>, --sysroot=<path>",
   )
   println("         --system-include-path=<path>, --system-library-path=<path>")
+  println("         --static, --dedupe-paths, --json, --explain")
 }
 
 ///|
@@ -237,8 +238,8 @@ fn main {
   let cflags_mode = mode is Some(Cflags(_))
   let libs_mode = mode is Some(Libs(_))
   let flag_mode = cflags_mode || libs_mode
-  if static_linking && !libs_mode {
-    println("--static requires --libs or a --libs-only-* mode")
+  if static_linking && !flag_mode {
+    println("--static requires a compiler or linker flag mode")
     @sys.exit(2)
   }
   if !flag_mode &&
@@ -276,7 +277,7 @@ fn main {
     match mode.unwrap() {
       Cflags(selection) | Libs(selection) => {
         let collected = if cflags_mode {
-          loaded.packages.collect_cflags(root)
+          loaded.packages.collect_cflags(root, static_linking~)
         } else {
           loaded.packages.collect_libs(root, static_linking~)
         }

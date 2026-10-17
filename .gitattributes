@@ -1,3 +1,6 @@
 * text=auto eol=lf
 /testdata/pkgconf-3.0.7/*.pc -text
 /testdata/pkgconf-3.0.7/LICENSE.pkgconf -text
+/testdata/real-world/*.pc -text
+/testdata/real-world/LICENSE.* -text
+/testdata/real-world/templates/* -text

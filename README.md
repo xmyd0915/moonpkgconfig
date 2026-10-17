@@ -23,11 +23,12 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 | 证据 | 当前结果 |
 | --- | --- |
-| 自动化测试 | 78 个逻辑测试 × 4 个目标，全部通过 |
+| 自动化测试 | 81 个逻辑测试 × 4 个目标，全部通过 |
 | 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言；Windows 上构建真实 MSVC zlib 并运行 MoonBit FFI |
 | 上游兼容语料 | 11 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
-| 真实项目模板 | 固定版本、提交和许可证的 zlib 1.3.1 与 libffi 3.4.6 官方 `.pc.in` 内容 |
-| 自动差分对照 | CI 对 38 项参数、分类查询、顺序、路径策略、虚拟包、变量和退出码行为逐项比较 MoonPkgConfig 与固定的 pkgconf 3.0.7 |
+| 真实项目模板 | zlib、libffi、libuv、libpng、PCRE2、Expat 六项目的固定版本模板、提交及许可证哈希；配置副本按独立预期检查参数和来源 |
+| 自动差分对照 | 原38项加120项真实模板查询、4项静态编译字段顺序，共162项固定 pkgconf 3.0.7 对照 |
+| 输入边界 | 固定种子的64个有效参数输入及94个截断/异常输入，检查参数边界、JSON、退出码、来源、确定性及超时 |
 | 原生闭环 | 使用查询得到的 Cflags/Libs 编译 C 静态库和 C++ 调用程序，并运行核对结果 |
 | 真实 MoonBit FFI | 从 zlib 1.3.1 安装生成的 `.pc` 查询参数，在 Ubuntu 与 Windows MSVC 构建 MoonBit 程序并验证 CRC-32、压缩/解压和错误返回 |
 | 真实私有依赖 | libpng 1.6.59 → zlib 1.3.1 跨目录查询、普通/静态参数区分、缺失依赖诊断与 MoonBit PNG 像素往返验证 |
@@ -36,6 +37,8 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 | 发布包实际使用 | 独立消费者使用 MoonCakes 0.2.0 计算真实 zlib 构建参数，演示缺失依赖、版本错误及修复，再构建文件压缩工具并检查双向互操作 |
 
 详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
+
+真实模板的配置、固定种子与报告重现见 [兼容性检查](docs/compatibility.md)。主分支另支持 `Cflags.private` 静态编译字段；此增量尚未发布，MoonCakes 当前仍为0.2.0。
 
 大型图测量见 [首次性能记录](docs/performance.md) 和 [查询优化记录](docs/query-performance.md)。0.2.0优化路径解释、虚拟包候选查找和有效子图的目录检查，并修复原生深链解析的进程异常退出；数据注明平台、计时范围和问题图的剩余开销。
 
@@ -118,6 +121,8 @@ Windows 安装 MoonBit、Python 3.9+、CMake 3.15+、Visual Studio C++ 工具及
 
 `scripts/compare-pkgconf.sh`（Windows 同样有 `.ps1`）把相同样本分别交给 MoonPkgConfig 和 pkgconf，比较 Cflags、动态/静态 Libs、依赖顺序、路径策略、版本、变量覆盖及版本条件退出码。CI 每次提交都会重新执行，不依赖人工抄录结果。
 
+`python scripts/verify-compatibility.py --reference /path/to/pkgconf` 校验六份真实模板和许可证，生成明确配置的副本，并执行独立预期、固定版本差分及输入边界检查。默认参考版本为 pkgconf 3.0.7；结果保存在 `_build/verification/compatibility.json`，CI 上传可下载的报告。
+
 GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检查、四目标类型检查与测试，并运行正常和错误文件演示。工作流只需要仓库只读权限。
 
 `testdata/pkgconf-3.0.7` 保存了11个未经修改的官方pkgconf测试文件，固定到上游标签、提交和ISC许可证。CI会把它们作为独立兼容语料检查；这证明所选输入受支持，不代表通过pkgconf完整测试套件。
@@ -151,6 +156,8 @@ let libs = doc.field("Libs")
 0.2.0在单次操作中复用依赖字段和虚拟包候选索引；有效且不涉及冲突字段的子图可复用目录检查结果。问题根仍执行完整诊断遍历，保持每根的冲突语义和错误顺序。每次公开调用重新建立上下文，添加包或修改文档后的下一次查询不会使用旧缓存。
 
 `collect_cflags` 与 `collect_libs` 聚合依赖图中的参数，每个参数保留包名、字段和来源位置。Cflags 会包含公开与私有依赖需要的编译参数；动态 Libs 只使用公开依赖，静态 Libs 会加入私有依赖与 `Libs.private`。`FlagResult::shell_text` 提供可复制到 POSIX shell 的文本表示；直接集成时应使用 `flags` 数组，避免再次解析展示文本。
+
+主分支的 `collect_cflags(root, static_linking=true)` 在所有普通编译参数之后，按同一包顺序追加 `Cflags.private`，适用于 Expat 的 `-DXML_STATIC` 等静态构建要求。CLI 可使用 `--cflags --static`，两种编译分类也可加 `--static`；默认查询不加入私有字段。该增量尚未发布到0.2.0。
 
 0.2.0新增 `PackageSet::dependency_paths(root, include_private=...)`，一次建立最短路径的前驱索引，返回的 `DependencyPaths::path_to(package_id)` 按需生成独立路径数组。适合解释同一根包的多个参数；已有 `dependency_path` 仍可用于单个目标。索引为调用时的快照，后续添加包时应重新建立。
 

@@ -215,6 +215,26 @@ jobs:
       - name: Compare supported queries with pkgconf
         run: sh scripts/compare-pkgconf.sh
 
+      - name: Verify real-world templates and seeded inputs
+        run: python3 scripts/verify-compatibility.py
+
+      - name: Retain compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-compatibility
+          path: _build/verification/compatibility.json
+          if-no-files-found: ignore
+
+      - name: Retain compatibility inputs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-compatibility-inputs
+          path: .tmp/compatibility-*/
+          if-no-files-found: ignore
+          include-hidden-files: true
+
       - name: Retain published consumer evidence
         uses: actions/upload-artifact@v4
         with:

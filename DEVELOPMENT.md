@@ -25,3 +25,5 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 仓库只保留与 MoonPkgConfig 有关的源码、测试和开发记录。提交应说明实际改动，不为数量拆分无意义修改。
 
 后续兼容性测试必须有独立预期值或官方工具依据；不能仅对实现输出生成快照并称之为正确性证明。遇到 pkgconf 与 pkg-config 差异时，记录所选兼容策略。
+
+`python scripts/verify-compatibility.py` 校验六个真实上游模板及许可证的固定哈希，执行声明预期、124项 pkgconf 3.0.7 对照与158个固定种子输入。参考工具可由 `--reference` 或 `PKGCONF` 指定；默认种子及重现方法见 `docs/compatibility.md`。Windows 完整流程及 Ubuntu CI 执行该检查，报告保存在 `_build/verification/compatibility.json`。新增语料必须保留完整许可证、固定提交与配置替换值，不得通过刷新预期输出掩盖差异。

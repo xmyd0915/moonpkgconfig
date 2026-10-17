@@ -109,6 +109,8 @@ try {
     }
     & "$PSScriptRoot\compare-pkgconf.ps1"
     if ($LASTEXITCODE -ne 0) { throw 'pkgconf differential checks failed.' }
+    & python "$PSScriptRoot\verify-compatibility.py"
+    if ($LASTEXITCODE -ne 0) { throw 'Real-world compatibility and seeded input checks failed.' }
 } finally {
     Pop-Location
     $env:MOON_HOME = $oldMoonHome

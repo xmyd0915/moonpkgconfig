@@ -246,10 +246,12 @@ fn same_flag_origin(left : ResolvedFlag, right : ResolvedFlag) -> Bool {
 }
 
 ///|
-/// Collect public compiler flags in dependant-first order.
+/// Collect compiler flags in dependant-first order. Static queries also
+/// include each package's `Cflags.private` field.
 pub fn PackageSet::collect_cflags(
   self : PackageSet,
   root : String,
+  static_linking? : Bool = false,
 ) -> FlagResult {
   // Private dependencies still contribute headers and compile definitions.
   // Their linker flags are restricted to static linking in collect_libs.
@@ -257,8 +259,15 @@ pub fn PackageSet::collect_cflags(
   let resolution = context.resolve(root, "query")
   let flags : Array[ResolvedFlag] = []
   let diagnostics = resolution.diagnostics.copy()
-  for id in context.flag_order(root) {
+  let order = context.flag_order(root)
+  for id in order {
     append_flag_field(self, id, "Cflags", flags, diagnostics)
+  }
+  if static_linking {
+    // pkgconf appends private compiler fields after all public fields.
+    for id in order {
+      append_flag_field(self, id, "Cflags.private", flags, diagnostics)
+    }
   }
   { flags, diagnostics, }
 }

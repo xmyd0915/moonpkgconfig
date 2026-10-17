@@ -15,7 +15,9 @@
 
 `testdata/pkgconf-3.0.7` 中的11个兼容样本未经修改地复制自pkgconf官方测试套件标签 `pkgconf-3.0.7`（提交 `0c9e506b64124d8727b68d8af0ed73739e66e2ba`），并随附上游ISC许可证。文件清单与原始路径见该目录README。
 
-`testdata/real-world` 保存 zlib 1.3.1 与 libffi 3.4.6 的官方 `.pc.in` 模板内容，只把文件后缀改为 `.pc` 供目录加载器直接检查。目录README记录固定提交、上游路径和替换标记边界，并随附各自许可证。
+`testdata/real-world` 保存 zlib 1.3.1 与 libffi 3.4.6 的官方 `.pc.in` 模板内容，只把文件后缀改为 `.pc` 供目录加载器直接检查；`templates/` 另存未经改写的 libuv 1.48.0、libpng 1.6.59、PCRE2 10.44 与 Expat 2.6.2 模板。目录README及 `corpus.json` 记录固定提交、上游路径、模板与完整许可证的 SHA-256、配置替换值及边界。配置副本仅用于测试，不代表实际安装。
+
+`scripts/verify-compatibility.py` 为本项目编写，使用清单声明的独立预期值、固定 pkgconf 3.0.7 和 Python 标准库 `shlex` 验证查询与参数边界。随机和异常输入由固定种子生成；不复制参考工具实现。`Cflags.private` 的静态顺序依据固定 pkgconf 的格式文档、公开命令和 `libpkgconf/pkg.c` 核对。
 
 `examples/zlib-ffi` 中的 MoonBit 程序、C 包装和运行脚本为本项目编写，API 用法参考 <https://zlib.net/manual.html>。CI 在临时目录构建官方 zlib 1.3.1 发行包；不把 zlib 实现或编译产物纳入本仓库。
 
