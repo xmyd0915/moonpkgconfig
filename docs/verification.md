@@ -8,6 +8,8 @@
 
 0.3.1发行候选已在 Windows 本机通过实际归档验证：四目标各通过89项源码测试及6项独立消费者测试，共95项；归档内另执行22个文件加载场景。版本与归档 SHA-256、命令结果写入 `_build/verification/package-install.json`。错误归档版本、与当前模块不一致的打包版本均被拒绝，旧成功报告会重置为失败状态。新增构建产物定位同时通过普通目录和独立工作区布局；已发布0.3.0仍在新项目中通过四目标各4项消费者测试。
 
+2026-10-18正式上传0.3.1返回 `200 OK`、退出码0；最终上传包四目标各95项和归档内22个文件场景通过。上传后新项目实际下载0.3.1，四目标各6项消费者测试通过；上传 ZIP 与公开索引 SHA-256 一致。源码标签、归档校验值及版本状态见 [完成记录](release.md)。
+
 通过 `scripts/verify.ps1` 执行：
 
 | 检查 | 结果 |
@@ -25,6 +27,7 @@
 | MoonCakes 0.1.0 历史复验 | 2026-09-28：`xmyd0915/moonpkgconfig@0.1.0` 可在全新临时模块中下载并通过 `moon check --target all --deny-warn` |
 | MoonCakes 0.2.0 安装复验 | 2026-10-17：正式发布返回 `200 OK`；全新模块实际下载0.2.0，无本地源码覆盖，四目标检查和每目标3项公开接口消费者测试均通过；归档 SHA-256 与公开索引一致 |
 | MoonCakes 0.3.0 安装复验 | 2026-10-17：正式发布返回 `200 OK`、退出码0；全新模块实际下载0.3.0，无本地源码覆盖，四目标检查和每目标4项公开接口消费者测试通过；含静态编译字段、依赖顺序和来源。上传 ZIP、测试归档与注册表索引 SHA-256 一致，源码标签为 `v0.3.0` |
+| MoonCakes 0.3.1 安装复验 | 2026-10-18：正式发布返回 `200 OK`、退出码0；全新模块实际下载0.3.1，无本地源码覆盖，四目标检查和每目标6项公开接口消费者测试通过，含新增诊断映射、私有模式和提供者路径。最终归档的源码、消费者及文件场景均通过；上传 ZIP 与公开索引校验值一致，标签为 `v0.3.1` |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc --json` | 成功，输出完整条目与空诊断数组 |
 | `moon run --target native cmd/inspect examples/invalid/broken.pc` | 按预期报告五项问题并返回退出码 1 |
@@ -74,6 +77,8 @@
 正式发行提交 `19aa710b356fa33406e9ed8345b3143d4022e77f` 的双平台 [CI 39032073532](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39032073532) 同样通过。0.3.0上传、标签、注册表下载安装和归档校验值见 [发布记录](release.md)。
 
 诊断修复与通用模板提交 `3b997f698c2e4c8bbb48c7030f50181cf5701d02` 的双平台 [CI 39034141546](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39034141546) 全部通过；已核对两个平台的附件，各含22个诊断场景及两个0.3.0消费者的缺失、版本失败、修复和真实构建结果。该记录早于0.3.1候选打包接口验证。
+
+0.3.1发行提交 `c138e4fc23291f4441eec9eabecd34a8b451243d` 的双平台 [CI 39070804193](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39070804193) 全部通过；已核对两平台的包报告、实际 ZIP 和源码内容，Windows CI ZIP 与正式上传包完全一致。保留162项 pkgconf 对照、158个输入场景、真实原生集成及既有版本消费者。
 
 已下载并校验官方 pkgconf 3.0.7 Windows x64 MSI，发布资产 SHA-256 为 `7a316dba4a4498ea952b746c82deed41c597657095a0f776b75654191b45ae44`。对照结果和已知差异见 `docs/pkgconf-comparison.md`。
 
