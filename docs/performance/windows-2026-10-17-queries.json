@@ -9,6 +9,7 @@
   },
   "toolchain": "moonc 0.10.14+7d59c7ec9; moon 0.1.20260915",
   "baseline_core_commit": "fc96813bc930465144eb3e9f0194cf13b73480b7",
+  "after_core_commit": "37c38ff97d767fff9f77304ef565b0691e90341c",
   "baseline_binary_sha256": "1ec3c9c0b4909bc146b20304230e3b435685cc772cb05075888fde6b2459931a",
   "after_binary_sha256": "05d5eb79d35fb26b213b717b9999928c10ccf2307b8c60722d77cdb08261f8f6",
   "mode": "native release; operation time in microseconds excluding input generation/loading",
