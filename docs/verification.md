@@ -15,7 +15,8 @@
 | `scripts/review-demo.*` | 来源解释、错误目录、sysroot与虚拟包范围四步演示均通过；成功/失败退出码均有断言 |
 | `moon package --list` | 成功，包含核心源码、README、许可证与来源说明，不包含构建、工具或凭据文件 |
 | 0.2.0 发布归档消费者 | 实际 ZIP 包含分类、路径、查询上下文与目录检查源码；在独立工作区四目标执行78项归档源码测试和3项消费者测试，验证公开 API 可导入并运行 |
-| MoonCakes 安装复验 | 2026-09-28：`xmyd0915/moonpkgconfig@0.1.0` 可在全新临时模块中下载并通过 `moon check --target all --deny-warn` |
+| MoonCakes 0.1.0 历史复验 | 2026-09-28：`xmyd0915/moonpkgconfig@0.1.0` 可在全新临时模块中下载并通过 `moon check --target all --deny-warn` |
+| MoonCakes 0.2.0 安装复验 | 2026-10-17：正式发布返回 `200 OK`；全新模块实际下载0.2.0，无本地源码覆盖，四目标检查和每目标3项公开接口消费者测试均通过；归档 SHA-256 与公开索引一致 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc` | 成功，从磁盘读取并输出九项字段及来源，无解析诊断 |
 | `moon run --target native cmd/inspect examples/valid/imagekit.pc --json` | 成功，输出完整条目与空诊断数组 |
 | `moon run --target native cmd/inspect examples/invalid/broken.pc` | 按预期报告五项问题并返回退出码 1 |
@@ -44,7 +45,7 @@
 | 真实私有依赖与 PNG | 官方 libpng 1.6.59 与 zlib 1.3.1 分别静态安装到不同前缀；查询普通/静态参数，验证缺失私有依赖时的退出码及 `PC015`，并在 MoonBit 中完成3组 RGBA PNG 像素往返和4种错误检查。当前示例未适配 Windows MSVC |
 | `cmd/check testdata/real-world` | zlib 1.3.1 与 libffi 3.4.6 固定上游模板全部通过，退出码 0 |
 | 自动 pkgconf 差分 | 38 项 Cflags、动态/静态 Libs、五种参数分类、依赖顺序、路径策略、虚拟包、真实模板、版本、变量覆盖及退出码与固定的 pkgconf 3.0.7 一致；仅忽略行末空白差异 |
-| GitHub Actions CI | 2026-10-17：查询与目录优化提交 `37c38ff` 在固定工具链的 Ubuntu 全新环境成功，含78个四目标逻辑测试、分类 CLI 检查、26个大图/展开边界工作负载、评审演示、包内容检查、C/C++ 闭环、真实 zlib/libpng FFI、11个上游样本及38项固定版本差分；运行记录：[39003870216](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39003870216)。9月首次发布的运行记录保留于 [36442570605](https://github.com/xmyd0915/moonpkgconfig/actions/runs/36442570605) |
+| GitHub Actions CI | 2026-10-17：0.2.0发行提交 `092d2fa` 在固定工具链的 Ubuntu 全新环境成功，含78个四目标核心测试、实际归档源码和3项消费者测试、分类 CLI 检查、26个大图/展开边界工作负载、评审演示、包内容检查、C/C++ 闭环、真实 zlib/libpng FFI、11个上游样本及38项固定版本差分；运行记录：[39004844362](https://github.com/xmyd0915/moonpkgconfig/actions/runs/39004844362)。9月首次发布的运行记录保留于 [36442570605](https://github.com/xmyd0915/moonpkgconfig/actions/runs/36442570605) |
 
 78 个逻辑测试在四个目标各运行一次，不将它们宣传为 312 个独立测试。覆盖顺序变量展开、调用方变量覆盖、未定义/自引用、字面美元符、命名空间与大小写、重复/保留定义、BOM/CRLF/注释/续行/Unicode、字段和值位置、包元数据校验、直接与传递依赖检查、全包检查去重及有效子图复用、最短公开/私有依赖路径和快照、5,000包深链/目录及诊断顺序、查询缓存刷新、精确包优先和虚拟候选顺序、Cflags 私有依赖语义、虚拟包范围比较矩阵、循环和每根独立包冲突诊断、参数聚合与来源、五种参数分类及 GNU 链接器分组、稳定的菱形依赖顺序、POSIX shell 参数边界、跨写法搜索路径去重、系统目录过滤、sysroot重写和来源边界、JSON 输出、参数引号/转义、版本分段比较、六种约束运算符及错误恢复、展开大小上限。
 
