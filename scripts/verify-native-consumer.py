@@ -94,9 +94,10 @@ def main():
             result = execute(label, ["--plan-only", *paths], 1)
             for section in ("cflags", "libs"):
                 problems = result["plan"][section]["diagnostics"]
-                if len(problems) != 1 or problems[0]["code"] != code or problems[0]["location"] != {
-                    "source": str(metadata), "line": 4, "column": 1,
-                } or result["built"]:
+                if (len(problems) != 1 or problems[0]["code"] != code
+                        or Path(problems[0]["location"]["source"]) != metadata
+                        or problems[0]["location"]["line"] != 4
+                        or problems[0]["location"]["column"] != 1 or result["built"]):
                     raise RuntimeError(f"Wrong failure location or unexpected build: {result}")
         metadata.write_text(original, encoding="utf-8")
         result = execute("repaired build and run", ["--pc-dir", str(directory), "--run"], 0)
