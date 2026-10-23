@@ -188,9 +188,14 @@ def main():
                            (destination / "moon.mod").read_text(encoding="utf-8"), re.MULTILINE)
         if not module:
             raise RuntimeError("Could not identify the built application's module name")
-        executable = destination / "_build/native/debug/build" / (module[1].rsplit("/", 1)[-1] + (".exe" if os.name == "nt" else ""))
-        if not executable.is_file():
-            raise RuntimeError(f"Expected the built executable at {executable}")
+        binary_directory = destination / "_build/native/debug/build"
+        binary_name = module[1].rsplit("/", 1)[-1]
+        # MoonBit may use .exe for native artifacts on POSIX as well.
+        candidates = [binary_directory / name for name in (binary_name + ".exe", binary_name)
+                      if (binary_directory / name).is_file()]
+        if len(candidates) != 1:
+            raise RuntimeError(f"Expected one built executable in {binary_directory}, found {candidates}")
+        executable = candidates[0]
         evidence.update({"built": True, "application": str(destination), "native": native,
                          "executable": str(executable)})
         if args.run:
