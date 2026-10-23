@@ -38,7 +38,7 @@ def main():
     parser.add_argument("--cmake", default="cmake")
     parser.add_argument("--moon", default="moon")
     parser.add_argument("--archive", type=Path, help="local pinned archive; checksum is still checked")
-    parser.add_argument("--with-native-consumer", action="store_true", help="also verify the generic MoonCakes 0.3.0 template")
+    parser.add_argument("--with-native-consumer", action="store_true", help="also verify the generic MoonCakes 0.3.1 template")
     args = parser.parse_args()
     cmake, moon = shutil.which(args.cmake), shutil.which(args.moon)
     if not cmake or not moon:

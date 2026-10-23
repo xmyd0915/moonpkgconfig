@@ -6,7 +6,7 @@
 
 1. pkgconf 项目 `.pc` 格式文档：<https://github.com/pkgconf/pkgconf/blob/main/man/pc.5>。
 2. pkgconf 版本比较接口文档：<https://pkgconf.readthedocs.io/en/latest/libpkgconf-pkg.html>，用于核对比较结果约定和 RPM 风格规则；固定标签3.0.7的 `libpkgconf/pkg.c` 用于核对 `Provides` 比较矩阵，并以发行版命令复验行为。
-3. pkg-config Guide：<https://people.freedesktop.org/~dbn/pkg-config-guide.html>。本次访问被站点拒绝，不能作为本次已读取证据。
+3. pkg-config Guide：<https://people.freedesktop.org/~dbn/pkg-config-guide.html>，供补充阅读；兼容性判断以固定版本 pkgconf 的文档、命令与差分结果为准。
 4. MoonBit 官方语言及包配置文档：<https://docs.moonbitlang.com/en/latest/>。
 5. MoonBit 标准库（工具链自带）：<https://github.com/moonbitlang/core>，Apache-2.0；本项目使用 API，不复制其实现。
 6. `moonbitlang/x` 0.5.5：<https://github.com/moonbitlang/x>，Apache-2.0；`cmd/inspect` 使用其 `fs` 和 `path` API 读取文件及计算 `pcfiledir`，依赖源码不纳入本仓库。

@@ -23,7 +23,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Compressor formatting failed.' }
     & "$MoonHome\bin\moon.exe" -C examples/expat-ffi fmt
     if ($LASTEXITCODE -ne 0) { throw 'Expat formatting failed.' }
-    foreach ($templateModule in @('examples/native-consumer', 'examples/native-consumer/apps/zlib', 'examples/native-consumer/apps/expat')) {
+    foreach ($templateModule in @('examples/native-consumer', 'examples/native-consumer/apps/zlib', 'examples/native-consumer/apps/expat', 'examples/native-consumer/apps/zlib-files')) {
         & "$MoonHome\bin\moon.exe" -C $templateModule fmt
         if ($LASTEXITCODE -ne 0) { throw 'Native consumer template formatting failed.' }
     }

@@ -1,10 +1,10 @@
-# 评审快速入口
+# 快速体验指南
 
 MoonPkgConfig 解决的是原生库接入时“参数从哪里来、依赖为什么失败、结果能否稳定交给其他工具”的问题。核心解析与依赖计算使用 MoonBit 编写，不启动 shell，也不调用系统 `pkg-config`。
 
-## 五分钟复现
+## 查询与诊断
 
-安装 MoonBit 工具链并在仓库根目录运行：
+安装 MoonBit 工具链并在仓库根目录运行。当前 CI 固定使用 `0.10.14+7d59c7ec9`，建议复现时使用相同版本：
 
 ```sh
 moon update
@@ -26,7 +26,21 @@ Windows PowerShell：
 
 成功时最后显示 `Reviewer walkthrough: passed`。该脚本也在 GitHub Actions 中运行，演示步骤不会只在维护者电脑上成立。
 
-## 证据位置
+## 从发布包构建实际文件工具
+
+在查询之后，可以使用同一套通用接入代码构建 zlib、Expat 和文件压缩器：
+
+```sh
+python scripts/review-native.py
+```
+
+需要 Python 3.9+、CMake 3.15+ 和原生构建环境：Linux 使用 C 编译器和 `make`，Windows 使用 Visual Studio C++ 工具及 Windows SDK。脚本检查工具、准备固定版本的静态库，再在仓库之外使用已发布的 MoonCakes 0.3.1。它串联缺失、版本错误、损坏文件定位、修复与实际执行，并核对三个应用使用相同的规划器和适配器。
+
+生成的文件工具支持 `compress <输入> <输出.zlib>` 和 `decompress <输入.zlib> <输出>`，验证涵盖空文件、文本、二进制和 Python zlib 双向互操作。程序一次处理整个文件，压缩输入及解压输出上限为 64 MiB，拒绝覆盖已有输出。应用均由本项目维护，不代表第三方采用。
+
+结果、实际耗时和可执行文件路径保存在 `_build/verification/native-walkthrough.json`。准备选项、复用已有安装、执行生成程序和三个详细报告见 [完整原生流程](native-walkthrough.md)。
+
+## 验证记录
 
 | 关注点 | 仓库证据 |
 | --- | --- |
@@ -39,7 +53,7 @@ Windows PowerShell：
 | 静态编译要求 | `examples/expat-ffi` 从真实安装的 `Cflags.private` 取得 `XML_STATIC`，验证 XML 分块解析、错误与 Python 独立安装对照；MSVC 移除/恢复该字段验证实际链接影响 |
 | 已发布库的独立使用 | `examples/zlib-consumer` 直接依赖 MoonCakes 0.2.0，读取真实 zlib 安装，重现缺失依赖和版本错误，再构建文件压缩程序并进行双向互操作检查；验证副本放在仓库之外 |
 | 来源与许可证 | `ORIGINS.md`、MIT许可证以及随样本保存的上游许可证 |
-| 复用同一接入代码 | `examples/native-consumer` 固定依赖 MoonCakes 0.3.0，在仓库外通过配置和应用源码分别构建 zlib、Expat；验证依赖故障、修复、真实运行和来源 |
+| 复用同一接入代码 | `examples/native-consumer` 固定依赖 MoonCakes 0.3.1，在仓库外通过配置和应用源码构建 zlib、Expat、文件压缩工具；验证依赖故障、修复、真实运行和来源，总入口比较规划器与适配器摘要 |
 | 损坏依赖定位 | 0.3.1包含22个文件加载 CLI 场景，保留依赖的原始文件错误 |
 | 独立环境复现 | `.github/workflows/ci.yml` 与 `docs/verification.md` 中的公开运行记录 |
 
@@ -49,6 +63,6 @@ Windows PowerShell：
 
 ## 边界
 
-有真实 zlib 和 Expat 安装时，使用 [完整原生演示](native-walkthrough.md) 可串联损坏依赖定位、修复和两个已发布版本消费者的构建。新增诊断映射从0.3.1起提供，通用模板使用已发布0.3.0接口。
+通用模板适用于单个根目录可执行包，支持通过应用配置声明导入和原生接口文件。已有自定义 `moon.pkg` 或 `moon.pkg.json` 会被拒绝；更复杂的构建系统应直接集成规划器 JSON。模板的损坏依赖诊断映射从 0.3.1 起提供。
 
 项目当前是面向常用 `.pc` 解析、检查和参数查询的0.3.1实现，不宣称完整替代 pkg-config/pkgconf。目录、系统路径和 sysroot 由调用方显式提供；尚不自动读取系统搜索路径，不实现 Windows 自动重定位及全部 pkgconf 扩展。

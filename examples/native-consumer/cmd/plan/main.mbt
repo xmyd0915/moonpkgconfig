@@ -13,18 +13,21 @@ fn main {
   }
   try {
     let loaded = @loader.load_directories(directories)
-    let problems = loaded.diagnostics_for(root)
-    let cflags : @pc.FlagResult = if problems.is_empty() {
-      loaded.packages.collect_cflags(root, static_linking~)
-    } else {
-      { flags: [], diagnostics: problems, }
-    }
-    let libs : @pc.FlagResult = if problems.is_empty() {
-      loaded.packages.collect_libs(root, static_linking~)
-    } else {
-      { flags: [], diagnostics: problems, }
-    }
-    let paths = loaded.packages.dependency_paths(root, include_private=true)
+    let cflags : @pc.FlagResult = loaded.packages.collect_cflags(
+      root,
+      static_linking~,
+      unavailable=loaded.diagnostics_by_package,
+    )
+    let libs : @pc.FlagResult = loaded.packages.collect_libs(
+      root,
+      static_linking~,
+      unavailable=loaded.diagnostics_by_package,
+    )
+    let paths = loaded.packages.dependency_paths(
+      root,
+      include_private=true,
+      unavailable=loaded.diagnostics_by_package,
+    )
     let dependencies : Array[Json] = []
     for id in loaded.package_ids {
       let route = paths.path_to(id)

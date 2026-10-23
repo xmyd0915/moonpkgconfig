@@ -28,7 +28,9 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 
 仓库只保留与 MoonPkgConfig 有关的源码、测试和开发记录。提交应说明实际改动，不为数量拆分无意义修改。
 
-`examples/native-consumer` 固定使用 MoonCakes 0.3.0，规划器和构建适配层可用于不同库。`python scripts/verify-native-consumer.py --library zlib --pc-dir <目录>` 与 `--library expat` 分别在仓库外验证同一模板的失败、修复与真实运行；Windows zlib 另传库名映射。两个准备脚本加 `--with-native-consumer` 可复用固定安装；完整验证的两个可选开关已包含该检查。不要把0.3.1新增的 `unavailable` 参数加入这个0.3.0消费者。完整串联演示见 `docs/native-walkthrough.md`。
+`examples/native-consumer` 固定使用 MoonCakes 0.3.1，规划器将加载诊断映射传入参数和依赖路径查询。`python scripts/verify-native-consumer.py --library zlib --pc-dir <目录>` 与 `--library expat` 分别在仓库外验证同一模板的缺包、版本错误、损坏依赖定位、修复与真实运行；Windows zlib 另传库名映射。`python scripts/verify-native-file-tool.py --pc-dir <目录>` 复用同一适配器构建实际文件工具，并与 Python zlib 双向对照。
+
+`python scripts/review-native.py` 自动准备固定的静态 zlib、Expat，再运行三个消费者；提供两个安装目录时可跳过准备。总报告要求三个消费者使用相同的规划器和适配代码。已有自定义应用构建设置会被拒绝，避免生成配置时丢失设置。完整运行方式见 `docs/native-walkthrough.md`。
 
 真实 Expat 验证为 `python scripts/verify-expat.py`，构建固定2.6.2静态库后调用 `verify-expat-ffi.py`；Linux 与 Windows CI 均执行。本地可加 `scripts/verify.ps1 -WithExpat -CMake <路径>`，既有 `-WithWindowsZlib` 可同时指定。Windows MSVC 环境发现已放入共用 `native_ffi.py`，修改时必须重跑两种 Windows 库及 Linux 的既有 FFI 集成。Expat 的私有宏必须来自查询结果，不得在 C 包装或构建脚本中补写；负对照要求真实导入符号链接失败。
 

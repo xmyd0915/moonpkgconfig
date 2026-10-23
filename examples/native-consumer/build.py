@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plan and build a root-package native application with MoonCakes 0.3.0."""
+"""Plan and build a root-package native application with MoonCakes 0.3.1."""
 
 import argparse
 import json
@@ -14,7 +14,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parent
 MODULE = "xmyd0915/moonpkgconfig"
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 NAME = r"[A-Za-z0-9_+][A-Za-z0-9_+.-]*"
 
 
@@ -66,6 +66,15 @@ def diagnostics(plan):
     return unique
 
 
+def package_manifest(config, native=None):
+    manifest = ('import {\n' + ''.join('  ' + json.dumps(name) + ',\n' for name in config["imports"]) + '}\n\n') if config["imports"] else ''
+    manifest += ('pkgtype(kind: "executable")\n\noptions(\n'
+                 '  "native-stub": ' + json.dumps(config["stubs"]) + ',\n')
+    if native is not None:
+        manifest += '  link: ' + json.dumps({"native": native}, indent=2) + ',\n'
+    return manifest + ')\n'
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True, help="application consumer.json")
@@ -98,6 +107,15 @@ def main():
     for filename in ("moon.mod", "main.mbt", config["package"] + ".pc", *config["stubs"]):
         if not (application / filename).is_file():
             parser.error(f"Application is missing {filename}")
+    existing_manifest = application / "moon.pkg"
+    if (application / "moon.pkg.json").exists() or (
+        existing_manifest.exists()
+        and re.sub(r"\s+", "", existing_manifest.read_text(encoding="utf-8"))
+        != re.sub(r"\s+", "", package_manifest(config))
+    ):
+        parser.error("Application has custom package configuration. This template accepts only the "
+                     "imports, executable declaration and native stubs listed in consumer.json; "
+                     "use the planner JSON to integrate an existing build.")
     directories = [application, *[path.resolve() for path in args.pc_dir]]
     if not all(path.is_dir() for path in directories):
         parser.error("Every explicit search directory must exist")
@@ -120,8 +138,8 @@ def main():
     run([moon, "update"], ROOT)
     run([moon, "build", "--target", "native", "--deny-warn", "cmd/plan"], ROOT)
     installed = ROOT / ".mooncakes" / MODULE / "moon.mod"
-    if not installed.is_file() or not re.search(r'^version\s*=\s*"0\.3\.0"', installed.read_text(encoding="utf-8"), re.MULTILINE):
-        raise RuntimeError("The planner must use MoonCakes MoonPkgConfig 0.3.0")
+    if not installed.is_file() or not re.search(r'^version\s*=\s*"' + re.escape(VERSION) + '"', installed.read_text(encoding="utf-8"), re.MULTILINE):
+        raise RuntimeError("The planner must use MoonCakes MoonPkgConfig " + VERSION)
     working = Path(tempfile.mkdtemp(prefix="consumer-", dir=ROOT / "_build"))
     evidence = {"dependency": MODULE + "@" + VERSION, "config": config,
                 "search_directories": list(map(str, directories)), "built": False}
@@ -163,19 +181,24 @@ def main():
             native.update({"cc": compiler, "stub-cc": compiler})
         destination = working / "application"
         shutil.copytree(application, destination, ignore=shutil.ignore_patterns("_build", ".mooncakes", "__pycache__", "moon.pkg"))
-        manifest = ('import {\n' + ''.join('  ' + json.dumps(name) + ',\n' for name in config["imports"]) + '}\n\n') if config["imports"] else ''
-        manifest += ('pkgtype(kind: "executable")\n\noptions(\n'
-                     '  "native-stub": ' + json.dumps(config["stubs"]) + ',\n'
-                     '  link: ' + json.dumps({"native": native}, indent=2) + ',\n)\n')
-        (destination / "moon.pkg").write_text(manifest, encoding="utf-8")
+        (destination / "moon.pkg").write_text(package_manifest(config, native), encoding="utf-8")
         run([moon, "update"], destination)
         run([moon, "build", "--target", "native", "--deny-warn", "."], destination)
-        evidence.update({"built": True, "application": str(destination), "native": native})
+        module = re.search(r'^name\s*=\s*"([A-Za-z0-9_./+-]+)"',
+                           (destination / "moon.mod").read_text(encoding="utf-8"), re.MULTILINE)
+        if not module:
+            raise RuntimeError("Could not identify the built application's module name")
+        executable = destination / "_build/native/debug/build" / (module[1].rsplit("/", 1)[-1] + (".exe" if os.name == "nt" else ""))
+        if not executable.is_file():
+            raise RuntimeError(f"Expected the built executable at {executable}")
+        evidence.update({"built": True, "application": str(destination), "native": native,
+                         "executable": str(executable)})
         if args.run:
             output = run([moon, "run", "--target", "native", "--deny-warn", "."], destination)
             evidence["output"] = output
             print(output, flush=True)
         print(f"Built application: {destination}", flush=True)
+        print(f"Executable: {executable}", flush=True)
         return 0
     finally:
         report.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

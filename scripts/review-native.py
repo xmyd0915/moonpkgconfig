@@ -1,74 +1,118 @@
-"""Show a damaged dependency, repair it, then build two published-package consumers."""
+"""Prepare native libraries, diagnose dependency errors and build published-package applications."""
 
 import argparse
 import json
 from pathlib import Path
-import shutil
+import subprocess
 import sys
 import tempfile
+import time
 
-from native_ffi import ROOT, run
+from native_ffi import ROOT
+
+
+def run_script(name, arguments):
+    command = [sys.executable, str(ROOT / "scripts" / name), *arguments]
+    result = subprocess.run(command, cwd=ROOT)
+    if result.returncode:
+        raise RuntimeError(f"{name} failed with exit {result.returncode}")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--zlib-pc-dir", type=Path, required=True)
-    parser.add_argument("--expat-pc-dir", type=Path, required=True)
+    parser.add_argument("--zlib-pc-dir", type=Path, help="reuse installed zlib; supply both library directories")
+    parser.add_argument("--expat-pc-dir", type=Path, help="reuse installed static Expat")
     parser.add_argument("--moon", default="moon")
+    parser.add_argument("--cmake", default="cmake")
     parser.add_argument("--cc")
+    parser.add_argument("--zlib-archive", type=Path, help="local pinned archive for preparation")
+    parser.add_argument("--expat-archive", type=Path, help="local pinned archive for preparation")
     parser.add_argument("--zlib-msvc-lib", action="append", default=[])
     args = parser.parse_args()
+    if bool(args.zlib_pc_dir) != bool(args.expat_pc_dir):
+        parser.error("Supply both --zlib-pc-dir and --expat-pc-dir, or neither to prepare fixed versions")
+    if args.zlib_pc_dir and (args.zlib_archive or args.expat_archive):
+        parser.error("Archive options apply only when preparing libraries")
     temporary = ROOT / ".tmp"
     temporary.mkdir(exist_ok=True)
     working = Path(tempfile.mkdtemp(prefix="native-walkthrough-", dir=temporary))
-    application = working / "application"
-    dependency = working / "dependency"
-    application.mkdir()
-    dependency.mkdir()
-    shutil.copyfile(ROOT / "examples/native-consumer/apps/expat/native-app.pc", application / "native-app.pc")
-    installed = args.expat_pc_dir.resolve() / "expat.pc"
-    original = installed.read_text(encoding="utf-8")
-    damaged = dependency / "expat.pc"
-    damaged.write_text("broken=${missing}\n" + original, encoding="utf-8")
-    command = [args.moon, "run", "--target", "native", "cmd/query", str(application), "native-app",
-               "--cflags", "--static", "--path", str(dependency), "--json"]
-    print("1/4 Query a damaged dependency copy (unreleased checkout)", flush=True)
-    failed = json.loads(run(command, ROOT, 1))
-    if len(failed["diagnostics"]) != 1 or failed["diagnostics"][0]["code"] != "PC004":
-        raise RuntimeError("Expected the original undefined-variable diagnostic")
-    problem = failed["diagnostics"][0]
-    at = problem["location"]
-    if Path(at["source"]) != damaged or at["line"] != 1 or at["column"] != 8:
-        raise RuntimeError("The damage was not located in the dependency file")
-    print(f"{problem['code']} {at['source']}:{at['line']}:{at['column']} {problem['message']}", flush=True)
-    print("2/4 Remove the invalid definition and query again", flush=True)
-    damaged.write_text(original, encoding="utf-8")
-    repaired = json.loads(run(command, ROOT))
-    if repaired["diagnostics"] or "-DXML_STATIC" not in [flag["value"] for flag in repaired["flags"]]:
-        raise RuntimeError("Repair did not restore Expat's static compiler flags")
-    print("Repair succeeded; static compiler flags include -DXML_STATIC", flush=True)
-    print("3/4 Build and run zlib with the published 0.3.0 template", flush=True)
-    for library, directory in (("zlib", args.zlib_pc_dir), ("expat", args.expat_pc_dir)):
-        if library == "expat":
-            print("4/4 Change application configuration and build/run Expat with the same template", flush=True)
-        consumer = [sys.executable, str(ROOT / "scripts/verify-native-consumer.py"),
-                    "--library", library, "--pc-dir", str(directory.resolve()), "--moon", args.moon]
-        if args.cc:
-            consumer.extend(["--cc", args.cc])
-        if library == "zlib":
-            for mapping in args.zlib_msvc_lib:
-                consumer.extend(["--msvc-lib", mapping])
-        print(run(consumer, ROOT), flush=True)
-    reports = [json.loads((ROOT / "_build/verification" / ("native-consumer-" + library + ".json")).read_text(encoding="utf-8"))
-               for library in ("zlib", "expat")]
-    if reports[0]["template_sha256"] != reports[1]["template_sha256"] or not all(report["passed"] for report in reports):
-        raise RuntimeError("The two applications did not pass with identical template code")
     report = ROOT / "_build/verification/native-walkthrough.json"
     report.parent.mkdir(parents=True, exist_ok=True)
-    report.write_text(json.dumps({"damaged": failed, "repaired": repaired, "inputs": str(working),
-                                  "consumers": ["native-consumer-zlib.json", "native-consumer-expat.json"],
-                                  "passed": True}, indent=2) + "\n", encoding="utf-8")
-    print(f"Native walkthrough: passed; {report}", flush=True)
+    started = time.monotonic()
+    evidence = {"dependency": "xmyd0915/moonpkgconfig@0.3.1", "passed": False,
+                "workspace": str(working), "consumers": []}
+    # Clear a previous success before running any preparation or consumer process.
+    report.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+    try:
+        mappings = list(args.zlib_msvc_lib)
+        if args.zlib_pc_dir:
+            zlib_directory, expat_directory = args.zlib_pc_dir.resolve(), args.expat_pc_dir.resolve()
+            for directory, filename in ((zlib_directory, "zlib.pc"), (expat_directory, "expat.pc")):
+                if not (directory / filename).is_file():
+                    raise RuntimeError(f"Installed metadata not found: {directory / filename}")
+        else:
+            print("Prepare fixed zlib and Expat installations", flush=True)
+            prepared_report = working / "dependencies.json"
+            options = ["--moon", args.moon, "--cmake", args.cmake, "--report", str(prepared_report)]
+            if args.cc:
+                options.extend(["--cc", args.cc])
+            for name, archive in (("--zlib-archive", args.zlib_archive), ("--expat-archive", args.expat_archive)):
+                if archive:
+                    options.extend([name, str(archive.resolve())])
+            try:
+                run_script("prepare-native.py", options)
+            finally:
+                if prepared_report.is_file():
+                    evidence["preparation"] = json.loads(prepared_report.read_text(encoding="utf-8"))
+            prepared = evidence["preparation"]
+            if not prepared["passed"]:
+                raise RuntimeError("Native dependency preparation did not complete")
+            zlib_directory, expat_directory = Path(prepared["zlib_pc_dir"]), Path(prepared["expat_pc_dir"])
+            if not mappings:
+                mappings = prepared["zlib_msvc_lib"]
+            evidence["preparation"] = prepared
+        evidence["search_directories"] = {"zlib": str(zlib_directory), "expat": str(expat_directory)}
+        reports = []
+        for library, directory in (("zlib", zlib_directory), ("expat", expat_directory)):
+            print(f"\nBuild {library}: missing, incompatible and damaged dependencies, repair, execution", flush=True)
+            options = ["--library", library, "--pc-dir", str(directory), "--moon", args.moon]
+            if args.cc:
+                options.extend(["--cc", args.cc])
+            if library == "zlib":
+                for mapping in mappings:
+                    options.extend(["--msvc-lib", mapping])
+            run_script("verify-native-consumer.py", options)
+            name = "native-consumer-" + library + ".json"
+            result = json.loads((report.parent / name).read_text(encoding="utf-8"))
+            if not result["passed"]:
+                raise RuntimeError(f"{library} consumer did not pass")
+            reports.append(result)
+            evidence["consumers"].append(name)
+        print("\nBuild a file tool with the same planner and adapter", flush=True)
+        options = ["--pc-dir", str(zlib_directory), "--moon", args.moon]
+        if args.cc:
+            options.extend(["--cc", args.cc])
+        for mapping in mappings:
+            options.extend(["--msvc-lib", mapping])
+        run_script("verify-native-file-tool.py", options)
+        file_result = json.loads((report.parent / "native-file-tool.json").read_text(encoding="utf-8"))
+        if not file_result["passed"]:
+            raise RuntimeError("File tool verification did not pass")
+        reports.append(file_result)
+        evidence["consumers"].append("native-file-tool.json")
+        if any(item["template_sha256"] != reports[0]["template_sha256"] for item in reports[1:]):
+            raise RuntimeError("Applications did not use identical planner and adapter source")
+        evidence["executable"] = file_result["executable"]
+        evidence["passed"] = True
+    except (RuntimeError, OSError, ValueError, KeyError) as error:
+        evidence["error"] = str(error)
+        raise
+    finally:
+        evidence["elapsed_seconds"] = round(time.monotonic() - started, 3)
+        report.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"\nNative walkthrough: passed in {evidence['elapsed_seconds']:.1f}s; {report}", flush=True)
+    print(f"Executable: {evidence['executable']}", flush=True)
+    print("Use the executable with: compress <input> <output.zlib> or decompress <input.zlib> <output>", flush=True)
 
 
 if __name__ == "__main__":

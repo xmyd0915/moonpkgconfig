@@ -6,13 +6,27 @@
 
 MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库为纯 MoonBit；解析与求值不启动 shell，也不调用外部 `pkg-config`。
 
-这个选题来自维护者较多的 C++ 开发实践：接入原生库时，最终参数通常能查到，但参数为什么出现、经过哪条依赖路径以及错误应回到哪里修改并不直观。MoonPkgConfig 尝试把这层过程变成可检查的数据。
+接入原生库时，构建工具不仅需要最终参数，还需要判断版本是否满足要求、定位出错的依赖文件，并解释参数经过哪条依赖路径而来。MoonPkgConfig 将这些信息作为结构化数据交给调用方，适合需要参数来源和精确诊断的工具集成。
 
 [MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) 是 MoonBit 的模块仓库，本项目在其中的名称为 `xmyd0915/moonpkgconfig`。安装可执行 `moon add xmyd0915/moonpkgconfig`；项目名称为 MoonPkgConfig。下面的命令行演示需要克隆本仓库运行。
 
 0.3.0新增静态编译字段与真实 Expat 接入，完整范围见 [0.3.0发行说明](docs/release-notes-0.3.0.md)。
 
-0.3.1修复损坏依赖被误报为缺包的诊断，返回真正出错的文件和行列，接口与范围见 [发行说明](docs/release-notes-0.3.1.md)。正式上传、标签及新项目安装结果见 [发布记录](https://github.com/xmyd0915/moonpkgconfig/blob/main/docs/release.md)。[通用原生接入模板](examples/native-consumer/README.md) 固定使用已发布的0.3.0，同一套规划与构建代码支持 zlib、Expat 两个应用；完整演示见 [故障定位与真实构建](docs/native-walkthrough.md)。
+0.3.1修复损坏依赖被误报为缺包的诊断，返回真正出错的文件和行列，接口与范围见 [发行说明](docs/release-notes-0.3.1.md)。正式上传、标签及新项目安装结果见 [发布记录](https://github.com/xmyd0915/moonpkgconfig/blob/main/docs/release.md)。
+
+## 用发布包构建文件工具
+
+一个实际用法是构建 MoonBit 文件压缩器：在应用的 `.pc` 中声明 `Requires.private: zlib >= 1.2.13`，由 MoonPkgConfig 从真实安装计算头文件、库路径和链接参数。损坏的间接依赖会显示真实文件和行列；修复后继续构建，生成可对实际文件执行压缩、解压的程序。
+
+[通用原生接入模板](examples/native-consumer/README.md) 固定依赖 MoonCakes 0.3.1，同一个规划器和构建适配器支持文件工具、zlib 检查程序和 Expat XML 程序。在仓库根目录运行：
+
+```sh
+python scripts/review-native.py
+```
+
+需要 MoonBit `0.10.14+7d59c7ec9`、Python 3.9+、CMake 3.15+；Linux 还需 C 编译器和 `make`，Windows 需 Visual Studio C++ 工具及 Windows SDK，建议使用 ASCII 构建目录（可含空格，详见运行说明）。该命令自动准备固定版本的静态依赖，在仓库之外运行发布包消费者，检查故障、修复、真实执行与 Python zlib 双向互操作，最后打印文件工具路径和本次耗时。
+
+工具用法、已有安装的复用选项和报告位置见 [完整原生流程](docs/native-walkthrough.md)。这些应用由本项目维护，不代表第三方采用。只体验参数查询时，可直接使用下面的快速体验步骤。
 
 ## 项目亮点
 
@@ -23,46 +37,17 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 | 稳定集成接口 | 提供结构化 JSON、明确退出码和不丢参数边界的输出 |
 | MoonBit 多目标核心 | 同一组逻辑测试覆盖 wasm、wasm-gc、JavaScript 和 native |
 
-## 验证快照
-
-| 证据 | 当前结果 |
-| --- | --- |
-| 自动化测试 | 0.3.1源码89个逻辑测试 × 4 个目标，全部通过；0.3.0发行源码为81项 |
-| 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言；Windows 上构建真实 MSVC zlib 并运行 MoonBit FFI |
-| 上游兼容语料 | 11 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
-| 真实项目模板 | zlib、libffi、libuv、libpng、PCRE2、Expat 六项目的固定版本模板、提交及许可证哈希；配置副本按独立预期检查参数和来源 |
-| 自动差分对照 | 原38项加120项真实模板查询、4项静态编译字段顺序，共162项固定 pkgconf 3.0.7 对照 |
-| 输入边界 | 固定种子的64个有效参数输入及94个截断/异常输入，检查参数边界、JSON、退出码、来源、确定性及超时 |
-| 原生闭环 | 使用查询得到的 Cflags/Libs 编译 C 静态库和 C++ 调用程序，并运行核对结果 |
-| 真实 MoonBit FFI | 从 zlib 1.3.1 安装生成的 `.pc` 查询参数，在 Ubuntu 与 Windows MSVC 构建 MoonBit 程序并验证 CRC-32、压缩/解压和错误返回 |
-| 真实私有依赖 | libpng 1.6.59 → zlib 1.3.1 跨目录查询、普通/静态参数区分、缺失依赖诊断与 MoonBit PNG 像素往返验证 |
-| 大图与边界 | 四种1,000包图、5,000包长链解析/目录检查、缺失依赖图及展开边界；保留耗时和峰值内存记录 |
-| 打包消费者 | 从实际发行归档提取源码，独立项目验证参数分类、路径、深图、静态编译字段及损坏依赖原始诊断；0.3.1四目标各6项消费者测试通过 |
-| 发布包实际使用 | 独立消费者使用 MoonCakes 0.2.0 计算真实 zlib 构建参数，演示缺失依赖、版本错误及修复，再构建文件压缩工具并检查双向互操作 |
-| 可复用接入模板 | 直接依赖 MoonCakes 0.3.0，在仓库之外以同一规划器和适配代码构建 zlib、Expat 应用，分别验证缺失/版本错误、修复及真实执行 |
-| 损坏依赖定位 | 0.3.1包含8项新增核心回归与22个文件加载 CLI 场景，原始文件错误不再变成缺包提示，覆盖私有模式、目录优先级、虚拟包和共享失败依赖 |
-
-详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
-
-真实模板的配置、固定种子与报告重现见 [兼容性检查](docs/compatibility.md)。`Cflags.private` 静态编译字段从0.3.0起提供。
-
-大型图测量见 [首次性能记录](docs/performance.md) 和 [查询优化记录](docs/query-performance.md)。0.2.0优化路径解释、虚拟包候选查找和有效子图的目录检查，并修复原生深链解析的进程异常退出；数据注明平台、计时范围和问题图的剩余开销。
-
-如果只想快速判断项目是否可运行，可从 [评审快速入口](docs/reviewer-guide.md) 开始；它用一个脚本依次展示来源解释、错误诊断、sysroot 和虚拟依赖范围。
-
-## 一分钟体验
+## 快速体验
 
 需要 MoonBit 工具链；当前 CI 固定使用 `0.10.14+7d59c7ec9`，建议复现时使用同一版本。在仓库根目录运行：
 
 ```sh
 moon update
-sh scripts/review-demo.sh
 moon run --target native cmd/query examples/valid imagekit --cflags --explain
 moon run --target native cmd/check examples/invalid
-moon test --target all --deny-warn
-sh scripts/verify-native-example.sh
-sh scripts/compare-pkgconf.sh
 ```
+
+最后一条命令有意检查错误样本，显示诊断并返回退出码 1。完整测试、原生构建和工具差分命令见后文。
 
 第一条查询会输出可直接使用的参数，并紧接着给出来源：
 
@@ -141,6 +126,34 @@ GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检
 
 `cmd/check` 检查显式目录里的全部 `.pc` 文件，不要求先知道根包名。它会汇总文本解析、必填元数据、公开和私有依赖、版本、依赖环及冲突诊断；正常目录返回 `0`，发现问题返回 `1`，目录读取或调用错误返回 `2`。
 
+## 验证快照
+
+| 证据 | 当前结果 |
+| --- | --- |
+| 自动化测试 | 0.3.1源码89个逻辑测试 × 4 个目标，全部通过；0.3.0发行源码为81项 |
+| 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言；Windows 上构建真实 MSVC zlib 并运行 MoonBit FFI |
+| 上游兼容语料 | 11 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
+| 真实项目模板 | zlib、libffi、libuv、libpng、PCRE2、Expat 六项目的固定版本模板、提交及许可证哈希；配置副本按独立预期检查参数和来源 |
+| 自动差分对照 | 原38项加120项真实模板查询、4项静态编译字段顺序，共162项固定 pkgconf 3.0.7 对照 |
+| 输入边界 | 固定种子的64个有效参数输入及94个截断/异常输入，检查参数边界、JSON、退出码、来源、确定性及超时 |
+| 原生闭环 | 使用查询得到的 Cflags/Libs 编译 C 静态库和 C++ 调用程序，并运行核对结果 |
+| 真实 MoonBit FFI | 从 zlib 1.3.1 安装生成的 `.pc` 查询参数，在 Ubuntu 与 Windows MSVC 构建 MoonBit 程序并验证 CRC-32、压缩/解压和错误返回 |
+| 真实私有依赖 | libpng 1.6.59 → zlib 1.3.1 跨目录查询、普通/静态参数区分、缺失依赖诊断与 MoonBit PNG 像素往返验证 |
+| 大图与边界 | 四种1,000包图、5,000包长链解析/目录检查、缺失依赖图及展开边界；保留耗时和峰值内存记录 |
+| 打包消费者 | 从实际发行归档提取源码，独立项目验证参数分类、路径、深图、静态编译字段及损坏依赖原始诊断；0.3.1四目标各6项消费者测试通过 |
+| 发布包实际使用 | 独立消费者使用 MoonCakes 0.2.0 计算真实 zlib 构建参数，演示缺失依赖、版本错误及修复，再构建文件压缩工具并检查双向互操作 |
+| 0.3.0模板历史验证 | 直接依赖 MoonCakes 0.3.0，在仓库之外以同一规划器和适配代码构建 zlib、Expat 应用，分别验证缺失/版本错误、修复及真实执行 |
+| 当前通用接入模板 | 固定依赖 MoonCakes 0.3.1，同一规划器和适配器构建 zlib、Expat、文件压缩工具；总入口核对代码摘要，并生成依赖错误、修复、文件互操作和执行结果报告 |
+| 损坏依赖定位 | 0.3.1包含8项新增核心回归与22个文件加载 CLI 场景，原始文件错误不再变成缺包提示，覆盖私有模式、目录优先级、虚拟包和共享失败依赖 |
+
+详细命令、工具版本和兼容边界记录在 [验证记录](docs/verification.md) 与 [pkgconf 对照记录](docs/pkgconf-comparison.md) 中。以上是所覆盖范围的证据，不代表完整兼容 pkgconf。
+
+真实模板的配置、固定种子与报告重现见 [兼容性检查](docs/compatibility.md)。`Cflags.private` 静态编译字段从0.3.0起提供。
+
+大型图测量见 [首次性能记录](docs/performance.md) 和 [查询优化记录](docs/query-performance.md)。0.2.0优化路径解释、虚拟包候选查找和有效子图的目录检查，并修复原生深链解析的进程异常退出；数据注明平台、计时范围和问题图的剩余开销。
+
+完整的查询体验见 [快速体验指南](docs/reviewer-guide.md)；它用一个脚本依次展示来源解释、错误诊断、sysroot 和虚拟依赖范围。
+
 ## 库接口
 
 ```moonbit
@@ -198,4 +211,4 @@ let libs = doc.field("Libs")
 - 核心库仅解析和查询元数据，不查找系统包、不修改构建配置、不运行编译器或安装依赖；原生集成示例会显式调用编译器。
 - sysroot 与系统目录由调用方显式提供；尚不读取 `PKG_CONFIG_SYSROOT_DIR` 等环境变量，不实现 Windows 自动重定位、完整片段去重或全部 pkgconf 3 扩展。
 
-可复制的演示步骤见 [docs/demo.md](docs/demo.md)，评审入口见 [docs/reviewer-guide.md](docs/reviewer-guide.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，0.2.0发行说明见 [docs/release-notes-0.2.0.md](docs/release-notes-0.2.0.md)，发布记录见 [docs/release.md](docs/release.md)，上游兼容样本见 [testdata/pkgconf-3.0.7](testdata/pkgconf-3.0.7)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。
+可复制的演示步骤见 [docs/demo.md](docs/demo.md)，快速体验见 [docs/reviewer-guide.md](docs/reviewer-guide.md)，独立工具对照见 [docs/pkgconf-comparison.md](docs/pkgconf-comparison.md)，0.2.0发行说明见 [docs/release-notes-0.2.0.md](docs/release-notes-0.2.0.md)，发布记录见 [docs/release.md](docs/release.md)，上游兼容样本见 [testdata/pkgconf-3.0.7](testdata/pkgconf-3.0.7)，来源与许可证见 [ORIGINS.md](ORIGINS.md)，开发计划见 [ROADMAP.md](ROADMAP.md)。MIT 许可证全文见 [LICENSE](LICENSE)。

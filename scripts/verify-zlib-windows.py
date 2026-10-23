@@ -39,7 +39,7 @@ def main():
     parser.add_argument("--cmake", default="cmake", help="CMake executable (3.15 or newer)")
     parser.add_argument("--archive", type=Path, help="optional local pinned zlib archive; checksum is still checked")
     parser.add_argument("--with-consumer", action="store_true", help="also verify the standalone MoonCakes consumer")
-    parser.add_argument("--with-native-consumer", action="store_true", help="also verify the generic MoonCakes 0.3.0 template")
+    parser.add_argument("--with-native-consumer", action="store_true", help="also verify the generic MoonCakes 0.3.1 template")
     args = parser.parse_args()
     if os.name != "nt":
         parser.error("this verification requires Windows x64 and MSVC")

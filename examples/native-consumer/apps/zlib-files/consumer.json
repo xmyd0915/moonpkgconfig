@@ -1,0 +1,11 @@
+{
+  "package": "native-app",
+  "static": true,
+  "stubs": ["zlib_stub.c"],
+  "imports": [
+    "moonbitlang/core/encoding/utf8",
+    "moonbitlang/core/env",
+    "moonbitlang/x/fs",
+    "moonbitlang/x/sys"
+  ]
+}
