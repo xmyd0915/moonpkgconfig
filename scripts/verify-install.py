@@ -229,6 +229,7 @@ def main():
     (consumer / "consumer_test.mbt").write_text(smoke, encoding="utf-8")
     run([moon, "fmt"], consumer)
     run([moon, "check", "--target", "all", "--deny-warn"], consumer)
+    run([moon, "build", "--target", "all", "--deny-warn"], consumer)
     if not archive:
         installed = consumer / ".mooncakes" / MODULE
         if version_from(installed) != args.version:

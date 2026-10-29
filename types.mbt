@@ -2,8 +2,8 @@
 /// A source location. Columns count Unicode scalar values, starting at one.
 pub(all) struct Location {
   source : String
-  line : Int
-  column : Int
+  line : Int32
+  column : Int32
 } derive(Eq, @debug.Debug)
 
 ///|
@@ -83,7 +83,7 @@ fn diag(code : String, message : String, location : Location) -> Diagnostic {
 }
 
 ///|
-fn chars_text(chars : Array[Char], start : Int, end : Int) -> String {
+fn chars_text(chars : Array[Char], start : Int32, end : Int32) -> String {
   let out = StringBuilder()
   for i = start; i < end; i = i + 1 {
     out.write_char(chars[i])

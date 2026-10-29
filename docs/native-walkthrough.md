@@ -6,7 +6,7 @@
 
 ## 准备
 
-需要 MoonBit `0.10.14+7d59c7ec9`、Python 3.9+、CMake 3.15+，以及原生构建工具：Linux 使用 C 编译器和 `make`；Windows 使用 x64 Visual Studio C++ 工具及 Windows SDK。首次运行需要访问源码下载地址和 MoonCakes。
+需要 MoonBit `0.10.16+b1a0e846e`、Python 3.9+、CMake 3.15+，以及原生构建工具：Linux 使用 C 编译器和 `make`；Windows 使用 x64 Visual Studio C++ 工具及 Windows SDK。首次运行需要访问源码下载地址和 MoonCakes。
 
 在仓库根目录运行：
 

@@ -6,7 +6,7 @@
 
 ## 构建与运行
 
-需要 MoonBit `0.10.14+7d59c7ec9`、Python 3.9+、C 编译器，以及带静态库、头文件和 `zlib.pc` 的 zlib 开发安装。Linux/macOS 使用 POSIX 编译器；Windows x64 使用 Visual Studio C++ 工具和 Windows SDK，静态库使用 `/MT` 运行库。
+需要 MoonBit `0.10.16+b1a0e846e`、Python 3.9+、C 编译器，以及带静态库、头文件和 `zlib.pc` 的 zlib 开发安装。Linux/macOS 使用 POSIX 编译器；Windows x64 使用 Visual Studio C++ 工具和 Windows SDK，静态库使用 `/MT` 运行库。
 
 在复制后的本目录运行：
 

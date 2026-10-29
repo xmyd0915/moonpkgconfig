@@ -4,8 +4,8 @@ fn flag_package(
   requires : String,
   cflags : String,
   libs : String,
-  private_requires? : String = "",
-  private_libs? : String = "",
+  private_requires~ : String = "",
+  private_libs~ : String = "",
 ) -> @moonpkgconfig.Document {
   let text = StringBuilder()
   text.write_string("Name: " + id + "\nDescription: flag fixture\nVersion: 1")

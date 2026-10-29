@@ -48,14 +48,14 @@ pub fn FlagResult::as_json(self : FlagResult) -> Json {
 }
 
 ///|
-pub fn Document::json_text(self : Document, pretty? : Bool = false) -> String {
+pub fn Document::json_text(self : Document, pretty~ : Bool = false) -> String {
   self.as_json().stringify(indent=if pretty { 2 } else { 0 })
 }
 
 ///|
 pub fn FlagResult::json_text(
   self : FlagResult,
-  pretty? : Bool = false,
+  pretty~ : Bool = false,
 ) -> String {
   self.as_json().stringify(indent=if pretty { 2 } else { 0 })
 }

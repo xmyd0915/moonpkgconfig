@@ -2,7 +2,7 @@
 priv struct CleanFrame {
   id : String
   steps : Array[ResolveStep]
-  mut next : Int
+  mut next : Int32
   mut clean : Bool
 }
 
@@ -10,8 +10,8 @@ priv struct CleanFrame {
 // 1 = active, 2 = proven clean, 3 = requires the full diagnostic traversal.
 // Any conflict field is conservative: its meaning depends on a root's selected
 // closure, so it must not be checked against the whole directory at once.
-fn QueryContext::clean_subgraphs(self : QueryContext) -> Map[String, Int] {
-  let states : Map[String, Int] = Map([])
+fn QueryContext::clean_subgraphs(self : QueryContext) -> Map[String, Int32] {
+  let states : Map[String, Int32] = Map([])
   for root in self.packages.package_ids {
     if states.contains(root) {
       continue

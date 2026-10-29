@@ -2,7 +2,7 @@
 
 这个示例从真实安装的 `libpng16.pc` 和 `zlib.pc` 查询参数，在独立 MoonBit 原生模块中编码 PNG、解码并逐字节比较 RGBA 像素。libpng 的元数据通过 `Requires.private: zlib` 声明依赖，因此可用实际构建检验普通查询与静态查询的区别。
 
-需要 Linux 或 macOS、MoonBit `0.10.14+7d59c7ec9`、Python 3、POSIX C 编译器，以及带头文件、静态库和 `.pc` 的 libpng/zlib 安装。当前示例未适配 Windows MSVC。
+需要 Linux 或 macOS、MoonBit `0.10.16+b1a0e846e`、Python 3、POSIX C 编译器，以及带头文件、静态库和 `.pc` 的 libpng/zlib 安装。当前示例未适配 Windows MSVC。
 
 在仓库根目录运行：
 

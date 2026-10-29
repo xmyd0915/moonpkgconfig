@@ -2,13 +2,13 @@
 #borrow(input, summary)
 extern "C" fn parse_xml(
   input : Bytes,
-  length : Int,
-  chunk_size : Int,
+  length : Int32,
+  chunk_size : Int32,
   summary : Bytes,
-) -> Int = "moonpkg_expat_parse"
+) -> Int32 = "moonpkg_expat_parse"
 
 ///|
-fn read_u32(bytes : Bytes, offset : Int) -> Int {
+fn read_u32(bytes : Bytes, offset : Int32) -> Int32 {
   bytes[offset].to_int() |
   (bytes[offset + 1].to_int() << 8) |
   (bytes[offset + 2].to_int() << 16) |
@@ -16,7 +16,7 @@ fn read_u32(bytes : Bytes, offset : Int) -> Int {
 }
 
 ///|
-fn check_document(input : Bytes, chunk_size : Int, valid : Bool) -> Json {
+fn check_document(input : Bytes, chunk_size : Int32, valid : Bool) -> Json {
   let summary = Bytes::new(24)
   let status = parse_xml(input, input.length(), chunk_size, summary)
   if status != (if valid { 1 } else { 0 }) {

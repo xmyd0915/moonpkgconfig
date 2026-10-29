@@ -1,28 +1,32 @@
 ///|
 #borrow(pixels)
-extern "C" fn encoded_size(width : Int, height : Int, pixels : Bytes) -> Int = "moonpkg_png_size"
+extern "C" fn encoded_size(
+  width : Int32,
+  height : Int32,
+  pixels : Bytes,
+) -> Int32 = "moonpkg_png_size"
 
 ///|
 #borrow(pixels, destination)
 extern "C" fn encode_rgba(
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   pixels : Bytes,
   destination : Bytes,
-) -> Int = "moonpkg_png_encode"
+) -> Int32 = "moonpkg_png_encode"
 
 ///|
 #borrow(encoded, destination)
 extern "C" fn decode_rgba(
   encoded : Bytes,
-  length : Int,
-  width : Int,
-  height : Int,
+  length : Int32,
+  width : Int32,
+  height : Int32,
   destination : Bytes,
-) -> Int = "moonpkg_png_decode"
+) -> Int32 = "moonpkg_png_decode"
 
 ///|
-fn encode(width : Int, height : Int, pixels : Bytes) -> (Bytes, Int) {
+fn encode(width : Int32, height : Int32, pixels : Bytes) -> (Bytes, Int32) {
   let capacity = encoded_size(width, height, pixels)
   if capacity <= 0 {
     abort("libpng could not measure the encoded image")
@@ -36,7 +40,7 @@ fn encode(width : Int, height : Int, pixels : Bytes) -> (Bytes, Int) {
 }
 
 ///|
-fn pixels(width : Int, height : Int) -> Bytes {
+fn pixels(width : Int32, height : Int32) -> Bytes {
   Bytes::makei(width * height * 4, i => {
     if i % 4 == 3 {
       b'\xff'
@@ -47,7 +51,7 @@ fn pixels(width : Int, height : Int) -> Bytes {
 }
 
 ///|
-fn round_trip(width : Int, height : Int) -> Unit {
+fn round_trip(width : Int32, height : Int32) -> Unit {
   let original = pixels(width, height)
   let (encoded, length) = encode(width, height, original)
   let restored = Bytes::new(original.length())

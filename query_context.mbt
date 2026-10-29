@@ -13,7 +13,7 @@ priv struct QueryContext {
 fn QueryContext::new(
   packages : PackageSet,
   include_private : Bool,
-  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
+  unavailable~ : Map[String, Array[Diagnostic]] = Map([]),
 ) -> QueryContext {
   { packages, include_private, providers: None, steps: Map([]), unavailable, }
 }

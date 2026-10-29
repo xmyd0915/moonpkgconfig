@@ -4,7 +4,7 @@
 /// Supports quoted spaces, empty arguments and escaped characters.
 pub fn split_flags(
   value : String,
-  source? : String = "flags",
+  source~ : String = "flags",
 ) -> Result[Array[String], Diagnostic] {
   let chars = value.to_array()
   let result : Array[String] = []

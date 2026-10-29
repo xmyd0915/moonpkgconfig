@@ -1,5 +1,5 @@
 ///|
-fn package_text(shape : String, size : Int, index : Int) -> String {
+fn package_text(shape : String, size : Int32, index : Int32) -> String {
   let text = StringBuilder()
   text.write_string(
     "Name: p\{index}\nDescription: generated benchmark\nVersion: 1\n",

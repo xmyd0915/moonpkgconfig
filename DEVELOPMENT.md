@@ -2,11 +2,15 @@
 
 核心模块不访问文件系统、不调用 shell。分层为文档解析、变量展开、参数分词、依赖表达式；`cmd/inspect` 使用 `moonbitlang/x/fs` 作为薄文件适配层，不把平台 IO 混入核心接口。
 
-代码以 `moon fmt` 格式化；提交前运行 `moon check --target all --deny-warn`、`moon test --target all --deny-warn` 和 `moon run cmd/demo`。四目标为 wasm、wasm-gc、js、native。验证证据写入 `docs/verification.md`，失败不能记为通过。
+代码以 `moon fmt` 格式化；提交前运行 `moon check --target all --deny-warn`、`moon build --target all --deny-warn`、`moon test --target all --deny-warn` 和 `moon run cmd/demo`。四目标为 wasm、wasm-gc、js、native。验证证据写入 `docs/verification.md`，失败不能记为通过。
 
-CI 固定使用 `0.10.14+7d59c7ec9` 工具链，避免滚动下载改变格式和语言语法。升级工具链时应单独完成迁移和全套验证，再调整固定版本。
+CI 固定使用 `0.10.16+b1a0e846e` 工具链，避免滚动下载改变格式和语言语法。升级工具链时应单独完成迁移和全套验证，再调整固定版本。
+
+Ubuntu 与 Windows CI 分别显示工具链版本、四目标检查、构建和测试；另从 MoonCakes 安装已发布的0.3.1，验证其公开接口。注册表报告与归档报告一起保存在各平台的 `package-install` 附件中，便于区分主分支归档与正式发布包。
 
 Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使用用户目录中的 `.moon` 安装。脚本遇到第一个失败立即退出，不修改全局 PATH。
+
+可将固定版本工具链单独安装到忽略的 `.tools` 目录，并通过 `-MoonHome` 传入该安装的绝对路径。源码按固定版本执行格式化；生成的 `pkg.generated.mbti` 是本地接口视图，不纳入版本控制和发行归档。
 
 发行验证使用 `python scripts/verify-install.py --package`：提取实际 ZIP，以独立 `moon.work` 连接归档源码和消费者，执行公开接口测试。默认不传参数时从 MoonCakes 安装当前模块版本，不设置本地依赖覆盖；此模式仅在版本已发布后运行。消费者目录保留在忽略的 `.tmp` 中，便于核对下载内容。
 

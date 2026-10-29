@@ -24,7 +24,7 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 python scripts/review-native.py
 ```
 
-需要 MoonBit `0.10.14+7d59c7ec9`、Python 3.9+、CMake 3.15+；Linux 还需 C 编译器和 `make`，Windows 需 Visual Studio C++ 工具及 Windows SDK，建议使用 ASCII 构建目录（可含空格，详见运行说明）。该命令自动准备固定版本的静态依赖，在仓库之外运行发布包消费者，检查故障、修复、真实执行与 Python zlib 双向互操作，最后打印文件工具路径和本次耗时。
+需要 MoonBit `0.10.16+b1a0e846e`、Python 3.9+、CMake 3.15+；Linux 还需 C 编译器和 `make`，Windows 需 Visual Studio C++ 工具及 Windows SDK，建议使用 ASCII 构建目录（可含空格，详见运行说明）。该命令自动准备固定版本的静态依赖，在仓库之外运行发布包消费者，检查故障、修复、真实执行与 Python zlib 双向互操作，最后打印文件工具路径和本次耗时。
 
 工具用法、已有安装的复用选项和报告位置见 [完整原生流程](docs/native-walkthrough.md)。这些应用由本项目维护，不代表第三方采用。只体验参数查询时，可直接使用下面的快速体验步骤。
 
@@ -39,7 +39,7 @@ python scripts/review-native.py
 
 ## 快速体验
 
-需要 MoonBit 工具链；当前 CI 固定使用 `0.10.14+7d59c7ec9`，建议复现时使用同一版本。在仓库根目录运行：
+需要 MoonBit 工具链；当前 CI 固定使用 `0.10.16+b1a0e846e`，建议复现时使用同一版本。在仓库根目录运行：
 
 ```sh
 moon update
@@ -63,6 +63,7 @@ moon run --target native cmd/check examples/invalid
 
 ```sh
 moon check --target all
+moon build --target all
 moon test --target all
 moon run cmd/demo
 moon run --target native cmd/inspect examples/valid/imagekit.pc
@@ -116,7 +117,7 @@ Windows 安装 MoonBit、Python 3.9+、CMake 3.15+、Visual Studio C++ 工具及
 
 `python scripts/verify-compatibility.py --reference /path/to/pkgconf` 校验六份真实模板和许可证，生成明确配置的副本，并执行独立预期、固定版本差分及输入边界检查。默认参考版本为 pkgconf 3.0.7；结果保存在 `_build/verification/compatibility.json`，CI 上传可下载的报告。
 
-GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检查、四目标类型检查与测试，并运行正常和错误文件演示。工作流只需要仓库只读权限。
+GitHub Actions 在全新的 Ubuntu 与 Windows 环境重新下载依赖，分别执行四目标类型检查、构建、测试和已发布0.3.1的安装验证。Ubuntu 另检查格式并运行正常和错误文件演示；两个平台均构建真实原生消费者。工作流只需要仓库只读权限。
 
 `testdata/pkgconf-3.0.7` 保存了11个未经修改的官方pkgconf测试文件，固定到上游标签、提交和ISC许可证。CI会把它们作为独立兼容语料检查；这证明所选输入受支持，不代表通过pkgconf完整测试套件。
 
@@ -131,7 +132,7 @@ GitHub Actions 会在全新的 Ubuntu 环境重新下载依赖，执行格式检
 | 证据 | 当前结果 |
 | --- | --- |
 | 自动化测试 | 0.3.1源码89个逻辑测试 × 4 个目标，全部通过；0.3.0发行源码为81项 |
-| 全新环境 CI | Ubuntu 上执行格式检查、四目标检查、测试和 CLI 断言；Windows 上构建真实 MSVC zlib 并运行 MoonBit FFI |
+| 全新环境 CI | Ubuntu 与 Windows 分别执行四目标检查、构建、测试和0.3.1注册表安装验证；Ubuntu 另检查格式与 CLI 断言，两个平台均构建并运行真实原生消费者 |
 | 上游兼容语料 | 11 个未经修改、固定版本与许可证的 pkgconf 3.0.7 官方测试文件 |
 | 真实项目模板 | zlib、libffi、libuv、libpng、PCRE2、Expat 六项目的固定版本模板、提交及许可证哈希；配置副本按独立预期检查参数和来源 |
 | 自动差分对照 | 原38项加120项真实模板查询、4项静态编译字段顺序，共162项固定 pkgconf 3.0.7 对照 |

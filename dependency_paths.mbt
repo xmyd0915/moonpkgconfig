@@ -37,8 +37,8 @@ pub fn DependencyPaths::path_to(
 pub fn PackageSet::dependency_paths(
   self : PackageSet,
   root : String,
-  include_private? : Bool = false,
-  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
+  include_private~ : Bool = false,
+  unavailable~ : Map[String, Array[Diagnostic]] = Map([]),
 ) -> DependencyPaths {
   self.build_dependency_paths(root, include_private, None, unavailable)
 }

@@ -5,7 +5,7 @@ pub(all) struct DirectoryLoad {
   package_ids : Array[String]
   diagnostics : Array[@pc.Diagnostic]
   diagnostics_by_package : Map[String, Array[@pc.Diagnostic]]
-  file_count : Int
+  file_count : Int32
 }
 
 ///|
@@ -25,7 +25,7 @@ pub fn DirectoryLoad::diagnostics_for(
 /// from filenames, matching the way pkg-config modules are normally named.
 pub fn load_directory(
   directory : String,
-  overrides? : Map[String, String] = Map([]),
+  overrides~ : Map[String, String] = Map([]),
 ) -> DirectoryLoad raise @fs.IOError {
   load_directories([directory], overrides~)
 }
@@ -35,7 +35,7 @@ pub fn load_directory(
 /// each package id wins, including when that file contains diagnostics.
 pub fn load_directories(
   directories : Array[String],
-  overrides? : Map[String, String] = Map([]),
+  overrides~ : Map[String, String] = Map([]),
 ) -> DirectoryLoad raise @fs.IOError {
   let packages = @pc.PackageSet::new()
   let package_ids : Array[String] = []

@@ -47,7 +47,7 @@ pub fn FlagResult::select(
 }
 
 ///|
-fn flag_group_end(flags : Array[ResolvedFlag], start : Int) -> Int {
+fn flag_group_end(flags : Array[ResolvedFlag], start : Int32) -> Int32 {
   let first = flags[start]
   let mut end = start + 1
   if first.value == "-Wl,--start-group" {

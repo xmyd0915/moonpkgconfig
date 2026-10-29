@@ -5,7 +5,7 @@
 /// before adding a document to a package set.
 pub fn Document::validate_metadata(
   self : Document,
-  source? : String = "package.pc",
+  source~ : String = "package.pc",
 ) -> Array[Diagnostic] {
   let diagnostics : Array[Diagnostic] = []
   validate_required_field(self, "Name", source, diagnostics)

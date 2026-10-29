@@ -17,9 +17,9 @@ pub(all) struct Resolution {
 pub fn PackageSet::resolve(
   self : PackageSet,
   root : String,
-  include_private? : Bool = false,
-  source? : String = "query",
-  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
+  include_private~ : Bool = false,
+  source~ : String = "query",
+  unavailable~ : Map[String, Array[Diagnostic]] = Map([]),
 ) -> Resolution {
   QueryContext::new(self, include_private, unavailable~).resolve(root, source)
 }
@@ -30,7 +30,7 @@ fn QueryContext::resolve(
   root : String,
   source : String,
 ) -> Resolution {
-  let states : Map[String, Int] = Map([])
+  let states : Map[String, Int32] = Map([])
   let order : Array[String] = []
   let stack : Array[String] = []
   let diagnostics : Array[Diagnostic] = []
@@ -63,8 +63,8 @@ fn QueryContext::resolve(
 /// caller's responsibility because they are not roots in this package set.
 pub fn PackageSet::check_all(
   self : PackageSet,
-  include_private? : Bool = true,
-  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
+  include_private~ : Bool = true,
+  unavailable~ : Map[String, Array[Diagnostic]] = Map([]),
 ) -> Array[Diagnostic] {
   let context = QueryContext::new(self, include_private, unavailable~)
   let clean = context.clean_subgraphs()
@@ -155,7 +155,7 @@ fn append_unavailable(
 priv struct ResolveFrame {
   id : String
   steps : Array[ResolveStep]
-  mut next : Int
+  mut next : Int32
 }
 
 ///|
@@ -163,7 +163,7 @@ fn resolve_graph(
   context : QueryContext,
   id : String,
   source : String,
-  states : Map[String, Int],
+  states : Map[String, Int32],
   order : Array[String],
   stack : Array[String],
   diagnostics : Array[Diagnostic],

@@ -6,7 +6,7 @@
 ///
 /// The result is negative, zero, or positive when `left` is respectively less
 /// than, equal to, or greater than `right`.
-pub fn compare_versions(left : String, right : String) -> Int {
+pub fn compare_versions(left : String, right : String) -> Int32 {
   let a = left.to_array()
   let b = right.to_array()
   let mut ai = 0

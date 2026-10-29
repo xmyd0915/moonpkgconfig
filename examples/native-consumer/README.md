@@ -19,7 +19,7 @@ use the published library; they are not third-party adoption examples.
 
 ## Run
 
-Prerequisites: MoonBit `0.10.14+7d59c7ec9`, Python 3.9+, and an installed native
+Prerequisites: MoonBit `0.10.16+b1a0e846e`, Python 3.9+, and an installed native
 library with its `.pc` file. Linux needs a C compiler. Windows needs the x64
 Visual Studio C++ tools and Windows SDK; MoonBit discovers MSVC. The adapter
 selects `/MT`, matching the static fixtures used in this repository. Registry

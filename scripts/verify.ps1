@@ -15,8 +15,14 @@ try {
     $env:MOON_HOME = $MoonHome
     $env:MOONC_OVERRIDE = "$MoonHome\bin\moonc.exe"
     $env:PATH = "$MoonHome\bin;$env:PATH"
+    & "$MoonHome\bin\moon.exe" version --all
+    if ($LASTEXITCODE -ne 0) { throw 'Toolchain version check failed.' }
     & "$MoonHome\bin\moon.exe" fmt
     if ($LASTEXITCODE -ne 0) { throw 'Formatting failed.' }
+    foreach ($ffiModule in @('examples/zlib-ffi', 'examples/libpng-ffi')) {
+        & "$MoonHome\bin\moon.exe" -C $ffiModule fmt
+        if ($LASTEXITCODE -ne 0) { throw 'FFI example formatting failed.' }
+    }
     & "$MoonHome\bin\moon.exe" -C examples/zlib-consumer fmt
     if ($LASTEXITCODE -ne 0) { throw 'Consumer formatting failed.' }
     & "$MoonHome\bin\moon.exe" -C examples/zlib-consumer/app fmt
@@ -29,6 +35,8 @@ try {
     }
     & "$MoonHome\bin\moon.exe" check --target all --deny-warn
     if ($LASTEXITCODE -ne 0) { throw 'Type checking failed.' }
+    & "$MoonHome\bin\moon.exe" build --target all --deny-warn
+    if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
     & "$MoonHome\bin\moon.exe" test --target all --deny-warn
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
     & "$MoonHome\bin\moon.exe" run cmd/demo

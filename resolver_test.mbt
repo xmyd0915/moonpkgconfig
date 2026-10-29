@@ -3,9 +3,9 @@ fn graph_package(
   id : String,
   version : String,
   requires : String,
-  private_requires? : String = "",
-  conflicts? : String = "",
-  provides? : String = "",
+  private_requires~ : String = "",
+  conflicts~ : String = "",
+  provides~ : String = "",
 ) -> @moonpkgconfig.Document {
   let text = StringBuilder()
   text.write_string(

@@ -2,7 +2,7 @@
 
 这个示例把 MoonPkgConfig 的查询结果用于 MoonBit 自身的原生构建：读取已安装的 `zlib.pc`，查询 Cflags 和静态 Libs，生成独立模块的原生编译配置，再调用 zlib 的 CRC-32、压缩和解压 API。
 
-Linux 或 macOS 需要 MoonBit、Python 3.9+、POSIX C 编译器，以及包含头文件、静态库和 `zlib.pc` 的 zlib 开发安装。Windows x64 的 MSVC 流程见下文。复现使用 MoonBit `0.10.14+7d59c7ec9`。
+Linux 或 macOS 需要 MoonBit、Python 3.9+、POSIX C 编译器，以及包含头文件、静态库和 `zlib.pc` 的 zlib 开发安装。Windows x64 的 MSVC 流程见下文。复现使用 MoonBit `0.10.16+b1a0e846e`。
 
 在仓库根目录运行，传入实际安装目录：
 

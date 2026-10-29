@@ -20,7 +20,7 @@ jobs:
       - name: Install MoonBit
         shell: bash
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- '0.10.14+7d59c7ec9'
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- '0.10.16+b1a0e846e'
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Show toolchain version
@@ -47,6 +47,9 @@ jobs:
       - name: Type-check all targets
         run: moon check --target all --deny-warn
 
+      - name: Build all targets
+        run: moon build --target all --deny-warn
+
       - name: Test all targets
         run: moon test --target all --deny-warn
 
@@ -67,6 +70,9 @@ jobs:
       - name: Verify packaged public API
         run: python3 scripts/verify-install.py --package --report _build/verification/package-install.json
 
+      - name: Verify published 0.3.1 from MoonCakes
+        run: python3 scripts/verify-install.py --version 0.3.1 --report _build/verification/registry-install-0.3.1.json
+
       - name: Retain package verification evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -74,6 +80,7 @@ jobs:
           name: ubuntu-package-install
           path: |
             _build/verification/package-install.json
+            _build/verification/registry-install-0.3.1.json
             _build/publish/*.zip
           if-no-files-found: ignore
 
@@ -298,7 +305,7 @@ jobs:
       - name: Install pinned MoonBit
         shell: pwsh
         run: |
-          $env:MOONBIT_INSTALL_VERSION = '0.10.14+7d59c7ec9'
+          $env:MOONBIT_INSTALL_VERSION = '0.10.16+b1a0e846e'
           $installerPath = Join-Path $env:RUNNER_TEMP 'install-moonbit.ps1'
           Invoke-WebRequest -Uri 'https://cli.moonbitlang.com/install/powershell.ps1' -OutFile $installerPath
           & $installerPath
@@ -316,8 +323,20 @@ jobs:
       - name: Download dependencies
         run: moon update
 
+      - name: Type-check all targets
+        run: moon check --target all --deny-warn
+
+      - name: Build all targets
+        run: moon build --target all --deny-warn
+
+      - name: Test all targets
+        run: moon test --target all --deny-warn
+
       - name: Verify packaged public API
         run: python scripts/verify-install.py --package --report _build/verification/package-install.json
+
+      - name: Verify published 0.3.1 from MoonCakes
+        run: python scripts/verify-install.py --version 0.3.1 --report _build/verification/registry-install-0.3.1.json
 
       - name: Retain package verification evidence
         if: always()
@@ -326,6 +345,7 @@ jobs:
           name: windows-package-install
           path: |
             _build/verification/package-install.json
+            _build/verification/registry-install-0.3.1.json
             _build/publish/*.zip
           if-no-files-found: ignore
 

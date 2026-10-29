@@ -25,7 +25,7 @@ pub fn PackageSet::add(
   self : PackageSet,
   id : String,
   document : Document,
-  source? : String = "package.pc",
+  source~ : String = "package.pc",
 ) -> Array[Diagnostic] {
   if id.is_empty() || id.iter().any(whitespace) {
     return [
@@ -145,7 +145,7 @@ fn virtual_requirement_matches(
 pub fn PackageSet::check_requirements(
   self : PackageSet,
   requirements : Array[Requirement],
-  source? : String = "Requires",
+  source~ : String = "Requires",
 ) -> Array[Diagnostic] {
   let diagnostics : Array[Diagnostic] = []
   let context = QueryContext::new(self, false)

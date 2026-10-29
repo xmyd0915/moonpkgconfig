@@ -1,21 +1,21 @@
 ///|
-extern "C" fn compress_bound(length : Int) -> Int = "moonpkg_zlib_compress_bound"
+extern "C" fn compress_bound(length : Int32) -> Int32 = "moonpkg_zlib_compress_bound"
 
 ///|
 #borrow(source)
-extern "C" fn checksum(source : Bytes) -> UInt = "moonpkg_zlib_crc32"
+extern "C" fn checksum(source : Bytes) -> UInt32 = "moonpkg_zlib_crc32"
 
 ///|
 #borrow(source, destination)
-extern "C" fn compress(source : Bytes, destination : Bytes) -> Int = "moonpkg_zlib_compress"
+extern "C" fn compress(source : Bytes, destination : Bytes) -> Int32 = "moonpkg_zlib_compress"
 
 ///|
 #borrow(source, destination)
 extern "C" fn decompress(
   source : Bytes,
-  length : Int,
+  length : Int32,
   destination : Bytes,
-) -> Int = "moonpkg_zlib_decompress"
+) -> Int32 = "moonpkg_zlib_decompress"
 
 ///|
 fn round_trip(source : Bytes) -> Unit {

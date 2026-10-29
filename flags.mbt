@@ -253,8 +253,8 @@ fn same_flag_origin(left : ResolvedFlag, right : ResolvedFlag) -> Bool {
 pub fn PackageSet::collect_cflags(
   self : PackageSet,
   root : String,
-  static_linking? : Bool = false,
-  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
+  static_linking~ : Bool = false,
+  unavailable~ : Map[String, Array[Diagnostic]] = Map([]),
 ) -> FlagResult {
   // Private dependencies still contribute headers and compile definitions.
   // Their linker flags are restricted to static linking in collect_libs.
@@ -283,8 +283,8 @@ pub fn PackageSet::collect_cflags(
 pub fn PackageSet::collect_libs(
   self : PackageSet,
   root : String,
-  static_linking? : Bool = false,
-  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
+  static_linking~ : Bool = false,
+  unavailable~ : Map[String, Array[Diagnostic]] = Map([]),
 ) -> FlagResult {
   let context = QueryContext::new(self, static_linking, unavailable~)
   let resolution = context.resolve(root, "query")
@@ -309,8 +309,8 @@ pub fn PackageSet::dependency_path(
   self : PackageSet,
   root : String,
   target : String,
-  include_private? : Bool = false,
-  unavailable? : Map[String, Array[Diagnostic]] = Map([]),
+  include_private~ : Bool = false,
+  unavailable~ : Map[String, Array[Diagnostic]] = Map([]),
 ) -> Array[String] {
   self
   .build_dependency_paths(root, include_private, Some(target), unavailable)

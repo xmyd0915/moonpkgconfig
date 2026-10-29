@@ -17,3 +17,4 @@
 /examples/native-consumer/**/_build/
 /examples/native-consumer/**/.mooncakes/
 __pycache__/
+pkg.generated.mbti

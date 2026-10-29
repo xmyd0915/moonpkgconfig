@@ -73,9 +73,9 @@ fn valid_key(name : String) -> Bool {
 /// Deliberately strict about duplicate definitions and undefined variables.
 pub fn parse(
   content : String,
-  source? : String = "input.pc",
-  pcfiledir? : String = ".",
-  overrides? : Map[String, String] = Map([]),
+  source~ : String = "input.pc",
+  pcfiledir~ : String = ".",
+  overrides~ : Map[String, String] = Map([]),
 ) -> Document {
   let entries : Array[Entry] = []
   let diagnostics : Array[Diagnostic] = []
@@ -156,7 +156,7 @@ pub fn parse(
 fn parse_line(
   text : String,
   source : String,
-  line_number : Int,
+  line_number : Int32,
   variables : Map[String, String],
   overrides : Map[String, String],
   defined_variables : Map[String, Bool],
