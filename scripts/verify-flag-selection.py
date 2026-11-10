@@ -17,7 +17,7 @@ if MOON is None:
 def query(directory, package, *options, status=0):
     result = subprocess.run(
         [MOON, "run", "--target", "native", "cmd/query", str(directory), package, *options],
-        cwd=ROOT, text=True, capture_output=True, check=False,
+        cwd=ROOT, text=True, encoding="utf-8", capture_output=True, check=False,
     )
     if result.returncode != status:
         raise AssertionError(
@@ -73,9 +73,13 @@ for options in [
     ["--modversion", "--static"],
     ["--libs-only-l", "--libs"],
     ["--cflags-only-I", "--cflags-only-other"],
-    ["--modversion", "--json"],
 ]:
     query("examples/flag-selection", "mixed", *options, status=2)
+
+version = json.loads(query("examples/valid", "imagekit", "--modversion", "--json"))
+if (version["schema_version"] != 1 or version["status"] != "ok"
+        or version["value"] != "1.2.0" or version["flags"] or version["diagnostics"]):
+    raise AssertionError(f"Metadata JSON query changed: {version}")
 
 with tempfile.TemporaryDirectory(prefix="moonpkgconfig-selection-") as directory:
     Path(directory, "quoted.pc").write_text(

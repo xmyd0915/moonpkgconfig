@@ -1,5 +1,15 @@
 # 验证记录
 
+## 机器接口与独立命令行包（2026-11-10）
+
+当前主分支统一命令的 Windows 隔离安装验证扩展到83个场景。新增部分检查 `inspect`、`query` 的成功、解析诊断、IO 和用法 JSON；元数据值、空变量、缺少变量、版本条件的 `null/false` 区分；虚拟提供者与公开/私有依赖的结构化路径。原有 `flags`、`entries` 内容按明确预期保留，旧入口与安装命令保持输出一致。报告仍为 `_build/verification/cli.json`。
+
+Windows 完整验证继续通过四目标各89项核心测试、实际归档每目标95项测试、22个文件加载场景、162项 pkgconf 对照及158个固定种子输入；大图与展开边界、原生 C/C++ 闭环及8项适配检查通过。
+
+`scripts/package-cli.py` 从实际 `moon install` 输出创建独立 ZIP，核对六个平铺文件与哈希，从该 ZIP 解压到仓库外的带空格目录，再清除 MoonBit 环境和 PATH 执行11个场景。Windows 本地通过帮助、三个子命令、链接顺序、带空格参数、损坏元数据和读取错误检查；运行后包内文件保持原内容。另以未提交源码触发 `--require-clean` 拒绝，失败报告没有保留旧成功下载包。
+
+ZIP 包含实际源码提交、dirty 状态、源码摘要、工具链与平台信息，以及 MIT 和实际 core/x 依赖许可说明；本地开发包明确标记 dirty，CI 只生成干净提交的包。报告为 `_build/verification/cli-package.json`。Ubuntu 与 Windows CI 分别保留 `ubuntu-cli-package`、`windows-cli-package` 附件30天，状态以对应提交的 [CI 运行](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml) 为准；平台范围见 [下载说明](cli-download.md)。本轮未改变 MoonCakes0.3.1发行包和历史标签。
+
 ## 命令行安装与多包接入（2026-11-10）
 
 本轮继续使用固定的 `moonc 0.10.16+b1a0e846e`、`moon 0.1.20261020`。核心库与注册表发行版本保持0.3.1；新增统一 CLI 和实验性工程适配属于主分支未发布内容。

@@ -46,6 +46,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
     & python "$PSScriptRoot\verify-cli.py"
     if ($LASTEXITCODE -ne 0) { throw 'Installed CLI and directory report checks failed.' }
+    & python "$PSScriptRoot\package-cli.py"
+    if ($LASTEXITCODE -ne 0) { throw 'Standalone CLI package checks failed.' }
     & "$MoonHome\bin\moon.exe" run cmd/demo
     if ($LASTEXITCODE -ne 0) { throw 'Demo failed.' }
     & "$PSScriptRoot\review-demo.ps1" -MoonHome $MoonHome

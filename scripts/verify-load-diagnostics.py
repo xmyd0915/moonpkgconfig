@@ -53,7 +53,10 @@ def main():
         for path in directories[1:]:
             command.extend(["--path", str(path)])
         data = json.loads(run(command, 1 if code else 0))
-        if set(data) != {"flags", "diagnostics"}:
+        if (not {"flags", "diagnostics"}.issubset(data)
+                or data.get("schema_version") != 1 or data.get("command") != "query"
+                or data.get("status") != ("diagnostics" if code else "ok")
+                or data.get("error") is not None):
             raise AssertionError(f"Result schema changed: {data}")
         problems = data["diagnostics"]
         if [item["code"] for item in problems] != ([code] if code else []):

@@ -10,6 +10,10 @@ Ubuntu 与 Windows CI 分别显示工具链版本、四目标检查、构建和�
 
 命令行实现集中在 `cli/commands`，`cmd/inspect`、`cmd/query`、`cmd/check` 与统一 `cmd/moonpkgconfig` 只负责传入参数。`python scripts/verify-cli.py` 从当前源码安装到隔离目录，在仓库外、清除 MoonBit 环境的进程中执行实际命令，验证目录 JSON、路径顺序、错误退出码和旧入口兼容性；报告为 `_build/verification/cli.json`。新增 CLI 尚未包含在注册表0.3.1中。
 
+CLI 层的版本化 JSON 外层报告与核心库序列化分开维护；原有 `flags/diagnostics`、`entries/diagnostics` 内容保留。非帮助模式指定 `--json` 后，读取和用法错误也必须可解析；新增状态不能伪装成无诊断成功。元数据、条件与 `--explain` 的协议见 [CLI JSON 接口](docs/cli-json.md)。
+
+`python scripts/package-cli.py` 从实际安装程序生成独立 ZIP，再从 ZIP 解压到仓库外，清除工具链环境后执行端到端验证。包内保留 MIT 与依赖许可证、提交与工具链信息、哈希；报告为 `_build/verification/cli-package.json`，下载文件在 `_build/cli`。CI 使用 `--require-clean` 拒绝未提交源码，附件保留30天；本地允许开发状态但必须在构建信息中标明。平台范围和下载方法见 [命令行下载指南](docs/cli-download.md)。
+
 Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使用用户目录中的 `.moon` 安装。脚本遇到第一个失败立即退出，不修改全局 PATH。
 
 可将固定版本工具链单独安装到忽略的 `.tools` 目录，并通过 `-MoonHome` 传入该安装的绝对路径。源码按固定版本执行格式化；生成的 `pkg.generated.mbti` 是本地接口视图，不纳入版本控制和发行归档。

@@ -14,6 +14,9 @@ import time
 ROOT = Path(__file__).resolve().parent.parent
 CHECK_KEYS = {"schema_version", "command", "status", "directories", "file_count",
               "package_count", "package_ids", "diagnostics", "error"}
+QUERY_KEYS = {"schema_version", "command", "status", "error", "directories", "package",
+              "mode", "static", "value", "matched", "paths", "flags", "diagnostics"}
+INSPECT_KEYS = {"schema_version", "command", "status", "error", "file", "entries", "diagnostics"}
 
 
 def digest(path):
@@ -125,6 +128,29 @@ def main():
                             encoding="utf-8")
             return path
 
+        def structured(label, command, arguments, code=0, status="ok"):
+            data = json.loads(cli(label, [command, *arguments, "--json"], code))
+            keys = QUERY_KEYS if command == "query" else INSPECT_KEYS
+            if (set(data) != keys or data["schema_version"] != 1 or data["command"] != command
+                    or data["status"] != status):
+                raise AssertionError(f"Unexpected {command} report: {data}")
+            if status in ("io_error", "usage_error", "not_found"):
+                kind = {"io_error": "io", "usage_error": "usage", "not_found": "variable"}[status]
+                if (not data["error"] or data["error"]["kind"] != kind
+                        or not data["error"]["message"] or data["diagnostics"]):
+                    raise AssertionError(f"Wrong operational error: {data}")
+                payload = "flags" if command == "query" else "entries"
+                if data[payload]:
+                    raise AssertionError(f"Failed operation returned an unevaluated payload: {data}")
+            elif data["error"] is not None:
+                raise AssertionError(f"Semantic result has an operational error: {data}")
+            if bool(data["diagnostics"]) != (status == "diagnostics"):
+                raise AssertionError(f"Diagnostic status disagrees with payload: {data}")
+            if command == "query" and status not in ("ok", "nonmatch"):
+                if data["value"] is not None or data["matched"] is not None or data["paths"] is not None:
+                    raise AssertionError(f"Failed query claims an evaluated value: {data}")
+            return data
+
         first, second, third, empty = [external / name for name in
                                        ("first space", "依赖 中文", "third", "empty")]
         for directory in (first, second, third, empty):
@@ -195,6 +221,128 @@ def main():
         if set(usage) != CHECK_KEYS or usage["status"] != "usage_error":
             raise AssertionError(f"Wrong usage error schema: {usage}")
 
+        query_dir = external / "query metadata 中文"
+        query_dir.mkdir()
+        root_file = pc(query_dir, "root", "Requires: middle\nRequires.private: hidden\n"
+                       'Cflags: -I"/sdk one/include" -DROOT=1\n'
+                       "Libs: -lroot -Wl,--as-needed\nLibs.private: -lm\n",
+                       prefix="prefix=/sdk one\nempty=\n")
+        pc(query_dir, "middle", "Requires: leaf\nCflags: -DMIDDLE=1\nLibs: -lmiddle\n")
+        pc(query_dir, "leaf", "Cflags: -I/leaf\nLibs: -lleaf\n")
+        pc(query_dir, "hidden", "Cflags: -I/hidden\nLibs: -lhidden\n")
+
+        def query(label, name, mode, code=0, status="ok", extra=(), directory=query_dir):
+            data = structured(label, "query", [directory, name, mode, *extra], code, status)
+            if (data["package"] != name or data["mode"] != mode
+                    or data["static"] != ("--static" in extra)):
+                raise AssertionError(f"Query context changed: {data}")
+            return data
+
+        plain = query("flag JSON retains origin fields", "root", "--libs")
+        if plain["paths"] is not None or plain["value"] is not None or plain["matched"] is not None:
+            raise AssertionError(f"Flag query claims metadata or unrequested explanation: {plain}")
+        expected_root = {"value": "-lroot", "package": "root", "field": "Libs",
+                         "location": {"source": str(root_file), "line": 9, "column": 1}}
+        if plain["flags"][0] != expected_root:
+            raise AssertionError(f"Existing flag object changed: {plain['flags'][0]}")
+        explained = query("JSON explanation includes transitive routes", "root", "--libs", extra=["--explain"])
+        public_paths = {"root": ["root"], "middle": ["root", "middle"],
+                        "leaf": ["root", "middle", "leaf"]}
+        if explained["flags"] != plain["flags"] or explained["paths"] != public_paths:
+            raise AssertionError(f"Explanation changed flags or lost routes: {explained}")
+        private_paths = {**public_paths, "hidden": ["root", "hidden"]}
+        for mode, extra in (("--libs", ["--static", "--explain"]), ("--cflags", ["--explain"])):
+            data = query("private paths " + mode, "root", mode, extra=extra)
+            if data["paths"] != private_paths:
+                raise AssertionError(f"Private dependency explanation changed: {data}")
+        data = query("classified explanation contains only returned packages", "root", "--libs-only-other",
+                     extra=["--explain"])
+        if data["paths"] != {"root": ["root"]} or [flag["value"] for flag in data["flags"]] != ["-Wl,--as-needed"]:
+            raise AssertionError(f"Classification retained unrelated paths: {data}")
+        pc(query_dir, "no-flags")
+        data = query("successful empty flag explanation is an empty map", "no-flags", "--libs", extra=["--explain"])
+        if data["flags"] or data["paths"] != {}:
+            raise AssertionError(f"Empty successful explanation changed: {data}")
+
+        for mode, expected, extra in (
+            ("--modversion", "2", []), ("--variable=prefix", "/sdk one", []),
+            ("--variable=empty", "", []),
+            ("--variable=prefix", "/overridden", ["--define-variable=prefix=/overridden"]),
+        ):
+            data = query("metadata value " + mode + str(extra), "root", mode, extra=extra)
+            if data["value"] != expected or data["matched"] is not None or data["flags"]:
+                raise AssertionError(f"Metadata value or empty value was lost: {data}")
+        data = query("missing variable is a named error", "root", "--variable=absent_setting", 1, "not_found")
+        if "absent_setting" not in data["error"]["message"]:
+            raise AssertionError(f"Missing variable name was lost: {data}")
+        missing_text = cli("text missing variable includes its name",
+                           ["query", query_dir, "root", "--variable=absent_setting"], 1)
+        if missing_text.strip() != "Variable not found: absent_setting":
+            raise AssertionError(f"Missing variable message is not interpolated: {missing_text}")
+        for mode, matched in (
+            ("--exists", True), ("--atleast-version=2", True), ("--atleast-version=3", False),
+            ("--exact-version=2", True), ("--exact-version=1", False),
+            ("--max-version=2", True), ("--max-version=1", False),
+        ):
+            data = query("predicate " + mode, "root", mode, 0 if matched else 1, "ok" if matched else "nonmatch")
+            if data["matched"] is not matched or data["value"] is not None or data["flags"]:
+                raise AssertionError(f"Predicate was not distinguished from a value: {data}")
+        query("missing root cannot evaluate exists", "missing-root", "--exists", 1, "diagnostics")
+        provider = pc(query_dir, "provider", "Provides: virtual-dep = 3\nLibs: -lprovider\n", prefix="prefix=/provider\n")
+        pc(query_dir, "virtual-app", "Requires: virtual-dep >= 3\nLibs: -lvirtual\n")
+        data = query("metadata selects the real virtual provider", "virtual-dep", "--variable=prefix")
+        if data["value"] != "/provider":
+            raise AssertionError(f"Virtual metadata query did not select the provider: {data}")
+        data = query("virtual dependency explanation names its real provider", "virtual-app", "--libs", extra=["--explain"])
+        if data["paths"] != {"virtual-app": ["virtual-app"], "provider": ["virtual-app", "provider"]}:
+            raise AssertionError(f"Virtual provider route changed: {data}")
+
+        broken_dir = external / "broken first"
+        broken_dir.mkdir()
+        malformed = pc(broken_dir, "root", prefix="broken=${missing}\n")
+        for mode in ("--modversion", "--variable=prefix", "--exists", "--exact-version=2", "--libs"):
+            data = query("malformed first package " + mode, "root", mode, 1, "diagnostics",
+                         extra=["--path", query_dir], directory=broken_dir)
+            if ([item["code"] for item in data["diagnostics"]] != ["PC004"]
+                    or Path(data["diagnostics"][0]["location"]["source"]) != malformed):
+                raise AssertionError(f"Malformed first package no longer wins: {data}")
+        bad_leaf = pc(broken_dir, "leaf", prefix="broken=${missing}\n")
+        data = query("damaged transitive explanation remains unavailable", "middle", "--libs", 1, "diagnostics",
+                     extra=["--path", query_dir, "--explain"], directory=broken_dir)
+        if data["paths"] is not None or Path(data["diagnostics"][0]["location"]["source"]) != bad_leaf:
+            raise AssertionError(f"Failed query fabricated a route: {data}")
+        for mode in ("--libs", "--exists", "--modversion"):
+            query("query IO failure " + mode, "root", mode, 2, "io_error", directory=external / "missing")
+        query("later search directory IO failure", "root", "--libs", 2, "io_error", extra=["--path", external / "missing"])
+        for mode, extra in (("--libs", ["--unknown"]), ("--libs", ["--path"]),
+                            ("--libs", ["--cflags"]), ("--modversion", ["--static"]),
+                            ("--exists", ["--explain"])):
+            query("query usage retains trailing JSON " + mode + str(extra), "root", mode, 2, "usage_error", extra=extra)
+        data = structured("query missing arguments are JSON", "query", [], 2, "usage_error")
+        if data["directories"] or data["package"] is not None or data["mode"] is not None:
+            raise AssertionError(f"Absent query context was fabricated: {data}")
+
+        tiny = pc(query_dir, "tiny", "Libs: -ltiny\n")
+        data = structured("inspect JSON retains complete entry objects", "inspect", [tiny])
+        expected_entries = []
+        for line, (name, value) in enumerate((("Name", "tiny"), ("Description", "CLI input"),
+                                               ("Version", "2"), ("Libs", "-ltiny")), 1):
+            expected_entries.append({"kind": "field", "name": name, "raw": value, "value": value,
+                                     "location": {"source": str(tiny), "line": line, "column": 1},
+                                     "value_location": {"source": str(tiny), "line": line, "column": len(name) + 3}})
+        if data["file"] != str(tiny) or data["entries"] != expected_entries:
+            raise AssertionError(f"Existing inspection entries changed: {data}")
+        structured("inspect malformed document is semantic JSON", "inspect", [malformed], 1, "diagnostics")
+        structured("inspect missing file is JSON IO error", "inspect", [external / "missing.pc"], 2, "io_error")
+        structured("inspect unknown option before JSON", "inspect", [tiny, "--unknown"], 2, "usage_error")
+        data = structured("inspect missing file argument is JSON", "inspect", [], 2, "usage_error")
+        if data["file"] is not None:
+            raise AssertionError(f"Absent inspection filename was fabricated: {data}")
+        for command in ("query", "inspect", "check"):
+            text = cli(command + " help takes precedence over JSON", [command, "--unknown", "--json", "--help"])
+            if not text.startswith("Usage:"):
+                raise AssertionError("Explicit help must remain human-readable text")
+
         target = workspace / "legacy-build"
         for name in ("query", "inspect", "check"):
             run([moon, "build", "--target", "native", "--release", "--target-dir", target,
@@ -207,6 +355,10 @@ def main():
             ("query", [first, "app", "--libs", "--json"], 1),
             ("query", [second, "helper", "--modversion"], 0),
             ("query", [second, "helper", "--exists"], 0),
+            ("query", [query_dir, "root", "--modversion", "--json"], 0),
+            ("query", [query_dir, "root", "--exact-version=3", "--json"], 1),
+            ("query", [query_dir, "root", "--libs", "--json", "--explain"], 0),
+            ("query", [external / "missing", "root", "--libs", "--json"], 2),
             ("inspect", [app, "--json"], 0),
             ("inspect", [app], 0),
             ("inspect", [external / "missing.pc", "--json"], 2),

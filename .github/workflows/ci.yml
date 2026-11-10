@@ -66,6 +66,21 @@ jobs:
           path: _build/verification/cli.json
           if-no-files-found: ignore
 
+      - name: Package and verify standalone CLI
+        run: python3 scripts/package-cli.py --require-clean
+
+      - name: Retain standalone CLI package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-cli-package
+          path: |
+            _build/cli/*.zip
+            _build/cli/*.sha256
+            _build/verification/cli-package.json
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Check publish package contents
         shell: bash
         run: |
@@ -366,6 +381,21 @@ jobs:
           name: windows-cli
           path: _build/verification/cli.json
           if-no-files-found: ignore
+
+      - name: Package and verify standalone CLI
+        run: python scripts/package-cli.py --require-clean
+
+      - name: Retain standalone CLI package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-cli-package
+          path: |
+            _build/cli/*.zip
+            _build/cli/*.sha256
+            _build/verification/cli-package.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Verify packaged public API
         run: python scripts/verify-install.py --package --report _build/verification/package-install.json

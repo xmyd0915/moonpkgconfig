@@ -44,6 +44,31 @@ fn checked_document(document : @pc.Document, source : String) -> @pc.Document {
 }
 
 ///|
+fn inspect_report(
+  file : String?,
+  document : @pc.Document,
+  status : String,
+  error~ : Json = Json(null),
+) -> Unit {
+  let (entries, diagnostics) = match document.as_json() {
+    Object({ "entries": entries, "diagnostics": diagnostics, .. }) =>
+      (entries, diagnostics)
+    _ => abort("Document JSON must contain entries and diagnostics")
+  }
+  println(
+    Json::object({
+      "schema_version": Json(1),
+      "command": Json("inspect"),
+      "status": Json(status),
+      "error": error,
+      "file": optional_string(file),
+      "entries": entries,
+      "diagnostics": diagnostics,
+    }).stringify(indent=2),
+  )
+}
+
+///|
 pub fn inspect(
   args : Array[String],
   command~ : String = "moon run cmd/inspect",
@@ -69,14 +94,22 @@ pub fn inspect(
     inspect_usage(command)
     return
   }
-  if invalid {
-    inspect_usage(command)
+  let empty_document : @pc.Document = { entries: [], diagnostics: [], }
+  if invalid || path is None {
+    if json {
+      inspect_report(
+        path,
+        empty_document,
+        "usage_error",
+        error=command_error("usage", "Expected one file and optional --json"),
+      )
+    } else {
+      inspect_usage(command)
+    }
     @sys.exit(2)
+    return
   }
-  guard path is Some(path) else {
-    inspect_usage(command)
-    @sys.exit(2)
-  }
+  guard path is Some(path) else { abort("A file was required before reading") }
   try {
     let input = @fs.read_file_to_string(path)
     let pcfiledir = @path.Path(path).dirname().to_string()
@@ -85,7 +118,15 @@ pub fn inspect(
       path,
     )
     if json {
-      println(document.json_text(pretty=true))
+      inspect_report(
+        Some(path),
+        document,
+        if document.diagnostics.is_empty() {
+          "ok"
+        } else {
+          "diagnostics"
+        },
+      )
     } else {
       print_summary(document)
     }
@@ -94,7 +135,17 @@ pub fn inspect(
     }
   } catch {
     @fs.IOError(message) => {
-      println("Could not read \{path}: \{message}")
+      let message = "Could not read \{path}: \{message}"
+      if json {
+        inspect_report(
+          Some(path),
+          empty_document,
+          "io_error",
+          error=command_error("io", message),
+        )
+      } else {
+        println(message)
+      }
       @sys.exit(2)
     }
   }

@@ -1,5 +1,7 @@
 # MoonPkgConfig
 
+[English introduction](README.en.md)
+
 [![CI](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml/badge.svg)](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml)
 
 用 MoonBit 实现的、保留源码位置的 `pkg-config` 元数据引擎。它不只读取 `.pc` 文件，还能解析依赖图、计算编译与链接参数，并解释每个参数来自哪个包、字段和源码行。
@@ -36,6 +38,10 @@ moonpkgconfig query native example --path /path/to/sdk/lib/pkgconfig --libs --st
 将路径和包名替换为自己的安装。命令安装到 MoonBit 的可执行目录，该目录需要在 `PATH` 中；也可用 `moon install ./cmd/moonpkgconfig --bin <目录>` 指定位置。`moonpkgconfig --help` 列出入口，各子命令支持 `--help`。
 
 这是从当前源码安装的工具，尚未包含在已发布的 MoonCakes 0.3.1 中。既有 `moon run cmd/inspect`、`cmd/query`、`cmd/check` 入口继续可用。`python scripts/verify-cli.py` 验证隔离安装后在仓库外直接执行，并核对旧入口行为。
+
+也可从成功的 CI 下载 `ubuntu-cli-package` 或 `windows-cli-package`，解压后直接运行，不需安装 MoonBit。包内附源码提交号、工具链信息、校验和和依赖许可证；平台范围、30天保留期及操作步骤见 [独立命令行下载](docs/cli-download.md)。这类附件是按提交生成的试用包。
+
+`inspect`、`query`、`check` 的 `--json` 统一覆盖成功、诊断、读取及用法错误。版本、变量和条件查询也可返回 JSON，参数查询的 `--json --explain` 提供结构化依赖路径。完整字段、退出码和外部程序调用示例见 [CLI JSON 接口](docs/cli-json.md)。
 
 ## 接入已有多包工程
 
