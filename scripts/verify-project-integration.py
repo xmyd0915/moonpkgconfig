@@ -26,6 +26,42 @@ def sources(directory):
                                           for part in path.relative_to(directory).parts)}
 
 
+def relocate_native_dependency(name, source, relocated, mappings, copy_native, windows=None):
+    """Copy the prepared fixture's own archive, leaving system libraries alone."""
+    windows = os.name == "nt" if windows is None else windows
+    metadata = source.read_text(encoding="utf-8")
+    prefix_match = re.search(r"^prefix=(.+)$", metadata, re.MULTILINE)
+    if not prefix_match or not Path(prefix_match[1].strip()).is_absolute():
+        raise RuntimeError("Verification requires an explicit absolute installation prefix")
+    prefix = Path(prefix_match[1].strip()).resolve()
+    # -lm and other system dependencies stay in the original ordered flags;
+    # they are resolved by the compiler, not copied from this installation.
+    project_library = {"zlib": "z", "expat": "libexpatMT" if windows else "expat"}[name]
+    fields = re.findall(r"^Libs(?:\.private)?:[^\n]*", metadata, re.MULTILINE)
+    library_names = re.findall(r"(?:^|\s)-l([A-Za-z0-9_+.-]+)", "\n".join(fields))
+    if project_library not in library_names:
+        raise RuntimeError(f"{name} metadata does not name its required project library: {project_library}")
+    mapped = dict(value.split("=", 1) for value in mappings)
+    filename = mapped.get(project_library, project_library + ".lib") if windows else "lib" + project_library + ".a"
+    # Require the fixture archive explicitly. Never let a missing archive fall
+    # through to a system-installed copy that could mask a broken relocation.
+    archive = prefix / "lib" / filename
+    if not archive.is_file():
+        raise RuntimeError(f"Required {name} project archive missing: {archive}")
+    (relocated / "include").mkdir(parents=True)
+    (relocated / "lib").mkdir()
+    headers = ("zlib.h", "zconf.h") if name == "zlib" else ("expat.h", "expat_external.h")
+    for header in headers:
+        copy_native(prefix / "include" / header, relocated / "include" / header)
+    copy_native(archive, relocated / "lib" / filename)
+    metadata = metadata.replace(prefix.as_posix(), relocated.as_posix())
+    metadata = metadata.replace(str(prefix), relocated.as_posix())
+    for variable in ("includedir", "libdir", "sharedlibdir"):
+        flag = "-I" if variable == "includedir" else "-L"
+        metadata = metadata.replace(flag + "${" + variable + "}", flag + '"${' + variable + '}"')
+    return metadata
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--prepared-report", type=Path, help="reuse a successful native walkthrough/dependency report")
@@ -110,32 +146,13 @@ def main():
 
         for name, source in installed.items():
             target = pc_directory / source.name
-            metadata = source.read_text(encoding="utf-8")
             # The prepared libraries have explicit installation prefixes. Use
             # independent relocated copies to exercise spaces in -I/-L as well
             # as in project and metadata paths, without editing the originals.
-            prefix_match = re.search(r"^prefix=(.+)$", metadata, re.MULTILINE)
-            if not prefix_match or not Path(prefix_match[1].strip()).is_absolute():
-                raise RuntimeError("Verification requires an explicit absolute installation prefix")
-            prefix = Path(prefix_match[1].strip()).resolve()
             relocated = working / (name + " installation with spaces")
             # Copy only the fixture's headers and static archives. An explicit
             # installation might live under /usr; never copy the entire prefix.
-            (relocated / "include").mkdir(parents=True)
-            (relocated / "lib").mkdir()
-            headers = ("zlib.h", "zconf.h") if name == "zlib" else ("expat.h", "expat_external.h")
-            for header in headers:
-                copy_native(prefix / "include" / header, relocated / "include" / header)
-            mapped = dict(value.split("=", 1) for value in mappings)
-            library_names = re.findall(r"(?:^|\s)-l([A-Za-z0-9_+.-]+)", metadata)
-            for library in library_names:
-                filename = mapped.get(library, library + ".lib") if os.name == "nt" else "lib" + library + ".a"
-                copy_native(prefix / "lib" / filename, relocated / "lib" / filename)
-            metadata = metadata.replace(prefix.as_posix(), relocated.as_posix())
-            metadata = metadata.replace(str(prefix), relocated.as_posix())
-            for variable in ("includedir", "libdir", "sharedlibdir"):
-                flag = "-I" if variable == "includedir" else "-L"
-                metadata = metadata.replace(flag + "${" + variable + "}", flag + '"${' + variable + '}"')
+            metadata = relocate_native_dependency(name, source, relocated, mappings, copy_native)
             target.write_text(metadata, encoding="utf-8")
             pc_files[name] = target
         originals = {name: path.read_text(encoding="utf-8") for name, path in pc_files.items()}
