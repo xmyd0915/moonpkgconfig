@@ -1,0 +1,6 @@
+import {
+  "xmyd0915/moonpkgconfig/cli/commands",
+  "moonbitlang/core/env",
+}
+
+pkgtype(kind: "executable")

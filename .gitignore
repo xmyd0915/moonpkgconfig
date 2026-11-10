@@ -16,5 +16,7 @@
 /examples/zlib-consumer/app/.mooncakes/
 /examples/native-consumer/**/_build/
 /examples/native-consumer/**/.mooncakes/
+/examples/project-integration/**/_build/
+/examples/project-integration/**/.mooncakes/
 __pycache__/
 pkg.generated.mbti

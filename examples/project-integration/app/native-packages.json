@@ -1,0 +1,6 @@
+{
+  "bindings": [
+    {"package": "examples/project-integration/zlib", "pc": "zlib", "variable": "ZLIB_CFLAGS", "static": true},
+    {"package": "examples/project-integration/expat", "pc": "expat", "variable": "EXPAT_CFLAGS", "static": true}
+  ]
+}

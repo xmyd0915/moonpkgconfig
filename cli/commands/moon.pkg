@@ -1,0 +1,7 @@
+import {
+  "xmyd0915/moonpkgconfig" @pc,
+  "xmyd0915/moonpkgconfig/cli" @loader,
+  "moonbitlang/x/fs",
+  "moonbitlang/x/path",
+  "moonbitlang/x/sys",
+}

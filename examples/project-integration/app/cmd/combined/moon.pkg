@@ -1,0 +1,6 @@
+import {
+  "examples/project-integration/zlib",
+  "examples/project-integration/expat",
+}
+
+pkgtype(kind: "executable")

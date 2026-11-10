@@ -1,0 +1,8 @@
+options(
+  "native-stub": [ "stub.c" ],
+  link: {
+    "native": {
+      "stub-cc-flags": "${build.PC_RUNTIME} -DPROJECT_ZLIB=7 ${build.ZLIB_CFLAGS}",
+    },
+  },
+)

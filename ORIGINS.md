@@ -25,7 +25,9 @@
 
 `examples/libpng-ffi` 中的 MoonBit 程序与 C 包装同样为本项目编写，API 用法参考 <https://www.libpng.org/pub/png/libpng-manual.txt>。CI 从官方发行包安装 libpng 1.6.59，使用安装生成的元数据检查其对 zlib 的私有依赖，再运行 PNG 编解码。库源码和编译产物不纳入本仓库；固定下载及校验值见示例 README。
 
-## 非代码验证工具
+## 构建集成与对照工具
+
+`examples/project-integration` 的规划器、Python 适配器和多包案例为本项目编写，依据 [MoonBit 官方 pre-build 配置脚本文档](https://docs.moonbitlang.com/en/stable/toolchain/moon/module.html#experimental-pre-build-config-script)使用 `vars` 与按包指定的 `link_configs`。该接口由上游标为实验性，本项目在固定工具链上验证其行为。案例使用上述 zlib、Expat 的公开 API 和原有包装方法，不复制其他绑定库的实现，也不表示第三方采用本项目。
 
 `examples/expat-ffi` 的 MoonBit 程序、C 包装及构建脚本为本项目编写，API 用法核对 Expat 官方文档及固定发行包的公开头文件。回归使用官方2.6.2源码包，固定归档 SHA-256；完整库源码和编译产物不进入仓库。实际安装生成的 `.pc` 不改写，Python 标准库 `xml.parsers.expat` 仅作为独立安装的解析结果对照，其版本记录在报告。来源、构建及负对照见示例 README。
 

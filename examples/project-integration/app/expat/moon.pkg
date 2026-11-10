@@ -1,0 +1,8 @@
+options(
+  "native-stub": [ "stub.c" ],
+  link: {
+    "native": {
+      "stub-cc-flags": "${build.PC_RUNTIME} -DPROJECT_EXPAT=11 ${build.EXPAT_CFLAGS}",
+    },
+  },
+)

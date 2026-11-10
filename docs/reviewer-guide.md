@@ -26,6 +26,12 @@ Windows PowerShell：
 
 成功时最后显示 `Reviewer walkthrough: passed`。该脚本也在 GitHub Actions 中运行，演示步骤不会只在维护者电脑上成立。
 
+## 在仓库外使用命令行工具
+
+在当前 checkout 运行 `moon install ./cmd/moonpkgconfig`，即可使用统一的 `moonpkgconfig inspect/query/check` 命令。安装目录需要在 `PATH` 中，也可通过 `--bin <目录>` 显式指定。新入口尚未包含在注册表0.3.1中；详细安装命令见 [README](../README.md#安装命令行工具)。
+
+目录检查可用 `moonpkgconfig check <目录> --path <另一个目录> --json` 接入 CI。报告保留目录优先级、选中包名和原始错误位置；正常、诊断失败、用法或 IO 错误分别返回0、1、2。扫描未完成时计数为 `null`，不能把读取失败当成空目录通过。`python scripts/verify-cli.py` 实际安装并在仓库外验证这个流程。
+
 ## 从发布包构建实际文件工具
 
 在查询之后，可以使用同一套通用接入代码构建 zlib、Expat 和文件压缩器：
@@ -39,6 +45,12 @@ python scripts/review-native.py
 生成的文件工具支持 `compress <输入> <输出.zlib>` 和 `decompress <输入.zlib> <输出>`，验证涵盖空文件、文本、二进制和 Python zlib 双向互操作。程序一次处理整个文件，压缩输入及解压输出上限为 64 MiB，拒绝覆盖已有输出。应用均由本项目维护，不代表第三方采用。
 
 结果、实际耗时和可执行文件路径保存在 `_build/verification/native-walkthrough.json`。准备选项、复用已有安装、执行生成程序和三个详细报告见 [完整原生流程](native-walkthrough.md)。
+
+## 保留已有多包工程的构建配置
+
+`python scripts/verify-project-integration.py` 准备固定原生库，用已发布0.3.1规划参数，经 MoonBit 实验性 pre-build 配置钩子驱动普通 `moon build/run/test`。案例将 zlib 与 Expat 放在独立库包中，由多个入口使用，并保留各包原有构建设置。配置和实验性限制见 [多包接入说明](../examples/project-integration/README.md)。
+
+已有完整原生流程报告时，可传入 `--prepared-report _build/verification/native-walkthrough.json` 复用安装。验证报告为 `_build/verification/project-integration.json`，两个 CI 平台保留独立附件。
 
 ## 验证记录
 
@@ -63,6 +75,6 @@ python scripts/review-native.py
 
 ## 边界
 
-通用模板适用于单个根目录可执行包，支持通过应用配置声明导入和原生接口文件。已有自定义 `moon.pkg` 或 `moon.pkg.json` 会被拒绝；更复杂的构建系统应直接集成规划器 JSON。模板的损坏依赖诊断映射从 0.3.1 起提供。
+原有通用模板适用于单个根目录可执行包，支持通过应用配置声明导入和原生接口文件；已有自定义 `moon.pkg` 或 `moon.pkg.json` 会被拒绝。多包工程另可使用固定工具链的实验性 pre-build 接入路径，或直接消费规划器 JSON。两条路径的损坏依赖诊断均使用已发布0.3.1的接口。
 
 项目当前是面向常用 `.pc` 解析、检查和参数查询的0.3.1实现，不宣称完整替代 pkg-config/pkgconf。目录、系统路径和 sysroot 由调用方显式提供；尚不自动读取系统搜索路径，不实现 Windows 自动重定位及全部 pkgconf 扩展。

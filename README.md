@@ -14,6 +14,39 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 0.3.1修复损坏依赖被误报为缺包的诊断，返回真正出错的文件和行列，接口与范围见 [发行说明](docs/release-notes-0.3.1.md)。正式上传、标签及新项目安装结果见 [发布记录](https://github.com/xmyd0915/moonpkgconfig/blob/main/docs/release.md)。
 
+## 安装命令行工具
+
+当前主分支提供统一命令 `moonpkgconfig`。安装 MoonBit `0.10.16+b1a0e846e` 和原生编译工具后，在克隆的仓库根目录运行：
+
+```sh
+git clone https://github.com/xmyd0915/moonpkgconfig.git
+cd moonpkgconfig
+moon update
+moon install ./cmd/moonpkgconfig
+```
+
+安装后可离开仓库，在自己的项目中检查或查询元数据：
+
+```sh
+moonpkgconfig inspect native/example.pc --json
+moonpkgconfig check native --path /path/to/sdk/lib/pkgconfig --json
+moonpkgconfig query native example --path /path/to/sdk/lib/pkgconfig --libs --static --explain
+```
+
+将路径和包名替换为自己的安装。命令安装到 MoonBit 的可执行目录，该目录需要在 `PATH` 中；也可用 `moon install ./cmd/moonpkgconfig --bin <目录>` 指定位置。`moonpkgconfig --help` 列出入口，各子命令支持 `--help`。
+
+这是从当前源码安装的工具，尚未包含在已发布的 MoonCakes 0.3.1 中。既有 `moon run cmd/inspect`、`cmd/query`、`cmd/check` 入口继续可用。`python scripts/verify-cli.py` 验证隔离安装后在仓库外直接执行，并核对旧入口行为。
+
+## 接入已有多包工程
+
+[多包原生接入示例](examples/project-integration/README.md) 使用已发布的0.3.1计算依赖参数，通过 MoonBit 的实验性 pre-build 配置钩子接入正常的 `moon build/run/test`。它按库包提供编译、链接配置，保留工程已有的源码、导入和自定义构建设置。
+
+```sh
+python scripts/verify-project-integration.py
+```
+
+该命令准备固定的 zlib、Expat 安装并在工程副本中验证接入；已有安装可直接指定目录。钩子与固定工具链绑定，配置方法、库包传播规则和实验性限制见示例说明。这是本项目维护的集成案例，不代表第三方采用。
+
 ## 用发布包构建文件工具
 
 一个实际用法是构建 MoonBit 文件压缩器：在应用的 `.pc` 中声明 `Requires.private: zlib >= 1.2.13`，由 MoonPkgConfig 从真实安装计算头文件、库路径和链接参数。损坏的间接依赖会显示真实文件和行列；修复后继续构建，生成可对实际文件执行压缩、解压的程序。
@@ -125,7 +158,9 @@ GitHub Actions 在全新的 Ubuntu 与 Windows 环境重新下载依赖，分别
 
 `cmd/query` 从显式目录加载其中的 `.pc` 文件，解析指定根包的依赖图，并通过 `--cflags`、`--libs` 或 `--libs --static` 输出聚合参数。`--modversion` 输出版本，`--variable=...` 读取变量，`--define-variable=...` 为查询覆盖变量；`--exists` 只用退出码表示包及其依赖是否可用，版本条件选项执行对应检查。可重复使用 `--path <directory>` 追加搜索目录；目录按命令行顺序查找，同名包由第一个目录中的文件确定，后续目录仍可补足其他依赖。普通文本输出按 POSIX shell 规则引用每个参数，含空格、引号、美元符或空参数时仍保留原有参数边界；跨平台程序应使用 `--json` 读取参数数组。JSON 模式在成功和诊断失败时都返回相同的 `flags`、`diagnostics` 对象结构，调用者再根据退出码区分结果。目录中的无关坏文件不会阻止正常包查询，目标包自身或所需依赖有问题时仍返回诊断。`--dedupe-paths` 会稳定地去除重复 `-I`/`-L` 搜索路径，但保留重复库和其他可能影响链接语义的参数；`--sysroot=...` 重写绝对的 `-I`、`-L` 和 `-isystem` 路径，`--system-include-path=...` 与 `--system-library-path=...` 可重复指定需要过滤的精确系统目录；`--explain` 会逐项显示最短依赖路径、包、字段和源码位置。命令不会隐式读取系统环境变量，因此路径策略在不同机器上仍可复现。
 
-`cmd/check` 检查显式目录里的全部 `.pc` 文件，不要求先知道根包名。它会汇总文本解析、必填元数据、公开和私有依赖、版本、依赖环及冲突诊断；正常目录返回 `0`，发现问题返回 `1`，目录读取或调用错误返回 `2`。
+`cmd/check` 检查显式目录里的全部 `.pc` 文件，不要求先知道根包名。可重复使用 `--path <directory>`，按目录顺序选择同名包；第一个损坏文件也会保留优先级，不能被后面的有效文件掩盖。它汇总文本解析、必填元数据、公开和私有依赖、版本、依赖环及冲突诊断；正常目录返回 `0`，发现问题返回 `1`，目录读取或调用错误返回 `2`。
+
+`check --json` 输出版本为1的结构化报告，包含目录顺序、扫描文件数、选中包名和带来源位置的诊断。`status` 为 `ok`、`diagnostics`、`io_error` 或 `usage_error`；读取或用法失败时计数为 `null`，并提供 `error` 对象。文件数包括被优先目录遮蔽的同名文件，包名只包含成功加载的选中包。JSON 保持在 stdout，系统 IO 的补充说明可能出现在 stderr，调用方同时检查退出码。
 
 ## 验证快照
 

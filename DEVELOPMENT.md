@@ -8,6 +8,8 @@ CI 固定使用 `0.10.16+b1a0e846e` 工具链，避免滚动下载改变格式�
 
 Ubuntu 与 Windows CI 分别显示工具链版本、四目标检查、构建和测试；另从 MoonCakes 安装已发布的0.3.1，验证其公开接口。注册表报告与归档报告一起保存在各平台的 `package-install` 附件中，便于区分主分支归档与正式发布包。
 
+命令行实现集中在 `cli/commands`，`cmd/inspect`、`cmd/query`、`cmd/check` 与统一 `cmd/moonpkgconfig` 只负责传入参数。`python scripts/verify-cli.py` 从当前源码安装到隔离目录，在仓库外、清除 MoonBit 环境的进程中执行实际命令，验证目录 JSON、路径顺序、错误退出码和旧入口兼容性；报告为 `_build/verification/cli.json`。新增 CLI 尚未包含在注册表0.3.1中。
+
 Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使用用户目录中的 `.moon` 安装。脚本遇到第一个失败立即退出，不修改全局 PATH。
 
 可将固定版本工具链单独安装到忽略的 `.tools` 目录，并通过 `-MoonHome` 传入该安装的绝对路径。源码按固定版本执行格式化；生成的 `pkg.generated.mbti` 是本地接口视图，不纳入版本控制和发行归档。
@@ -35,6 +37,8 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 `examples/native-consumer` 固定使用 MoonCakes 0.3.1，规划器将加载诊断映射传入参数和依赖路径查询。`python scripts/verify-native-consumer.py --library zlib --pc-dir <目录>` 与 `--library expat` 分别在仓库外验证同一模板的缺包、版本错误、损坏依赖定位、修复与真实运行；Windows zlib 另传库名映射。`python scripts/verify-native-file-tool.py --pc-dir <目录>` 复用同一适配器构建实际文件工具，并与 Python zlib 双向对照。
 
 `python scripts/review-native.py` 自动准备固定的静态 zlib、Expat，再运行三个消费者；提供两个安装目录时可跳过准备。总报告要求三个消费者使用相同的规划器和适配代码。已有自定义应用构建设置会被拒绝，避免生成配置时丢失设置。完整运行方式见 `docs/native-walkthrough.md`。
+
+`examples/project-integration` 提供保留现有多包构建配置的另一条接入路径。它使用固定工具链的实验性 pre-build 钩子：配置阶段先构建独立的0.3.1规划器，钩子只运行规划器并输出构建 JSON。`python scripts/verify-project-integration.py` 验证真实库包链接、配置保留、失败修复及元数据更新；CI 传入 `--prepared-report _build/verification/native-walkthrough.json` 复用已准备的安装。Windows 完整验证可加 `-WithProjectIntegration`。报告为 `_build/verification/project-integration.json`；不能把该实验性适配路径表述为任意工具链都稳定支持。
 
 真实 Expat 验证为 `python scripts/verify-expat.py`，构建固定2.6.2静态库后调用 `verify-expat-ffi.py`；Linux 与 Windows CI 均执行。本地可加 `scripts/verify.ps1 -WithExpat -CMake <路径>`，既有 `-WithWindowsZlib` 可同时指定。Windows MSVC 环境发现已放入共用 `native_ffi.py`，修改时必须重跑两种 Windows 库及 Linux 的既有 FFI 集成。Expat 的私有宏必须来自查询结果，不得在 C 包装或构建脚本中补写；负对照要求真实导入符号链接失败。
 

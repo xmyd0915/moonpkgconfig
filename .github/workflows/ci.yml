@@ -42,6 +42,8 @@ jobs:
           moon -C examples/native-consumer/apps/zlib fmt
           moon -C examples/native-consumer/apps/expat fmt
           moon -C examples/native-consumer/apps/zlib-files fmt
+          moon -C examples/project-integration/planner fmt
+          moon -C examples/project-integration/app fmt
           git diff --exit-code
 
       - name: Type-check all targets
@@ -52,6 +54,17 @@ jobs:
 
       - name: Test all targets
         run: moon test --target all --deny-warn
+
+      - name: Verify installed CLI and structured directory checks
+        run: python3 scripts/verify-cli.py
+
+      - name: Retain installed CLI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-cli
+          path: _build/verification/cli.json
+          if-no-files-found: ignore
 
       - name: Check publish package contents
         shell: bash
@@ -243,6 +256,17 @@ jobs:
       - name: Prepare libraries and run published native applications
         run: python3 scripts/review-native.py
 
+      - name: Verify existing multi-package project integration
+        run: python3 scripts/verify-project-integration.py --prepared-report _build/verification/native-walkthrough.json
+
+      - name: Retain project integration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-project-integration
+          path: _build/verification/project-integration.json
+          if-no-files-found: ignore
+
       - name: Retain generic template and dependency diagnostic evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -332,6 +356,17 @@ jobs:
       - name: Test all targets
         run: moon test --target all --deny-warn
 
+      - name: Verify installed CLI and structured directory checks
+        run: python scripts/verify-cli.py
+
+      - name: Retain installed CLI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-cli
+          path: _build/verification/cli.json
+          if-no-files-found: ignore
+
       - name: Verify packaged public API
         run: python scripts/verify-install.py --package --report _build/verification/package-install.json
 
@@ -363,6 +398,17 @@ jobs:
 
       - name: Prepare libraries and run published native applications
         run: python scripts/review-native.py
+
+      - name: Verify existing multi-package project integration
+        run: python scripts/verify-project-integration.py --prepared-report _build/verification/native-walkthrough.json
+
+      - name: Retain project integration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-project-integration
+          path: _build/verification/project-integration.json
+          if-no-files-found: ignore
 
       - name: Retain generic template and dependency diagnostic evidence
         if: always()

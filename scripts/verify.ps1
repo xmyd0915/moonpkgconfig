@@ -2,6 +2,7 @@ param(
     [string]$MoonHome = (Join-Path $env:USERPROFILE '.moon'),
     [switch]$WithWindowsZlib,
     [switch]$WithExpat,
+    [switch]$WithProjectIntegration,
     [string]$CMake = 'cmake'
 )
 $ErrorActionPreference = 'Stop'
@@ -33,12 +34,18 @@ try {
         & "$MoonHome\bin\moon.exe" -C $templateModule fmt
         if ($LASTEXITCODE -ne 0) { throw 'Native consumer template formatting failed.' }
     }
+    foreach ($projectModule in @('examples/project-integration/planner', 'examples/project-integration/app')) {
+        & "$MoonHome\bin\moon.exe" -C $projectModule fmt
+        if ($LASTEXITCODE -ne 0) { throw 'Project integration formatting failed.' }
+    }
     & "$MoonHome\bin\moon.exe" check --target all --deny-warn
     if ($LASTEXITCODE -ne 0) { throw 'Type checking failed.' }
     & "$MoonHome\bin\moon.exe" build --target all --deny-warn
     if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
     & "$MoonHome\bin\moon.exe" test --target all --deny-warn
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+    & python "$PSScriptRoot\verify-cli.py"
+    if ($LASTEXITCODE -ne 0) { throw 'Installed CLI and directory report checks failed.' }
     & "$MoonHome\bin\moon.exe" run cmd/demo
     if ($LASTEXITCODE -ne 0) { throw 'Demo failed.' }
     & "$PSScriptRoot\review-demo.ps1" -MoonHome $MoonHome
@@ -127,6 +134,10 @@ try {
     if ($WithExpat) {
         & python "$PSScriptRoot\verify-expat.py" --cmake $CMake --with-native-consumer
         if ($LASTEXITCODE -ne 0) { throw 'Expat static integration failed.' }
+    }
+    if ($WithProjectIntegration) {
+        & python "$PSScriptRoot\verify-project-integration.py" --cmake $CMake
+        if ($LASTEXITCODE -ne 0) { throw 'Existing project integration failed.' }
     }
     & "$PSScriptRoot\compare-pkgconf.ps1"
     if ($LASTEXITCODE -ne 0) { throw 'pkgconf differential checks failed.' }
