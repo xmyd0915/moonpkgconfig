@@ -36,12 +36,14 @@ def main():
 
     # Copy the actual root metadata unchanged into an isolated search directory.
     # Its absolute prefix still points at the installed library, but no zlib.pc
-    # can be discovered implicitly. Dynamic Libs remain valid; Cflags/static fail.
+    # can be discovered implicitly. Root metadata stays readable, while every
+    # CLI flag mode validates the missing private dependency.
     with temporary_directory("libpng-missing-private-") as name:
         isolated = Path(name)
         shutil.copyfile(root_pc, isolated / root_pc.name)
-        query(moon, [isolated], PACKAGE, "--libs")
-        for mode, static_link in (("--cflags", False), ("--libs", True)):
+        if query(moon, [isolated], PACKAGE, "--modversion") != version:
+            raise RuntimeError("missing private metadata changed the root version")
+        for mode, static_link in (("--cflags", False), ("--libs", False), ("--libs", True)):
             command = query_command(moon, [isolated], PACKAGE, mode, static_link)
             result = json.loads(run(command, ROOT, expected_status=1))
             if not any(
@@ -49,7 +51,7 @@ def main():
                 for problem in result["diagnostics"]
             ):
                 raise RuntimeError("missing private zlib dependency was not diagnosed")
-    print("Private dependency isolation: dynamic query passed; Cflags/static rejected missing zlib")
+    print("Private dependency isolation: root version readable; Cflags and dynamic/static Libs rejected missing zlib")
     build_example(moon, compiler, "libpng-ffi", "png_stub.c", cflags, static, SUCCESS)
 
 
