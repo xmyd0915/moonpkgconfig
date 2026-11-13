@@ -42,6 +42,8 @@ Windows 完整验证与 Ubuntu CI 均执行此检查。CI 上传 `ubuntu-compati
 
 规范化使用 CLI 返回的连续来源段，按原顺序构造独立线性元数据，由 pkgconf 3.0.7 处理普通/私有重复片段和链接分组；不会根据参考图或预期序列重排输入。固定正负探针覆盖公开重复、私有重复、分组及参数交换。Cflags 和分类模式的序列一致率单独记录，集合比较仍严格；差分中双方显式保留系统路径，默认系统目录过滤由固定样例另外验证。
 
+2026-11-13的135包系统语料中，普通/静态 Cflags 的规范化序列各有118包与3.0.7完全一致；17个差异集中在 cairo、gio 相关包的头文件目录顺序，其他编译参数分类全部一致。本库当前保留广度优先的 Cflags 顺序，不能把参数集合相同解释为头文件搜索优先级完全相同。报告逐项保留两边的序列及差异根。
+
 ```sh
 python scripts/verify-system-packages.py --reference /path/to/pkgconf --directory /path/to/pkgconfig --directory /path/to/extra/pkgconfig
 ```

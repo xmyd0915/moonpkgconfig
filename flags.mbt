@@ -282,6 +282,8 @@ pub fn PackageSet::collect_cflags(
 ///|
 /// Collect linker flags in dependant-first order. Static queries also include
 /// private dependency edges and each package's `Libs.private` field.
+/// Valid private dependencies can constrain the order of public libraries in
+/// dynamic output, without adding private libraries or private diagnostics.
 /// `unavailable` retains original diagnostics for excluded dependencies, as
 /// in `resolve`, following the selected public/private edge mode.
 pub fn PackageSet::collect_libs(
@@ -294,7 +296,25 @@ pub fn PackageSet::collect_libs(
   let resolution = context.resolve(root, "query")
   let flags : Array[ResolvedFlag] = []
   let diagnostics = resolution.diagnostics.copy()
-  for id in context.link_order(root) {
+  let order = if static_linking || !diagnostics.is_empty() {
+    context.link_order(root)
+  } else {
+    let complete = QueryContext::new(self, true, unavailable~)
+    if complete.resolve(root, "query").diagnostics.is_empty() {
+      // pkgconf orders the complete graph before filtering private-only nodes.
+      // A hidden chain can therefore delay a library also reached publicly.
+      let public : Map[String, Bool] = Map([])
+      for id in resolution.order {
+        public[id] = true
+      }
+      complete.link_order(root).filter(id => public.contains(id))
+    } else {
+      // Private failures are outside the core dynamic query's diagnostic scope.
+      // In particular, a private cycle must not reorder a valid public DAG.
+      context.link_order(root)
+    }
+  }
+  for id in order {
     append_flag_field(self, id, "Libs", flags, diagnostics)
     if static_linking {
       append_flag_field(self, id, "Libs.private", flags, diagnostics)
