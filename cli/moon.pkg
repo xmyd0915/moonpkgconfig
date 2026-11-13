@@ -2,4 +2,5 @@ import {
   "xmyd0915/moonpkgconfig" @pc,
   "moonbitlang/x/fs",
   "moonbitlang/x/path",
+  "moonbitlang/core/encoding/utf8",
 }

@@ -1,0 +1,5 @@
+Name: paths
+Description: Existing sysroot and adjacent path fixture
+Version: 1
+Cflags: -I/sdk/usr/include/existing -I/sdk-other/include -I/usr/include/new
+Libs: -L/sdk/usr/lib/existing -L/sdk-other/lib -L/usr/lib/new -lpaths

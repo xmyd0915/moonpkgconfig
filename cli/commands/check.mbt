@@ -1,8 +1,12 @@
 ///|
-fn check_usage(command : String) -> Unit {
-  println("Usage: \{command} <directory> [--path <directory>]... [--json]")
-  println(
+fn check_usage(command : String, error~ : Bool = false) -> Unit {
+  command_line(
+    "Usage: \{command} <directory> [--path <directory>]... [--json]",
+    error~,
+  )
+  command_line(
     "Exit codes: 0 valid, 1 diagnostics found, 2 usage or directory error",
+    error~,
   )
 }
 
@@ -99,7 +103,7 @@ pub fn check(
         ).stringify(indent=2),
       )
     } else {
-      check_usage(command)
+      check_usage(command, error=true)
     }
     @sys.exit(2)
     return
@@ -131,8 +135,9 @@ pub fn check(
       )
     } else {
       print_diagnostics(diagnostics)
-      println(
+      command_line(
         "Checked \{loaded.package_ids.length()} packages from \{loaded.file_count} .pc files; \{diagnostics.length()} diagnostics.",
+        error=!diagnostics.is_empty(),
       )
     }
     if !diagnostics.is_empty() {
@@ -151,7 +156,7 @@ pub fn check(
           ).stringify(indent=2),
         )
       } else {
-        println("Could not check \{directories.join(", ")}: \{message}")
+        eprintln("Could not check \{directories.join(", ")}: \{message}")
       }
       @sys.exit(2)
     }

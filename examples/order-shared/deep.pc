@@ -1,0 +1,7 @@
+Name: deep
+Description: Shared dependency order fixture
+Version: 1
+Requires: base, upper, right
+Cflags: -I/deep
+Libs: -ldeep
+Libs.private: -ldeep-private

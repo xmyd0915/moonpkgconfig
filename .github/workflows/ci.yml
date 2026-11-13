@@ -115,7 +115,7 @@ jobs:
       - name: Run library API demo
         run: moon run cmd/demo
 
-      - name: Run reviewer walkthrough
+      - name: Run usage walkthrough
         run: sh scripts/review-demo.sh
 
       - name: Run valid file demo
@@ -143,7 +143,7 @@ jobs:
           test "$(moon run --target native cmd/query examples/order root --libs --static)" = "-lroot -lroot-private -lleft -lright -lcommon"
           test "$(moon run --target native cmd/query examples/mixed good --cflags)" = "-I/good"
           set +e
-          broken_output="$(moon run --target native cmd/query examples/mixed broken --cflags)"
+          broken_output="$(moon run --target native cmd/query examples/mixed broken --cflags 2>&1)"
           broken_status=$?
           set -e
           test "$broken_status" -eq 1
@@ -188,7 +188,7 @@ jobs:
           test "$(moon run --target native cmd/check testdata/pkgconf-3.0.7)" = "Checked 11 packages from 11 .pc files; 0 diagnostics."
           test "$(moon run --target native cmd/check testdata/real-world)" = "Checked 2 packages from 2 .pc files; 0 diagnostics."
           set +e
-          output="$(moon run --target native cmd/check examples/invalid)"
+          output="$(moon run --target native cmd/check examples/invalid 2>&1)"
           status=$?
           set -e
           test "$status" -eq 1
@@ -267,6 +267,36 @@ jobs:
 
       - name: Build pinned Expat and verify static compiler definition
         run: python3 scripts/verify-expat.py
+
+      - name: Verify real static dependency link order
+        run: python3 scripts/verify-link-order.py
+
+      - name: Install system metadata corpus
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libcairo2-dev libglib2.0-dev libfontconfig1-dev libfreetype6-dev libpng-dev libpixman-1-dev liblzo2-dev
+
+      - name: Compare installed system packages with pinned pkgconf
+        shell: bash
+        run: |
+          python3 scripts/verify-system-packages.py --self-test
+          arguments=()
+          for directory in "/usr/lib/$(cc -print-multiarch)/pkgconfig" /usr/lib/pkgconfig /usr/share/pkgconfig; do
+            if test -d "$directory"; then
+              arguments+=(--directory "$directory")
+            fi
+          done
+          python3 scripts/verify-system-packages.py --reference "$PKGCONF" "${arguments[@]}"
+
+      - name: Retain system and static linking evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-system-packages
+          path: |
+            _build/verification/system-packages.json
+            _build/verification/link-order.json
+          if-no-files-found: error
 
       - name: Prepare libraries and run published native applications
         run: python3 scripts/review-native.py

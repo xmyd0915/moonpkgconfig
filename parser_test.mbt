@@ -234,3 +234,51 @@ test "expansion enforces output limit before appending oversized variable" {
     Ok(_) => fail("expected expansion limit diagnostic")
   }
 }
+
+///|
+test "document expansion accepts the single value boundary" {
+  let value = "x".repeat(1048576)
+  let doc = @moonpkgconfig.parse("large=${value}\nName: valid", overrides={
+    "value": value,
+  })
+  @debug.assert_eq(doc.diagnostics, [])
+  @debug.assert_eq(doc.variable("large").unwrap().value.length(), 1048576)
+  @debug.assert_eq(doc.field("Name").unwrap().value, "valid")
+}
+
+///|
+test "document expansion stops at the cumulative UTF-16 budget" {
+  let source = StringBuilder()
+  source.write_string("seed=" + "x".repeat(65536) + "\n")
+  for i = 0; i < 255; i = i + 1 {
+    source.write_string("value")
+    source.write_string(i.to_string())
+    source.write_string("=${seed}\n")
+  }
+  source.write_string("empty=\noverflow=${seed}\nafter=ignored\n")
+  let doc = @moonpkgconfig.parse(source.to_string(), source="budget.pc")
+  @debug.assert_eq(doc.entries.length(), 257)
+  @debug.assert_eq(doc.variable("empty").unwrap().value, "")
+  @debug.assert_eq(doc.variable("overflow"), None)
+  @debug.assert_eq(doc.variable("after"), None)
+  @debug.assert_eq(doc.diagnostics.map(d => d.code), ["PC009"])
+  @debug.assert_eq(doc.diagnostics[0].location, {
+    source: "budget.pc",
+    line: 258,
+    column: 10,
+  })
+  @debug.assert_eq(
+    doc.diagnostics[0].message,
+    "Document expansion exceeds 16 Mi UTF-16 code units",
+  )
+}
+
+///|
+test "document overrides cannot bypass expansion limits" {
+  let doc = @moonpkgconfig.parse("large=small\nName: valid", overrides={
+    "large": "x".repeat(1048577),
+  })
+  @debug.assert_eq(doc.variable("large"), None)
+  @debug.assert_eq(doc.diagnostics.map(d => d.code), ["PC009"])
+  @debug.assert_eq(doc.field("Name").unwrap().value, "valid")
+}

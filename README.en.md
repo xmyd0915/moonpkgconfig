@@ -15,6 +15,8 @@ A source-aware `pkg-config` metadata engine written in MoonBit. It parses `.pc` 
 
 The unified CLI and experimental project integration are main-branch additions. They have not been published as a new MoonCakes release. Examples are maintained by this project and do not represent independent adoption.
 
+The current main branch also fixes linker ordering, file and UTF-8 diagnostics, private-dependency predicates and expansion limits. These fixes are unreleased; the published 0.3.1 archive remains unchanged.
+
 ## Try the CLI
 
 Use the pinned `moonc 0.10.20+65efd5b93` / `moon 0.1.20261104` toolchain to reproduce the build:
@@ -41,8 +43,8 @@ The package includes the executable, MIT license, dependency notices, usage inst
 For recognized `inspect`, `query` and `check` commands, `--json` returns one JSON object on stdout for success, diagnostics, usage errors and IO errors. Keep stderr separate. Help takes precedence and remains text.
 
 - Exit 0: success or a satisfied predicate.
-- Exit 1: metadata diagnostics, a missing variable, or an unsatisfied version predicate.
-- Exit 2: usage or filesystem error.
+- Exit 1: metadata or per-entry loading diagnostics, a missing variable, or an unsatisfied version predicate.
+- Exit 2: usage, search-directory IO, or direct `inspect` file IO error.
 
 Check `schema_version` (currently 1), `status` and the exit code. Query reports retain `flags` and `diagnostics`; inspect reports retain `entries` and `diagnostics`. Additional fields describe errors and query context. Metadata queries return `value`; evaluated predicates return `matched`. `--json --explain` adds `paths`, a mapping from each returned argument's package to its dependency path. See the complete [JSON contract](docs/cli-json.md).
 
@@ -62,11 +64,19 @@ arguments = [flag["value"] for flag in report["flags"]]
 
 Pass arguments to subprocesses as an argv list. The text flag output uses POSIX shell quoting; it is not a Windows command string. Search directories, sysroot and system-path filtering are explicit, so queries do not silently depend on the host's `PKG_CONFIG_*` environment.
 
+Text failures write diagnostics, usage and IO messages to stderr. Failed flag queries leave stdout empty; explicit help writes to stdout. For `query` and `check`, an unreadable individual `.pc` entry produces `PC019` and invalid UTF-8 produces `PC020`, with exit 1. Unrelated queries remain usable, and the first broken file retains precedence. Search-directory failures remain exit 2. `inspect` reports invalid UTF-8 as `PC020` while retaining exit 2 for file IO errors.
+
+The four predicates (`--exists` and the three version conditions) check private dependencies; `--modversion` does not. The loader defaults `pc_sysrootdir` to an empty expansion value, and explicit `--sysroot` supplies its value. Paths already under that sysroot are not prefixed again. These defaults do not create source entries.
+
 ## Scope and verification
 
-The core supports ordered variable expansion, public/private dependencies, version constraints, virtual providers, static flags, source diagnostics and argument classification. It is intentionally strict about duplicate definitions and undefined variables. It does not claim full `pkgconf` compatibility, automatic Windows relocation, or arbitrary compiler-option translation in the native examples.
+The core supports ordered variable expansion, public/private dependencies, version constraints, virtual providers, static flags, source diagnostics and argument classification. Linker flags place dependants before dependencies; compiler flags retain breadth-first ordering. It is intentionally strict about duplicate definitions, undefined variables and dependency cycles (`PC017`). Known field names are case-sensitive; unknown extension fields are retained without a diagnostic. The query root accepts one package identifier, not a version expression.
+
+Expansion is limited to 1 Mi UTF-16 code units per value and 16 Mi cumulatively per document, including overrides; exhaustion produces `PC009`. This is not a process-memory limit. Caller mutations that remove package references or version metadata now produce diagnostics instead of aborting those query paths. MoonPkgConfig does not claim full `pkgconf` compatibility, automatic Windows relocation, or arbitrary compiler-option translation in the native examples.
 
 CI checks, builds and tests the core on wasm, wasm-gc, JavaScript and native, verifies the actual package archive and published 0.3.1 in fresh consumers, and builds real zlib/Expat consumers on Ubuntu and Windows. CLI verification runs an installed executable outside the repository; standalone-package verification extracts and runs the actual ZIP with MoonBit environment variables and PATH cleared.
+
+The fixed comparison scripts cover 174 pkgconf 3.0.7 comparisons (50 base, 120 configured-template and 4 static-order queries), plus 158 seeded inputs. Additional scripts exercise actual installed Ubuntu metadata and real static linking. See the [compatibility guide](docs/compatibility.md) for their platform scope and results for each commit.
 
 ```sh
 moon check --target all --deny-warn

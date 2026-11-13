@@ -85,7 +85,7 @@ try {
     if ($LASTEXITCODE -ne 0 -or $orderedStaticLibs -ne '-lroot -lroot-private -lleft -lright -lcommon') { throw 'Static library dependency order failed.' }
     $isolatedQuery = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/mixed good --cflags | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $isolatedQuery -ne '-I/good') { throw 'Unrelated invalid file blocked a valid query.' }
-    $brokenQuery = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/mixed broken --cflags | Out-String).Trim()
+    $brokenQuery = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/mixed broken --cflags 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 1 -or $brokenQuery -notmatch 'PC004') { throw 'Invalid root package diagnostics were not returned.' }
     $brokenJsonText = (& "$MoonHome\bin\moon.exe" run --target native cmd/query examples/mixed broken --cflags --json | Out-String).Trim()
     if ($LASTEXITCODE -ne 1) { throw 'Invalid root JSON query did not return exit code 1.' }
@@ -113,7 +113,7 @@ try {
     if ($LASTEXITCODE -ne 1) { throw 'Maximum version mismatch did not return exit code 1.' }
     $validDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/valid | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $validDirectory -ne 'Checked 3 packages from 3 .pc files; 0 diagnostics.') { throw 'Valid directory check failed.' }
-    $invalidDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/invalid | Out-String).Trim()
+    $invalidDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check examples/invalid 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 1 -or $invalidDirectory -notmatch 'package-that-is-not-here' -or $invalidDirectory -notmatch 'private-helper' -or $invalidDirectory -notmatch '4 diagnostics\.') { throw 'Invalid directory check failed.' }
     $upstreamDirectory = (& "$MoonHome\bin\moon.exe" run --target native cmd/check testdata/pkgconf-3.0.7 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0 -or $upstreamDirectory -ne 'Checked 11 packages from 11 .pc files; 0 diagnostics.') { throw 'Upstream pkgconf corpus check failed.' }

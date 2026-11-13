@@ -1,0 +1,7 @@
+Name: left
+Description: Shared dependency order fixture
+Version: 1
+Requires: base
+Cflags: -I/left
+Libs: -lleft
+Libs.private: -lleft-private

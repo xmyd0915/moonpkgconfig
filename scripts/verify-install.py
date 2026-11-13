@@ -239,9 +239,9 @@ def main():
         # Exercise the archived adapter, rather than the checkout that produced it.
         run([sys.executable, str(source / "scripts/verify-load-diagnostics.py")], source)
         filesystem = json.loads((source / "_build/verification/load-diagnostics.json").read_text(encoding="utf-8"))
-        if filesystem.get("passed") is not True or len(filesystem["cases"]) != 22:
+        if filesystem.get("passed") is not True or len(filesystem["cases"]) < 22:
             raise RuntimeError("Archived filesystem diagnostic checks were incomplete")
-        report["archived_filesystem_cases"] = 22
+        report["archived_filesystem_cases"] = len(filesystem["cases"])
     report["passed"] = True
     save_report()
     origin = "packaged archive" if archive else "MoonCakes registry"

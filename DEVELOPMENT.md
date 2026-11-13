@@ -1,6 +1,6 @@
 # 开发说明
 
-核心模块不访问文件系统、不调用 shell。分层为文档解析、变量展开、参数分词、依赖表达式；`cmd/inspect` 使用 `moonbitlang/x/fs` 作为薄文件适配层，不把平台 IO 混入核心接口。
+核心模块不访问文件系统、不调用 shell。分层为文档解析、变量展开、参数分词、依赖表达式；文件访问集中在 `cli` 加载层，使用 `moonbitlang/x/fs`，不把平台 IO 混入核心接口。
 
 代码以 `moon fmt` 格式化；提交前运行 `moon check --target all --deny-warn`、`moon build --target all --deny-warn`、`moon test --target all --deny-warn` 和 `moon run cmd/demo`。四目标为 wasm、wasm-gc、js、native。验证证据写入 `docs/verification.md`，失败不能记为通过。
 
@@ -12,6 +12,8 @@ Ubuntu 与 Windows CI 分别显示工具链版本、四目标检查、构建和�
 
 CLI 层的版本化 JSON 外层报告与核心库序列化分开维护；原有 `flags/diagnostics`、`entries/diagnostics` 内容保留。非帮助模式指定 `--json` 后，读取和用法错误也必须可解析；新增状态不能伪装成无诊断成功。元数据、条件与 `--explain` 的协议见 [CLI JSON 接口](docs/cli-json.md)。
 
+文本失败的诊断、用法、IO 信息及目录检查汇总写入 stderr；失败的参数查询不能在 stdout 留下部分参数。显式帮助使用 stdout。JSON schema 保持1，保留核心返回的参数内容，调用者必须判断状态与退出码。`--exists` 和三个版本条件包含私有依赖，版本和变量读取不包含私有依赖。
+
 `python scripts/package-cli.py` 从实际安装程序生成独立 ZIP，再从 ZIP 解压到仓库外，清除工具链环境后执行端到端验证。包内保留 MIT 与依赖许可证、提交与工具链信息、哈希；报告为 `_build/verification/cli-package.json`，下载文件在 `_build/cli`。CI 使用 `--require-clean` 拒绝未提交源码，附件保留30天；本地允许开发状态但必须在构建信息中标明。平台范围和下载方法见 [命令行下载指南](docs/cli-download.md)。
 
 Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使用用户目录中的 `.moon` 安装。脚本遇到第一个失败立即退出，不修改全局 PATH。
@@ -20,15 +22,23 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 
 发行验证使用 `python scripts/verify-install.py --package`：提取实际 ZIP，以独立 `moon.work` 连接归档源码和消费者，执行公开接口测试。默认不传参数时从 MoonCakes 安装当前模块版本，不设置本地依赖覆盖；此模式仅在版本已发布后运行。消费者目录保留在忽略的 `.tmp` 中，便于核对下载内容。
 
-`moon.mod` 当前版本为0.3.1。发行前运行归档模式，上传成功后运行注册表模式；正式状态见 `docs/release.md`。复验旧版本需显式指定 `--version 0.3.0` 或 `--version 0.2.0`。0.3.1消费者新增2项诊断映射验证，四目标各运行6项；0.3.0运行原4项，0.2.0运行原3项。归档模式另从提取源码运行22个文件加载场景。可加 `--report <路径>` 保存版本、归档哈希和命令结果；失败报告不会标记为通过。
+`moon.mod` 当前版本为0.3.1，主分支后续修复仍属未发布变更。发行前运行归档模式，上传成功后运行注册表模式；正式状态见 `docs/release.md`。复验旧版本需显式指定 `--version 0.3.0` 或 `--version 0.2.0`。0.3.1消费者新增2项诊断映射验证，四目标各运行6项；0.3.0运行原4项，0.2.0运行原3项。归档模式另从提取源码运行文件加载场景，实际数量与平台跳过项记录在报告中。可加 `--report <路径>` 保存版本、归档哈希和命令结果；失败报告不会标记为通过。
 
 参数分类的端到端检查为 `python scripts/verify-flag-selection.py`，需要 Python 3；Windows 验证脚本和 Ubuntu CI 均会执行。它检查 JSON 与文本参数边界、来源解释、静态参数及诊断退出码，独立工具对照由 `scripts/compare-pkgconf.*` 执行。
 
-`python scripts/verify-load-diagnostics.py` 构建原生命令，验证22个文件加载场景，报告为 `_build/verification/load-diagnostics.json`。适配层应把 `diagnostics_by_package` 传给0.3.1的可选 `unavailable` 参数；不要解析诊断文本来推断包名，也不要把无关损坏文件加入单包查询。0.3.0不提供这个参数。
+`python scripts/verify-load-diagnostics.py` 构建原生命令，验证内容损坏、单文件读取/UTF-8 失败、目录优先级、虚拟提供者和目录 IO 错误，报告为 `_build/verification/load-diagnostics.json`。可传 `--target-dir` 和 `--report` 使用隔离构建与报告目录；符号链接和权限场景按平台执行，跳过原因必须记录。适配层应把 `diagnostics_by_package` 传给0.3.1的可选 `unavailable` 参数；不要解析诊断文本来推断包名，也不要把无关损坏文件加入单包查询。0.3.0不提供这个参数。
+
+`cli.read_document` 严格解码 UTF-8，解码失败返回 `PC020`，不再追加缺少字段的假诊断。目录加载将单文件读取失败转为该包的 `PC019`；首个条目即使损坏也占据优先级。搜索目录读取失败继续抛 IO 错误并指出实际目录，不能把未完成扫描当成空成功。加载器只在调用方未覆盖时提供空的 `pc_sysrootdir` 展开值；CLI 显式 sysroot 覆盖它，默认值不能伪造成源码条目。
 
 `python scripts/verify-performance.py` 构建原生 release 基准并验证大图及展开边界，不设机器相关的耗时门槛。详细测量使用 `scripts/benchmark.py`，范围、命令和原始记录见 `docs/performance.md`。修改遍历时必须保留深图安全性、最短路径选择以及诊断顺序；批量解释应复用一次 `dependency_paths` 快照。
 
 查询期间的提供者索引和依赖步骤放在内部 `QueryContext`，不得跨公开调用复用，因为 `PackageSet` 和文档由调用方持有。目录优化仅复用能够证明无诊断且无冲突字段的子图；问题根保持完整遍历。提供者顺序、精确包优先、文档修改可见性和每根冲突范围由回归测试保护。后续测量及剩余边界见 `docs/query-performance.md`。
+
+链接参数单独使用迭代逆后序，把依赖者放在其依赖之前；Cflags 的广度优先声明顺序保持原行为，不能共用链接次序来改写它。回归覆盖三角、跨层共享与深图；实际静态库检查由 `scripts/verify-link-order.py --reference <pkgconf-3.0.7>` 执行，需要 GNU 兼容 `cc`/`ar`，报告为 `_build/verification/link-order.json`。固定 pkgconf 对照由50项基础查询与124项模板/静态顺序查询组成，共174项；158个固定种子输入另行计数。
+
+Ubuntu GNU 用户空间可用 `scripts/verify-system-packages.py --reference <pkgconf-3.0.7> --directory <目录>` 检查实际安装的系统语料；目录可重复指定，`--package` 限定根，`--cli` 复用已构建程序。报告为 `_build/verification/system-packages.json`，记录文件哈希和环境，比较参数集合、退出码、版本、谓词及依赖者优先顺序，不要求全部重复参数或独立分支顺序一致。新增检查的实际结果以对应提交 CI 为准。
+
+展开预算按 UTF-16 code units 计数：单值1 Mi，每文档累计16 Mi；覆盖值及展开工作不能绕过预算，超限返回 `PC009`。这不是进程内存上限。公开文档和包 Map 仍可变，查询不得假设插入时校验永久有效；缺失/无效 Version 与缺失包引用应返回诊断，不能用 `unwrap` 中止进程。字段大小写、未知扩展字段与循环的严格边界见 README。
 
 真实 zlib 和 libpng 的 MoonBit FFI 示例使用独立模块，在 Linux CI 中构建和运行。zlib 另有 Windows MSVC CI，执行 `python scripts/verify-zlib-windows.py`；本地完整检查可加 `scripts/verify.ps1 -WithWindowsZlib -CMake <路径>`。命令及前置条件见各自示例的 README；它们不加入核心库的四目标依赖。两个运行脚本共用 `scripts/native_ffi.py`，修改共用代码时必须重跑 Linux 的两条集成流程以及 Windows zlib。
 

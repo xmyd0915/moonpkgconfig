@@ -6,6 +6,7 @@ fn flag_package(
   libs : String,
   private_requires~ : String = "",
   private_libs~ : String = "",
+  private_cflags~ : String = "",
 ) -> @moonpkgconfig.Document {
   let text = StringBuilder()
   text.write_string("Name: " + id + "\nDescription: flag fixture\nVersion: 1")
@@ -23,6 +24,9 @@ fn flag_package(
   }
   if !cflags.is_empty() {
     text.write_string("\nCflags: " + cflags)
+  }
+  if !private_cflags.is_empty() {
+    text.write_string("\nCflags.private: " + private_cflags)
   }
   @moonpkgconfig.parse(text.to_string(), source=id + ".pc")
 }
@@ -180,6 +184,142 @@ test "flag order keeps declared siblings stable in a diamond graph" {
 }
 
 ///|
+test "triangle links defer shared dependencies and retain flag origins" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  for
+    (id, requires) in [
+      ("root", "base, mid, base"),
+      ("mid", "base"),
+      ("base", ""),
+    ] {
+    packages.add(
+      id,
+      flag_package(
+        id,
+        requires,
+        "-I/" + id,
+        "-l" + id,
+        private_libs="-l" + id + "-private",
+        private_cflags="-D" + id + "_PRIVATE",
+      ),
+    )
+    |> ignore
+  }
+  let dynamic = packages.collect_libs("root")
+  @debug.assert_eq(dynamic.diagnostics, [])
+  @debug.assert_eq(dynamic.flags.map(f => f.value), [
+    "-lroot", "-lmid", "-lbase",
+  ])
+  @debug.assert_eq(dynamic.flags.map(f => f.package_id), ["root", "mid", "base"])
+  @debug.assert_eq(dynamic.flags.map(f => f.location.source), [
+    "root.pc", "mid.pc", "base.pc",
+  ])
+  @debug.assert_eq(
+    packages.collect_libs("root", static_linking=true).flags.map(f => f.value),
+    [
+      "-lroot", "-lroot-private", "-lmid", "-lmid-private", "-lbase", "-lbase-private",
+    ],
+  )
+  // Compiler paths remain breadth-first, with all private fields last.
+  @debug.assert_eq(
+    packages.collect_cflags("root", static_linking=true).flags.map(f => f.value),
+    [
+      "-I/root", "-I/base", "-I/mid", "-Droot_PRIVATE", "-Dbase_PRIVATE", "-Dmid_PRIVATE",
+    ],
+  )
+}
+
+///|
+test "cross-level shared libraries follow every dependant" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  for
+    (id, requires) in [
+      ("root", "left, right"),
+      ("left", "shared"),
+      ("right", "bridge"),
+      ("bridge", "shared"),
+      ("shared", ""),
+    ] {
+    packages.add(id, flag_package(id, requires, "-I/" + id, "-l" + id))
+    |> ignore
+  }
+  let result = packages.collect_libs("root")
+  @debug.assert_eq(result.diagnostics, [])
+  @debug.assert_eq(result.flags.map(f => f.value), [
+    "-lroot", "-lleft", "-lright", "-lbridge", "-lshared",
+  ])
+  @debug.assert_eq(packages.collect_cflags("root").flags.map(f => f.value), [
+    "-I/root", "-I/left", "-I/right", "-I/shared", "-I/bridge",
+  ])
+}
+
+///|
+test "link branches keep declaration order and duplicate edges are stable" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  for
+    (id, requires) in [
+      ("root", "a, b"),
+      ("a", "x"),
+      ("x", "y"),
+      ("y", ""),
+      ("b", "z"),
+      ("z", ""),
+    ] {
+    packages.add(id, flag_package(id, requires, "", "-l" + id)) |> ignore
+  }
+  @debug.assert_eq(packages.collect_libs("root").flags.map(f => f.value), [
+    "-lroot", "-la", "-lx", "-ly", "-lb", "-lz",
+  ])
+  // pkgconf 3.0.7 gives the final repeated dependency its last declared place.
+  let repeated = @moonpkgconfig.PackageSet::new()
+  repeated.add("root", flag_package("root", "a, b, a", "", "-lroot")) |> ignore
+  repeated.add("a", flag_package("a", "", "", "-la -la")) |> ignore
+  repeated.add("b", flag_package("b", "", "", "-lb")) |> ignore
+  @debug.assert_eq(repeated.collect_libs("root").flags.map(f => f.value), [
+    "-lroot", "-lb", "-la", "-la",
+  ])
+}
+
+///|
+test "private shared edges affect only static link order" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  packages.add(
+    "root",
+    flag_package("root", "base", "", "-lroot", private_requires="mid, base"),
+  )
+  |> ignore
+  packages.add("mid", flag_package("mid", "base", "", "-lmid")) |> ignore
+  packages.add("base", flag_package("base", "", "", "-lbase")) |> ignore
+  @debug.assert_eq(packages.collect_libs("root").flags.map(f => f.value), [
+    "-lroot", "-lbase",
+  ])
+  @debug.assert_eq(
+    packages.collect_libs("root", static_linking=true).flags.map(f => f.value),
+    ["-lroot", "-lmid", "-lbase"],
+  )
+}
+
+///|
+test "deep shared link graphs use an iterative dependency order" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  let size = 5000
+  packages.add("root", flag_package("root", "p4999, p0", "", "-lroot"))
+  |> ignore
+  for i = 0; i < size; i = i + 1 {
+    let requires = if i + 1 < size { "p\{i + 1}" } else { "" }
+    packages.add("p\{i}", flag_package("p\{i}", requires, "", "-lp\{i}"))
+    |> ignore
+  }
+  let result = packages.collect_libs("root")
+  @debug.assert_eq(result.diagnostics, [])
+  assert_eq(result.flags.length(), size + 1)
+  assert_eq(result.flags[0].value, "-lroot")
+  for i = 0; i < size; i = i + 1 {
+    assert_eq(result.flags[i + 1].value, "-lp\{i}")
+  }
+}
+
+///|
 test "dependency paths use the shortest valid public or private route" {
   let packages = @moonpkgconfig.PackageSet::new()
   packages.add("common", flag_package("common", "", "", "-lcommon")) |> ignore
@@ -305,4 +445,34 @@ test "sysroot composition keeps rewritten former system paths" {
     .with_sysroot("/sdk")
     .filter_system_search_paths(["/usr/include"], ["/usr/lib"])
   @debug.assert_eq(cflags.flags.map(f => f.value), ["-I/sdk/usr/include"])
+}
+
+///|
+test "sysroot rewriting is idempotent at path component boundaries" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  packages.add(
+    "paths",
+    flag_package(
+      "paths", "", "-I/sdk/include -I /sdk -I/sdk-other/include -I/usr/include -isystem /sdk/system -isystem/sdk/attached -DKEEP=/sdk",
+      "-L/sdk/lib -L /sdk -L/sdk-other/lib -L/usr/lib -lpaths",
+    ),
+  )
+  |> ignore
+  let cflags = packages.collect_cflags("paths")
+  let rewritten = cflags.with_sysroot("/sdk")
+  @debug.assert_eq(rewritten.flags.map(f => f.value), [
+    "-I/sdk/include", "-I", "/sdk", "-I/sdk/sdk-other/include", "-I/sdk/usr/include",
+    "-isystem", "/sdk/system", "-isystem/sdk/attached", "-DKEEP=/sdk",
+  ])
+  @debug.assert_eq(rewritten.with_sysroot("/sdk"), rewritten)
+  @debug.assert_eq(cflags.with_sysroot("/sdk/"), rewritten)
+  @debug.assert_eq(
+    rewritten.flags.map(f => f.location),
+    cflags.flags.map(f => f.location),
+  )
+  let libs = packages.collect_libs("paths").with_sysroot("/sdk")
+  @debug.assert_eq(libs.flags.map(f => f.value), [
+    "-L/sdk/lib", "-L", "/sdk", "-L/sdk/sdk-other/lib", "-L/sdk/usr/lib", "-lpaths",
+  ])
+  @debug.assert_eq(libs.with_sysroot("/sdk"), libs)
 }

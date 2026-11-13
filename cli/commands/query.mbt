@@ -11,21 +11,28 @@ priv enum QueryMode {
 }
 
 ///|
-fn query_usage(command : String) -> Unit {
-  println(
+fn query_usage(command : String, error~ : Bool = false) -> Unit {
+  command_line(
     "Usage: \{command} <directory> <package> <mode> [--path <directory>]... [options]",
+    error~,
   )
-  println(
+  command_line(
     "Modes: --cflags, --libs, --variable=<name>, --modversion, --exists, --atleast-version=<version>, --exact-version=<version>, --max-version=<version>",
+    error~,
   )
-  println(
+  command_line(
     "       --cflags-only-I, --cflags-only-other, --libs-only-L, --libs-only-l, --libs-only-other",
+    error~,
   )
-  println(
+  command_line(
     "Options: --define-variable=<name>=<value>, --path <directory>, --sysroot=<path>",
+    error~,
   )
-  println("         --system-include-path=<path>, --system-library-path=<path>")
-  println("         --static, --dedupe-paths, --json, --explain")
+  command_line(
+    "         --system-include-path=<path>, --system-library-path=<path>",
+    error~,
+  )
+  command_line("         --static, --dedupe-paths, --json, --explain", error~)
 }
 
 ///|
@@ -46,7 +53,7 @@ fn valid_variable_name(name : String) -> Bool {
 ///|
 fn print_diagnostics(diagnostics : Array[@pc.Diagnostic]) -> Unit {
   for problem in diagnostics {
-    println(
+    eprintln(
       "\{problem.code} \{problem.location.source}:\{problem.location.line}:\{problem.location.column} \{problem.message}",
     )
   }
@@ -61,6 +68,10 @@ fn print_flags(
   include_private : Bool,
   unavailable : Map[String, Array[@pc.Diagnostic]],
 ) -> Unit {
+  if !result.diagnostics.is_empty() {
+    print_diagnostics(result.diagnostics)
+    return
+  }
   println(result.shell_text())
   if explain {
     let paths = packages.dependency_paths(root, include_private~, unavailable~)
@@ -336,7 +347,7 @@ pub fn query(
         ),
       )
     } else {
-      query_usage(command)
+      query_usage(command, error=true)
     }
     @sys.exit(2)
     return
@@ -357,7 +368,7 @@ pub fn query(
         error=command_error("usage", message),
       )
     } else {
-      println(message)
+      eprintln(message)
     }
     @sys.exit(2)
     return
@@ -382,13 +393,15 @@ pub fn query(
         error=command_error("usage", message),
       )
     } else {
-      println(message)
+      eprintln(message)
     }
     @sys.exit(2)
     return
   }
-  let directory = positionals[0]
   let root = positionals[1]
+  if !sysroot.is_empty() {
+    overrides["pc_sysrootdir"] = sysroot
+  }
   try {
     let loaded = @loader.load_directories(directories, overrides~)
     let root_diagnostics = loaded.diagnostics_for(root)
@@ -487,6 +500,10 @@ pub fn query(
       | MaxVersion(_) as metadata_query => {
         let resolution = loaded.packages.resolve(
           root,
+          include_private=match metadata_query {
+            Exists | AtLeastVersion(_) | ExactVersion(_) | MaxVersion(_) => true
+            _ => false
+          },
           unavailable=loaded.diagnostics_by_package,
         )
         if !resolution.diagnostics.is_empty() {
@@ -554,7 +571,7 @@ pub fn query(
                     error=command_error("variable", message),
                   )
                 } else {
-                  println(message)
+                  eprintln(message)
                 }
                 @sys.exit(1)
               }
@@ -605,7 +622,7 @@ pub fn query(
           ),
         )
       } else {
-        println("Could not load \{directory}: \{message}")
+        eprintln("Could not load \{directories.join(", ")}: \{message}")
       }
       @sys.exit(2)
     }

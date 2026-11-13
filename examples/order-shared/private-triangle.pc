@@ -1,0 +1,8 @@
+Name: private-triangle
+Description: Shared dependency order fixture
+Version: 1
+Requires: base
+Requires.private: mid, base
+Cflags: -I/private-triangle
+Libs: -lprivate-triangle
+Libs.private: -lprivate-triangle-private

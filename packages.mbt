@@ -61,6 +61,38 @@ pub fn PackageSet::get(self : PackageSet, id : String) -> Package? {
 }
 
 ///|
+// Documents are caller-owned; validation at insertion cannot justify an unwrap
+// after the caller changes entries or inserts a package directly.
+fn Package::checked_version(self : Package) -> Result[String, Diagnostic] {
+  match self.document.field("Version") {
+    Some(entry) =>
+      if entry.value.is_empty() {
+        Err(diag("PC011", "Required field is empty: Version", entry.location))
+      } else if entry.value.iter().any(whitespace) {
+        Err(
+          diag("PC012", "Version must not contain whitespace", entry.location),
+        )
+      } else {
+        Ok(entry.value)
+      }
+    None => {
+      let source = if self.document.entries.is_empty() {
+        self.id + ".pc"
+      } else {
+        self.document.entries[0].location.source
+      }
+      Err(
+        diag("PC010", "Missing required field: Version", {
+          source,
+          line: 1,
+          column: 1,
+        }),
+      )
+    }
+  }
+}
+
+///|
 /// Compare a requested virtual dependency with one `Provides` declaration.
 ///
 /// This is not ordinary interval intersection. It mirrors the comparator-pair
@@ -153,17 +185,30 @@ pub fn PackageSet::check_requirements(
   for requirement in requirements {
     match self.packages.get(requirement.name) {
       None =>
-        if context.find_provider(requirement) is None {
-          diagnostics.push(
-            diag("PC015", "Required package not found: " + requirement.name, {
-              source,
-              line: 1,
-              column: 1,
-            }),
-          )
+        match context.find_provider(requirement) {
+          Some(id) => {
+            guard self.packages.get(id) is Some(pkg) else { continue }
+            if pkg.checked_version() is Err(problem) {
+              append_unavailable([problem], diagnostics)
+            }
+          }
+          None =>
+            diagnostics.push(
+              diag("PC015", "Required package not found: " + requirement.name, {
+                source,
+                line: 1,
+                column: 1,
+              }),
+            )
         }
       Some(pkg) => {
-        let version = pkg.document.field("Version").unwrap().value
+        let version = match pkg.checked_version() {
+          Ok(version) => version
+          Err(problem) => {
+            append_unavailable([problem], diagnostics)
+            continue
+          }
+        }
         if !requirement.matches(version) {
           diagnostics.push(
             diag(

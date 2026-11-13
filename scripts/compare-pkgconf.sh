@@ -82,6 +82,17 @@ assert_equal "private dependency order" \
   "$("$reference" --static --libs root)" \
   "$(moon run --target native cmd/query examples/order root --libs --static)"
 
+export PKG_CONFIG_PATH="$project_root/examples/order-shared"
+export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
+for package in triangle cross deep private-triangle; do
+  assert_equal "$package dynamic link order" \
+    "$("$reference" --libs "$package")" \
+    "$(moon run --target native cmd/query examples/order-shared "$package" --libs)"
+  assert_equal "$package static link order" \
+    "$("$reference" --static --libs "$package")" \
+    "$(moon run --target native cmd/query examples/order-shared "$package" --libs --static)"
+done
+
 export PKG_CONFIG_PATH="$project_root/testdata/real-world"
 export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
 assert_equal "zlib template Cflags" \
@@ -124,6 +135,13 @@ assert_equal "selected sysroot Cflags" \
 assert_equal "selected sysroot Libs" \
   "$("$reference" --libs-only-L paths)" \
   "$(moon run --target native cmd/query examples/path-policy paths --libs-only-L --sysroot=/sdk --system-library-path=/usr/lib)"
+export PKG_CONFIG_PATH="$project_root/examples/sysroot-existing"
+export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
+for option in --cflags --libs --cflags-only-I --libs-only-L; do
+  assert_equal "existing sysroot $option" \
+    "$("$reference" "$option" paths)" \
+    "$(moon run --target native cmd/query examples/sysroot-existing paths "$option" --sysroot=/sdk)"
+done
 unset PKG_CONFIG_SYSROOT_DIR
 
 compare_status() {

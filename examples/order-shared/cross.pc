@@ -1,0 +1,7 @@
+Name: cross
+Description: Shared dependency order fixture
+Version: 1
+Requires: left, right
+Cflags: -I/cross
+Libs: -lcross
+Libs.private: -lcross-private

@@ -1,11 +1,18 @@
 ///|
-fn inspect_usage(command : String) -> Unit {
-  println("Usage: \{command} <file.pc> [--json]")
-  println("Exit codes: 0 valid, 1 diagnostics found, 2 usage or file error")
+fn inspect_usage(command : String, error~ : Bool = false) -> Unit {
+  command_line("Usage: \{command} <file.pc> [--json]", error~)
+  command_line(
+    "Exit codes: 0 valid, 1 diagnostics found, 2 usage or file error",
+    error~,
+  )
 }
 
 ///|
 fn print_summary(document : @pc.Document) -> Unit {
+  if !document.diagnostics.is_empty() {
+    print_diagnostics(document.diagnostics)
+    return
+  }
   for
     field_name in [
       "Name", "Description", "Version", "Requires", "Requires.private", "Provides",
@@ -19,20 +26,14 @@ fn print_summary(document : @pc.Document) -> Unit {
       None => ()
     }
   }
-  if document.diagnostics.is_empty() {
-    println("Diagnostics: none")
-  } else {
-    println("Diagnostics:")
-    for problem in document.diagnostics {
-      println(
-        "  \{problem.code} \{problem.location.source}:\{problem.location.line}:\{problem.location.column} \{problem.message}",
-      )
-    }
-  }
+  println("Diagnostics: none")
 }
 
 ///|
 fn checked_document(document : @pc.Document, source : String) -> @pc.Document {
+  if document.diagnostics.any(problem => problem.code == "PC020") {
+    return document
+  }
   let diagnostics : Array[@pc.Diagnostic] = []
   for problem in document.diagnostics {
     diagnostics.push(problem)
@@ -104,17 +105,16 @@ pub fn inspect(
         error=command_error("usage", "Expected one file and optional --json"),
       )
     } else {
-      inspect_usage(command)
+      inspect_usage(command, error=true)
     }
     @sys.exit(2)
     return
   }
   guard path is Some(path) else { abort("A file was required before reading") }
   try {
-    let input = @fs.read_file_to_string(path)
     let pcfiledir = @path.Path(path).dirname().to_string()
     let document = checked_document(
-      @pc.parse(input, source=path, pcfiledir~),
+      @loader.read_document(path, pcfiledir~),
       path,
     )
     if json {
@@ -144,7 +144,7 @@ pub fn inspect(
           error=command_error("io", message),
         )
       } else {
-        println(message)
+        eprintln(message)
       }
       @sys.exit(2)
     }

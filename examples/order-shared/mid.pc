@@ -1,0 +1,7 @@
+Name: mid
+Description: Shared dependency order fixture
+Version: 1
+Requires: base
+Cflags: -I/mid
+Libs: -lmid
+Libs.private: -lmid-private

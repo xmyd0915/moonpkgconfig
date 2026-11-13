@@ -1,17 +1,20 @@
 ///|
-fn usage() -> Unit {
-  println("Usage: moonpkgconfig <inspect|query|check> [arguments]")
-  println("  inspect <file.pc> [--json]")
-  println("  query <directory> <package> <mode> [options]")
-  println("  check <directory> [--path <directory>]... [--json]")
-  println("Use moonpkgconfig <command> --help for command options.")
+fn usage(error~ : Bool = false) -> Unit {
+  command_line("Usage: moonpkgconfig <inspect|query|check> [arguments]", error~)
+  command_line("  inspect <file.pc> [--json]", error~)
+  command_line("  query <directory> <package> <mode> [options]", error~)
+  command_line("  check <directory> [--path <directory>]... [--json]", error~)
+  command_line(
+    "Use moonpkgconfig <command> --help for command options.",
+    error~,
+  )
 }
 
 ///|
 /// Run the installed command with process arguments, including argv[0].
 pub fn run(args : Array[String]) -> Unit {
   if args.length() < 2 {
-    usage()
+    usage(error=true)
     @sys.exit(2)
     return
   }
@@ -28,8 +31,8 @@ pub fn run(args : Array[String]) -> Unit {
     "query" => query(command_args, command="moonpkgconfig query")
     "check" => check(command_args, command="moonpkgconfig check")
     _ => {
-      println("Unknown command: \{args[1]}")
-      usage()
+      eprintln("Unknown command: \{args[1]}")
+      usage(error=true)
       @sys.exit(2)
     }
   }

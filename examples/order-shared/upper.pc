@@ -1,0 +1,7 @@
+Name: upper
+Description: Shared dependency order fixture
+Version: 1
+Requires: inner
+Cflags: -I/upper
+Libs: -lupper
+Libs.private: -lupper-private

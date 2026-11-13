@@ -109,8 +109,8 @@ pub fn FlagResult::deduplicate_search_paths(self : FlagResult) -> FlagResult {
 /// Prefix absolute compiler and linker search paths with a sysroot.
 ///
 /// Attached and split `-I`, `-L` and `-isystem` forms are supported. Relative
-/// paths and unrelated arguments are unchanged, and every rewritten flag keeps
-/// its original package, field and source location.
+/// paths, paths already within the sysroot and unrelated arguments are unchanged.
+/// Every rewritten flag keeps its original package, field and source location.
 pub fn FlagResult::with_sysroot(
   self : FlagResult,
   sysroot : String,
@@ -228,7 +228,9 @@ fn flag_with_value(flag : ResolvedFlag, value : String) -> ResolvedFlag {
 
 ///|
 fn sysroot_path(sysroot : String, path : String) -> String {
-  if is_absolute_search_path(path) {
+  if is_absolute_search_path(path) &&
+    path != sysroot &&
+    !path.has_prefix(sysroot + "/") {
     sysroot + path
   } else {
     path
@@ -292,7 +294,7 @@ pub fn PackageSet::collect_libs(
   let resolution = context.resolve(root, "query")
   let flags : Array[ResolvedFlag] = []
   let diagnostics = resolution.diagnostics.copy()
-  for id in context.flag_order(root) {
+  for id in context.link_order(root) {
     append_flag_field(self, id, "Libs", flags, diagnostics)
     if static_linking {
       append_flag_field(self, id, "Libs.private", flags, diagnostics)
@@ -320,9 +322,7 @@ pub fn PackageSet::dependency_path(
 }
 
 ///|
-// pkgconf emits the requested package first, then walks dependencies in their
-// declaration order. A separate traversal is used because `Resolution.order`
-// is intentionally dependency-first for build planning.
+// Compiler search paths keep the existing breadth-first declaration order.
 fn QueryContext::flag_order(
   self : QueryContext,
   root : String,
@@ -343,6 +343,44 @@ fn QueryContext::flag_order(
       }
       index = index + 1
     }
+  }
+  order
+}
+
+///|
+// Reverse postorder with reversed child visits puts every dependant before its
+// dependencies, while keeping independent branches in declaration order. In a
+// triangle, a direct dependency must wait for the sibling that also uses it.
+// The explicit stack handles deep graphs without recursive calls; resolution
+// has already reported cycles or missing dependencies.
+fn QueryContext::link_order(
+  self : QueryContext,
+  root : String,
+) -> Array[String] {
+  let finished : Array[String] = []
+  let seen : Map[String, Bool] = Map([])
+  let pending : Array[(String, Bool)] = []
+  if self.root_id(root) is Some(id) {
+    pending.push((id, false))
+  }
+  while !pending.is_empty() {
+    let (id, complete) = pending.pop().unwrap()
+    if complete {
+      finished.push(id)
+    } else if !seen.contains(id) {
+      seen[id] = true
+      pending.push((id, true))
+      // Pushing in declaration order visits the last child first.
+      for step in self.resolve_steps(id) {
+        if step is Visit(next) {
+          pending.push((next, false))
+        }
+      }
+    }
+  }
+  let order : Array[String] = []
+  for i = finished.length() - 1; i >= 0; i = i - 1 {
+    order.push(finished[i])
   }
   order
 }

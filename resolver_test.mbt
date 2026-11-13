@@ -27,6 +27,86 @@ fn graph_package(
 }
 
 ///|
+test "resolution diagnoses removed versions for roots dependencies and providers" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  let document = graph_package("provider", "1", "", provides="virtual = 2")
+  let version = document.field("Version").unwrap()
+  packages.add("provider", document) |> ignore
+  packages.add("root", graph_package("root", "1", "provider")) |> ignore
+  packages.add("virtual-root", graph_package("virtual-root", "1", "virtual"))
+  |> ignore
+  packages.add(
+    "conflict",
+    graph_package("conflict", "1", "", conflicts="provider >= 2"),
+  )
+  |> ignore
+  packages.add(
+    "shared-root",
+    graph_package("shared-root", "1", "root, virtual-root, conflict"),
+  )
+  |> ignore
+  @debug.assert_eq(packages.resolve("root").diagnostics, [])
+  let entries = document.entries.filter(entry => entry.name != "Version")
+  document.entries.clear()
+  for entry in entries {
+    document.entries.push(entry)
+  }
+  for root in ["root", "virtual-root", "shared-root", "provider", "virtual"] {
+    let result = packages.resolve(root)
+    @debug.assert_eq(result.diagnostics.map(d => d.code), ["PC010"])
+    @debug.assert_eq(result.diagnostics[0].location.source, "provider.pc")
+  }
+  @debug.assert_eq(packages.check_all().map(d => d.code), ["PC010"])
+  document.entries.push(version)
+  for root in ["root", "virtual-root", "shared-root", "provider", "virtual"] {
+    @debug.assert_eq(packages.resolve(root).diagnostics, [])
+  }
+  @debug.assert_eq(packages.check_all(), [])
+}
+
+///|
+test "resolution diagnoses directly inserted invalid package versions" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  for
+    (id, text, code) in [
+      ("missing", "Name: Missing\nDescription: no version", "PC010"),
+      ("empty", "Name: Empty\nDescription: empty version\nVersion:", "PC011"),
+      (
+        "spaces", "Name: Spaces\nDescription: invalid version\nVersion: 1 2", "PC012",
+      ),
+    ] {
+    packages.packages[id] = { id, document: @moonpkgconfig.parse(text), }
+    @debug.assert_eq(packages.resolve(id).diagnostics.map(d => d.code), [code])
+  }
+}
+
+///|
+test "removed package map entries do not abort provider or directory checks" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  packages.add(
+    "provider",
+    graph_package("provider", "1", "", provides="virtual = 2"),
+  )
+  |> ignore
+  packages.add("root", graph_package("root", "1", "virtual")) |> ignore
+  @debug.assert_eq(packages.resolve("root").diagnostics, [])
+  packages.packages.remove("provider") |> ignore
+  @debug.assert_eq(packages.resolve("root").diagnostics.map(d => d.code), [
+    "PC015",
+  ])
+  @debug.assert_eq(packages.resolve("provider").diagnostics.map(d => d.code), [
+    "PC015",
+  ])
+  @debug.assert_eq(packages.check_all().map(d => d.code), ["PC015", "PC015"])
+  packages.packages["provider"] = {
+    id: "provider",
+    document: graph_package("provider", "1", "", provides="virtual = 2"),
+  }
+  @debug.assert_eq(packages.resolve("root").diagnostics, [])
+  @debug.assert_eq(packages.check_all(), [])
+}
+
+///|
 test "resolver returns dependencies before their dependants" {
   let packages = @moonpkgconfig.PackageSet::new()
   packages.add("compression", graph_package("compression", "1", "")) |> ignore

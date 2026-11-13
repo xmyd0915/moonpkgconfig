@@ -65,6 +65,14 @@ try {
     Assert-Equal 'diamond Cflags order' (Invoke-Text $Reference @('--cflags', 'root')) (Invoke-MoonQuery 'examples/order' @('--cflags'))
     Assert-Equal 'private dependency order' (Invoke-Text $Reference @('--static', '--libs', 'root')) (Invoke-MoonQuery 'examples/order' @('--libs', '--static'))
 
+    $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'examples/order-shared'
+    $env:PKG_CONFIG_LIBDIR = $env:PKG_CONFIG_PATH
+    foreach ($package in @('triangle', 'cross', 'deep', 'private-triangle')) {
+        $script:Package = $package
+        Assert-Equal "$package dynamic link order" (Invoke-Text $Reference @('--libs', $package)) (Invoke-MoonQuery 'examples/order-shared' @('--libs'))
+        Assert-Equal "$package static link order" (Invoke-Text $Reference @('--static', '--libs', $package)) (Invoke-MoonQuery 'examples/order-shared' @('--libs', '--static'))
+    }
+
     $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'testdata/real-world'
     $env:PKG_CONFIG_LIBDIR = $env:PKG_CONFIG_PATH
     $script:Package = 'zlib'
@@ -88,6 +96,11 @@ try {
     Assert-Equal 'sysroot Libs' (Invoke-Text $Reference @('--libs', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--libs', '--sysroot=/sdk', '--system-library-path=/usr/lib'))
     Assert-Equal 'selected sysroot Cflags' (Invoke-Text $Reference @('--cflags-only-I', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--cflags-only-I', '--sysroot=/sdk', '--system-include-path=/usr/include'))
     Assert-Equal 'selected sysroot Libs' (Invoke-Text $Reference @('--libs-only-L', 'paths')) (Invoke-MoonQuery 'examples/path-policy' @('--libs-only-L', '--sysroot=/sdk', '--system-library-path=/usr/lib'))
+    $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'examples/sysroot-existing'
+    $env:PKG_CONFIG_LIBDIR = $env:PKG_CONFIG_PATH
+    foreach ($option in @('--cflags', '--libs', '--cflags-only-I', '--libs-only-L')) {
+        Assert-Equal "existing sysroot $option" (Invoke-Text $Reference @($option, 'paths')) (Invoke-MoonQuery 'examples/sysroot-existing' @($option, '--sysroot=/sdk'))
+    }
     Remove-Item Env:PKG_CONFIG_SYSROOT_DIR -ErrorAction SilentlyContinue
 
     $script:Package = 'imagekit'

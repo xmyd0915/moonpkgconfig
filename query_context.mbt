@@ -57,7 +57,7 @@ fn QueryContext::find_provider(
     None => {
       let index : Map[String, Array[(String, Requirement)]] = Map([])
       for id in self.packages.package_ids {
-        let pkg = self.packages.packages.get(id).unwrap()
+        guard self.packages.packages.get(id) is Some(pkg) else { continue }
         guard pkg.document.field("Provides") is Some(field) else { continue }
         guard parse_requirements(field.value, source=field.location.source)
           is Ok(provides) else {
@@ -92,10 +92,27 @@ fn QueryContext::resolve_steps(
     Some(steps) => steps
     None => {
       let steps : Array[ResolveStep] = []
-      let pkg = self.packages.packages.get(id).unwrap()
-      append_resolve_steps(self, pkg, "Requires", steps)
-      if self.include_private {
-        append_resolve_steps(self, pkg, "Requires.private", steps)
+      match self.packages.packages.get(id) {
+        None =>
+          steps.push(
+            Problem(
+              diag("PC015", "Required package not found: " + id, {
+                source: id,
+                line: 1,
+                column: 1,
+              }),
+            ),
+          )
+        Some(pkg) =>
+          match pkg.checked_version() {
+            Err(problem) => steps.push(Unavailable([problem]))
+            Ok(_) => {
+              append_resolve_steps(self, pkg, "Requires", steps)
+              if self.include_private {
+                append_resolve_steps(self, pkg, "Requires.private", steps)
+              }
+            }
+          }
       }
       self.steps[id] = steps
       steps

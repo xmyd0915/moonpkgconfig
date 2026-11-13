@@ -112,7 +112,13 @@ fn append_selected_conflicts(
             guard packages.packages.get(conflict.name) is Some(other) else {
               continue
             }
-            let version = other.document.field("Version").unwrap().value
+            let version = match other.checked_version() {
+              Ok(version) => version
+              Err(problem) => {
+                append_unavailable([problem], diagnostics)
+                continue
+              }
+            }
             if conflict.matches(version) {
               diagnostics.push(
                 diag(
@@ -259,7 +265,13 @@ fn append_resolve_steps(
                 }
             }
           Some(dependency) => {
-            let version = dependency.document.field("Version").unwrap().value
+            let version = match dependency.checked_version() {
+              Ok(version) => version
+              Err(problem) => {
+                steps.push(Unavailable([problem]))
+                continue
+              }
+            }
             if !requirement.matches(version) {
               steps.push(
                 Problem(

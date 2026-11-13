@@ -1,0 +1,7 @@
+Name: right
+Description: Shared dependency order fixture
+Version: 1
+Requires: bridge
+Cflags: -I/right
+Libs: -lright
+Libs.private: -lright-private

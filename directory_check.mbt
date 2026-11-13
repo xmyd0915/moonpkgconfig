@@ -49,11 +49,9 @@ fn QueryContext::clean_subgraphs(self : QueryContext) -> Map[String, Int32] {
 
 ///|
 fn QueryContext::clean_frame(self : QueryContext, id : String) -> CleanFrame {
-  {
-    id,
-    steps: self.resolve_steps(id),
-    next: 0,
-    clean: self.packages.packages.get(id).unwrap().document.field("Conflicts")
-    is None,
+  let clean = match self.packages.packages.get(id) {
+    Some(pkg) => pkg.document.field("Conflicts") is None
+    None => false
   }
+  { id, steps: self.resolve_steps(id), next: 0, clean, }
 }

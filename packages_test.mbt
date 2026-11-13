@@ -139,3 +139,39 @@ test "unversioned Provides does not synthesize a usable virtual version" {
   @debug.assert_eq(virtual_provider_accepts("virtual", "virtual"), false)
   @debug.assert_eq(virtual_provider_accepts("virtual", "virtual = 1"), false)
 }
+
+///|
+test "direct requirement checks diagnose removed metadata and observe repairs" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  let document = test_package("codec", "2")
+  let entries = document.entries.copy()
+  packages.add("codec", document) |> ignore
+  let requirements = @moonpkgconfig.parse_requirements("codec >= 1").unwrap()
+  @debug.assert_eq(packages.check_requirements(requirements), [])
+  document.entries.clear()
+  let diagnostics = packages.check_requirements(requirements)
+  @debug.assert_eq(diagnostics.map(d => d.code), ["PC010"])
+  @debug.assert_eq(diagnostics[0].message, "Missing required field: Version")
+  @debug.assert_eq(diagnostics[0].location.source, "codec.pc")
+  for entry in entries {
+    document.entries.push(entry)
+  }
+  @debug.assert_eq(packages.check_requirements(requirements), [])
+}
+
+///|
+test "directly inserted packages cannot bypass version diagnostics" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  let document = @moonpkgconfig.parse(
+    "Name: Broken\nDescription: missing version\nProvides: virtual = 2",
+    source="custom/broken.pc",
+  )
+  packages.packages["broken"] = { id: "broken", document, }
+  packages.package_ids.push("broken")
+  for name in ["broken", "virtual"] {
+    let requirements = @moonpkgconfig.parse_requirements(name).unwrap()
+    let diagnostics = packages.check_requirements(requirements)
+    @debug.assert_eq(diagnostics.map(d => d.code), ["PC010"])
+    @debug.assert_eq(diagnostics[0].location.source, "custom/broken.pc")
+  }
+}

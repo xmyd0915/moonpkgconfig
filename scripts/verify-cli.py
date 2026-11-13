@@ -98,8 +98,13 @@ def main():
 
         def cli(label, arguments, status=0):
             result = run([binary, *arguments], status, env=clean_env)
-            if result.stderr and status != 2:
+            json_mode = "--json" in arguments and "--help" not in arguments and "-h" not in arguments
+            if result.stderr and (status == 0 or json_mode and status != 2):
                 raise AssertionError(f"Unexpected stderr for {label}: {result.stderr}")
+            if status and not json_mode and result.stdout:
+                raise AssertionError(f"Failed text command wrote result data to stdout for {label}: {result.stdout}")
+            if status == 2 and not json_mode and not result.stderr:
+                raise AssertionError(f"Text usage/IO error omitted stderr for {label}")
             report["cases"].append({"case": label, "exit": status, "stderr": result.stderr})
             return result.stdout
 
@@ -214,7 +219,10 @@ def main():
         unreadable = external / "file-read-error"
         unreadable.mkdir()
         (unreadable / "directory.pc").mkdir()
-        checked("pc file read failure is not empty success", [unreadable], 2)
+        data = checked("pc file read failure is a named package diagnostic", [unreadable], 1)
+        if ([problem["code"] for problem in data["diagnostics"]] != ["PC019"]
+                or Path(data["diagnostics"][0]["location"]["source"]) != unreadable / "directory.pc"):
+            raise AssertionError(f"Unreadable package did not retain its own diagnostic: {data}")
         checked("unknown check option is structured usage error", [first], 2, ["--unknown"])
         usage = json.loads(cli("missing path operand is structured usage error",
                                ["check", first, "--path", "--json"], 2))
@@ -275,10 +283,10 @@ def main():
         data = query("missing variable is a named error", "root", "--variable=absent_setting", 1, "not_found")
         if "absent_setting" not in data["error"]["message"]:
             raise AssertionError(f"Missing variable name was lost: {data}")
-        missing_text = cli("text missing variable includes its name",
-                           ["query", query_dir, "root", "--variable=absent_setting"], 1)
-        if missing_text.strip() != "Variable not found: absent_setting":
-            raise AssertionError(f"Missing variable message is not interpolated: {missing_text}")
+        cli("text missing variable includes its name on stderr",
+            ["query", query_dir, "root", "--variable=absent_setting"], 1)
+        if report["cases"][-1]["stderr"].strip() != "Variable not found: absent_setting":
+            raise AssertionError("Missing variable message is not on stderr")
         for mode, matched in (
             ("--exists", True), ("--atleast-version=2", True), ("--atleast-version=3", False),
             ("--exact-version=2", True), ("--exact-version=1", False),
@@ -288,6 +296,29 @@ def main():
             if data["matched"] is not matched or data["value"] is not None or data["flags"]:
                 raise AssertionError(f"Predicate was not distinguished from a value: {data}")
         query("missing root cannot evaluate exists", "missing-root", "--exists", 1, "diagnostics")
+        for mode in ("--exists", "--atleast-version=1", "--exact-version=2", "--max-version=3"):
+            data = query("predicate checks missing private dependency " + mode,
+                         "private-app", mode, 1, "diagnostics", directory=private_dir)
+            if data["matched"] is not None or [item["code"] for item in data["diagnostics"]] != ["PC015"]:
+                raise AssertionError(f"Broken private dependency was evaluated as a predicate: {data}")
+        data = query("modversion does not require private dependencies", "private-app", "--modversion", directory=private_dir)
+        if data["value"] != "2":
+            raise AssertionError("Version metadata unexpectedly depended on private packages")
+        cli("failed text cflags excludes partial arguments",
+            ["query", private_dir, "private-app", "--cflags"], 1)
+        if "PC015" not in report["cases"][-1]["stderr"]:
+            raise AssertionError("Private dependency error omitted its diagnostic")
+        cli("failed text query explanation excludes partial output",
+            ["query", private_dir, "private-app", "--cflags", "--explain"], 1)
+        rooted_dir = external / "rooted"
+        rooted_dir.mkdir()
+        pc(rooted_dir, "rooted", "Cflags: -I${pc_sysrootdir}/usr/include/sr -I/sdk/usr/include/dp\n")
+        for prefix, expected in (([], ["-I/usr/include/sr", "-I/sdk/usr/include/dp"]),
+                                 (["--sysroot=/sdk"], ["-I/sdk/usr/include/sr", "-I/sdk/usr/include/dp"])):
+            data = query("sysroot builtin and already rooted path " + str(prefix), "rooted", "--cflags",
+                         extra=prefix, directory=rooted_dir)
+            if [flag["value"] for flag in data["flags"]] != expected:
+                raise AssertionError(f"Sysroot expansion or idempotence changed: {data}")
         provider = pc(query_dir, "provider", "Provides: virtual-dep = 3\nLibs: -lprovider\n", prefix="prefix=/provider\n")
         pc(query_dir, "virtual-app", "Requires: virtual-dep >= 3\nLibs: -lvirtual\n")
         data = query("metadata selects the real virtual provider", "virtual-dep", "--variable=prefix")
@@ -333,6 +364,12 @@ def main():
         if data["file"] != str(tiny) or data["entries"] != expected_entries:
             raise AssertionError(f"Existing inspection entries changed: {data}")
         structured("inspect malformed document is semantic JSON", "inspect", [malformed], 1, "diagnostics")
+        cli("inspect diagnostics use stderr", ["inspect", malformed], 1)
+        invalid_utf8 = query_dir / "invalid-utf8.pc"
+        invalid_utf8.write_bytes(b"Name: bad\nDescription: invalid\xff\nVersion: 1\n")
+        data = structured("inspect invalid UTF8 is a precise diagnostic", "inspect", [invalid_utf8], 1, "diagnostics")
+        if [problem["code"] for problem in data["diagnostics"]] != ["PC020"]:
+            raise AssertionError(f"Invalid UTF8 produced fabricated missing fields: {data}")
         structured("inspect missing file is JSON IO error", "inspect", [external / "missing.pc"], 2, "io_error")
         structured("inspect unknown option before JSON", "inspect", [tiny, "--unknown"], 2, "usage_error")
         data = structured("inspect missing file argument is JSON", "inspect", [], 2, "usage_error")
@@ -364,11 +401,13 @@ def main():
             ("inspect", [external / "missing.pc", "--json"], 2),
             ("check", [first], 1),
             ("check", [first, "--path", second, "--json"], 0),
+            ("query", [private_dir, "private-app", "--cflags"], 1),
+            ("inspect", [malformed], 1),
         ]
         for index, (name, arguments, status) in enumerate(parity):
             original = run([legacy[name], *arguments], status, env=clean_env)
             actual = cli(f"legacy {name} parity {index + 1}", [name, *arguments], status)
-            if actual != original.stdout:
+            if actual != original.stdout or report["cases"][-1]["stderr"] != original.stderr:
                 raise AssertionError(f"Installed {name} differs from the legacy entry point")
         report["source_unchanged"] = before == source_hashes()
         if not report["source_unchanged"]:

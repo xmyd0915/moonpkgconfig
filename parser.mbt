@@ -7,12 +7,28 @@ pub fn expand(
   variables : Map[String, String],
   location~ : Location,
 ) -> Result[String, Diagnostic] {
+  expand_limited(
+    value, variables, location, 1048576, "Expanded value exceeds 1 MiB",
+  )
+}
+
+///|
+fn expand_limited(
+  value : String,
+  variables : Map[String, String],
+  location : Location,
+  limit : Int32,
+  limit_message : String,
+) -> Result[String, Diagnostic] {
   let chars = value.to_array()
   let out = StringBuilder()
   let mut expanded_length = 0
   let mut i = 0
   while i < chars.length() {
     if chars[i] == '$' && i + 1 < chars.length() && chars[i + 1] == '$' {
+      if expanded_length == limit {
+        return Err(diag("PC009", limit_message, location))
+      }
       out.write_char('$')
       expanded_length = expanded_length + 1
       i = i + 2
@@ -30,26 +46,33 @@ pub fn expand(
       let name = chars_text(chars, name_start, i)
       match variables.get(name) {
         Some(v) => {
-          expanded_length = expanded_length + v.length()
-          if expanded_length > 1048576 {
-            return Err(diag("PC009", "Expanded value exceeds 1 MiB", location))
+          if v.length() > limit - expanded_length {
+            return Err(diag("PC009", limit_message, location))
           }
+          expanded_length = expanded_length + v.length()
           out.write_string(v)
         }
         None => return Err(diag("PC004", "Undefined variable: " + name, at))
       }
       i = i + 1
     } else {
+      let width = if chars[i].to_int() > 65535 { 2 } else { 1 }
+      if width > limit - expanded_length {
+        return Err(diag("PC009", limit_message, location))
+      }
       out.write_char(chars[i])
-      expanded_length = expanded_length +
-        (if chars[i].to_int() > 65535 { 2 } else { 1 })
+      expanded_length = expanded_length + width
       i = i + 1
-    }
-    if expanded_length > 1048576 {
-      return Err(diag("PC009", "Expanded value exceeds 1 MiB", location))
     }
   }
   Ok(out.to_string())
+}
+
+///|
+// String lengths and both expansion limits count UTF-16 code units, not bytes.
+priv struct ExpansionBudget {
+  mut remaining : Int32
+  mut exhausted : Bool
 }
 
 ///|
@@ -79,6 +102,7 @@ pub fn parse(
 ) -> Document {
   let entries : Array[Entry] = []
   let diagnostics : Array[Diagnostic] = []
+  let budget = { remaining: 16777216, exhausted: false, }
   let variables : Map[String, String] = { "pcfiledir": pcfiledir }
   for name, value in overrides {
     if name != "pcfiledir" {
@@ -129,7 +153,11 @@ pub fn parse(
         fields,
         entries,
         diagnostics,
+        budget,
       )
+      if budget.exhausted {
+        break
+      }
       line.reset()
       physical_line = physical_line + 1
       start_line = physical_line
@@ -148,6 +176,7 @@ pub fn parse(
     fields,
     entries,
     diagnostics,
+    budget,
   )
   { entries, diagnostics, }
 }
@@ -163,8 +192,9 @@ fn parse_line(
   fields : Map[String, Bool],
   entries : Array[Entry],
   diagnostics : Array[Diagnostic],
+  budget : ExpansionBudget,
 ) -> Unit {
-  if text.is_blank() {
+  if budget.exhausted || text.is_blank() {
     return
   }
   let chars = text.to_array()
@@ -205,13 +235,40 @@ fn parse_line(
   }
   let raw = chars_text(chars, value_start, chars.length()).trim_end().to_owned()
   let value_location = { ..location, column: value_start + 1, }
-  match expand(raw, variables, location=value_location) {
-    Err(d) => diagnostics.push(d)
+  let document_limited = budget.remaining < 1048576
+  let limit = if document_limited { budget.remaining } else { 1048576 }
+  let limit_message = if document_limited {
+    "Document expansion exceeds 16 Mi UTF-16 code units"
+  } else {
+    "Expanded value exceeds 1 MiB"
+  }
+  match expand_limited(raw, variables, value_location, limit, limit_message) {
+    Err(d) => {
+      diagnostics.push(d)
+      if document_limited && d.code == "PC009" {
+        budget.exhausted = true
+      }
+    }
     Ok(expanded_value) => {
       let value = match kind {
         Variable => overrides.get(name).unwrap_or(expanded_value)
         Field => expanded_value
       }
+      // Overrides must not bypass either limit. Count discarded expansion work
+      // too, so many overridden values cannot repeatedly consume the budget.
+      let size = if value.length() > expanded_value.length() {
+        value.length()
+      } else {
+        expanded_value.length()
+      }
+      if size > limit {
+        diagnostics.push(diag("PC009", limit_message, value_location))
+        if document_limited {
+          budget.exhausted = true
+        }
+        return
+      }
+      budget.remaining = budget.remaining - size
       entries.push({ kind, name, raw, value, location, value_location, })
       match kind {
         Variable => {

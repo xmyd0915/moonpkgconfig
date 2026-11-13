@@ -1,0 +1,7 @@
+Name: triangle
+Description: Shared dependency order fixture
+Version: 1
+Requires: base, mid, base
+Cflags: -I/triangle
+Libs: -ltriangle
+Libs.private: -ltriangle-private
