@@ -67,7 +67,7 @@ fn inflate_file(source : Bytes) -> Bytes {
 fn main {
   let args = @env.args()
   if args.length() != 4 || (args[1] != "compress" && args[1] != "decompress") {
-    println("Usage: compressor <compress|decompress> <input> <output>")
+    eprintln("Usage: compressor <compress|decompress> <input> <output>")
     @sys.exit(2)
   }
   if args[2] == args[3] {
