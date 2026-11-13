@@ -17,7 +17,7 @@ The unified CLI and experimental project integration are main-branch additions. 
 
 ## Try the CLI
 
-Use the pinned `moonc 0.10.16+b1a0e846e` / `moon 0.1.20261020` toolchain to reproduce CI:
+Use the pinned `moonc 0.10.20+65efd5b93` / `moon 0.1.20261104` toolchain to reproduce the build:
 
 ```sh
 git clone https://github.com/xmyd0915/moonpkgconfig.git

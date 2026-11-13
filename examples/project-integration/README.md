@@ -7,8 +7,8 @@ zlib/Expat command use the same two library packages, which also have native tes
 The applications are maintained here; they are not third-party adoption claims.
 
 The adapter uses MoonBit's [experimental prebuild configuration hook](https://docs.moonbitlang.com/en/stable/toolchain/moon/module.html#experimental-pre-build-config-script).
-Its interface may change. This integration is tested with MoonBit
-`0.10.16+b1a0e846e` and the accompanying `moon 0.1.20261020`.
+Its interface may change. Reproduce this integration with the pinned MoonBit
+`0.10.20+65efd5b93` and the accompanying `moon 0.1.20261104`.
 It requires Python 3.9+, installed static zlib and Expat with their `.pc` files,
 and the platform's native compiler. Windows uses x64 MSVC with the static CRT.
 

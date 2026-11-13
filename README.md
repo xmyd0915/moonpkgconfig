@@ -18,7 +18,7 @@ MoonPkgConfig 面向 MoonBit 原生 FFI、构建工具和 CI 集成。核心库�
 
 ## 安装命令行工具
 
-当前主分支提供统一命令 `moonpkgconfig`。安装 MoonBit `0.10.16+b1a0e846e` 和原生编译工具后，在克隆的仓库根目录运行：
+当前主分支提供统一命令 `moonpkgconfig`。安装 MoonBit `0.10.20+65efd5b93` 和原生编译工具后，在克隆的仓库根目录运行：
 
 ```sh
 git clone https://github.com/xmyd0915/moonpkgconfig.git
@@ -63,7 +63,7 @@ python scripts/verify-project-integration.py
 python scripts/review-native.py
 ```
 
-需要 MoonBit `0.10.16+b1a0e846e`、Python 3.9+、CMake 3.15+；Linux 还需 C 编译器和 `make`，Windows 需 Visual Studio C++ 工具及 Windows SDK，建议使用 ASCII 构建目录（可含空格，详见运行说明）。该命令自动准备固定版本的静态依赖，在仓库之外运行发布包消费者，检查故障、修复、真实执行与 Python zlib 双向互操作，最后打印文件工具路径和本次耗时。
+需要 MoonBit `0.10.20+65efd5b93`、Python 3.9+、CMake 3.15+；Linux 还需 C 编译器和 `make`，Windows 需 Visual Studio C++ 工具及 Windows SDK，建议使用 ASCII 构建目录（可含空格，详见运行说明）。该命令自动准备固定版本的静态依赖，在仓库之外运行发布包消费者，检查故障、修复、真实执行与 Python zlib 双向互操作，最后打印文件工具路径和本次耗时。
 
 工具用法、已有安装的复用选项和报告位置见 [完整原生流程](docs/native-walkthrough.md)。这些应用由本项目维护，不代表第三方采用。只体验参数查询时，可直接使用下面的快速体验步骤。
 
@@ -78,7 +78,7 @@ python scripts/review-native.py
 
 ## 快速体验
 
-需要 MoonBit 工具链；当前 CI 固定使用 `0.10.16+b1a0e846e`，建议复现时使用同一版本。在仓库根目录运行：
+需要 MoonBit 工具链；复现时使用固定版本 `0.10.20+65efd5b93`。在仓库根目录运行：
 
 ```sh
 moon update

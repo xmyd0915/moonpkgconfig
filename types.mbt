@@ -1,27 +1,31 @@
 ///|
 /// A source location. Columns count Unicode scalar values, starting at one.
+#derive(Eq, @debug.Debug)
 pub(all) struct Location {
   source : String
   line : Int32
   column : Int32
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// Diagnostics are errors in the supported subset, not pkgconf exit codes.
+#derive(Eq, @debug.Debug)
 pub(all) struct Diagnostic {
   code : String
   message : String
   location : Location
-} derive(Eq, @debug.Debug)
+}
 
 ///|
+#derive(Eq, @debug.Debug)
 pub(all) enum EntryKind {
   Variable
   Field
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// Original value is retained for explaining substitutions.
+#derive(Eq, @debug.Debug)
 pub(all) struct Entry {
   kind : EntryKind
   name : String
@@ -29,16 +33,18 @@ pub(all) struct Entry {
   value : String
   location : Location
   value_location : Location
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// A parsed document. Invalid entries are not available to subsequent queries.
+#derive(Eq, @debug.Debug)
 pub(all) struct Document {
   entries : Array[Entry]
   diagnostics : Array[Diagnostic]
-} derive(Eq, @debug.Debug)
+}
 
 ///|
+#derive(Eq, @debug.Debug)
 pub(all) enum VersionOp {
   Any
   Equal
@@ -47,15 +53,16 @@ pub(all) enum VersionOp {
   LessEqual
   Greater
   GreaterEqual
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// Version comparison and transitive dependency resolution are later milestones.
+#derive(Eq, @debug.Debug)
 pub(all) struct Requirement {
   name : String
   op : VersionOp
   version : String
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 pub fn Document::field(self : Document, name : String) -> Entry? {

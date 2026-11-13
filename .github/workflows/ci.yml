@@ -20,7 +20,7 @@ jobs:
       - name: Install MoonBit
         shell: bash
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- '0.10.16+b1a0e846e'
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- '0.10.20+65efd5b93'
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Show toolchain version
@@ -344,7 +344,7 @@ jobs:
       - name: Install pinned MoonBit
         shell: pwsh
         run: |
-          $env:MOONBIT_INSTALL_VERSION = '0.10.16+b1a0e846e'
+          $env:MOONBIT_INSTALL_VERSION = '0.10.20+65efd5b93'
           $installerPath = Join-Path $env:RUNNER_TEMP 'install-moonbit.ps1'
           Invoke-WebRequest -Uri 'https://cli.moonbitlang.com/install/powershell.ps1' -OutFile $installerPath
           & $installerPath

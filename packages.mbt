@@ -1,9 +1,10 @@
 ///|
 /// A validated package stored under the identifier used in dependency lists.
+#derive(Eq, @debug.Debug)
 pub(all) struct Package {
   id : String
   document : Document
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// An in-memory package collection. File discovery belongs to adapters and the

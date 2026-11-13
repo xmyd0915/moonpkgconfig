@@ -1,17 +1,19 @@
 ///|
 /// One compiler or linker argument together with its origin.
+#derive(Eq, @debug.Debug)
 pub(all) struct ResolvedFlag {
   value : String
   package_id : String
   field : String
   location : Location
-} derive(Eq, @debug.Debug)
+}
 
 ///|
+#derive(Eq, @debug.Debug)
 pub(all) struct FlagResult {
   flags : Array[ResolvedFlag]
   diagnostics : Array[Diagnostic]
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// Render collected arguments as one POSIX shell command fragment.

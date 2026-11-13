@@ -1,12 +1,13 @@
 ///|
 /// Select one of the conventional pkg-config compiler or linker flag groups.
+#derive(Eq, @debug.Debug)
 pub(all) enum FlagSelection {
   IncludePaths
   OtherCflags
   LibraryPaths
   Libraries
   OtherLibs
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// Keep selected arguments in their original order, with origins and diagnostics.

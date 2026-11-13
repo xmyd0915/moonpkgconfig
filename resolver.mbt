@@ -1,10 +1,11 @@
 ///|
 /// Result of resolving one root package. Dependencies precede dependants in
 /// `order`; diagnostics explain every branch that could not be resolved.
+#derive(Eq, @debug.Debug)
 pub(all) struct Resolution {
   order : Array[String]
   diagnostics : Array[Diagnostic]
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// Resolve the dependency graph rooted at `root`.

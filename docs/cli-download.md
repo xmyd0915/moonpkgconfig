@@ -58,6 +58,6 @@ moon update
 moon install ./cmd/moonpkgconfig
 ```
 
-复现 CI 请使用 `moonc 0.10.16+b1a0e846e`、`moon 0.1.20261020`。安装目录需要加入 PATH，也可使用 `moon install ./cmd/moonpkgconfig --bin <目录>`。
+复现构建请使用 `moonc 0.10.20+65efd5b93`、`moon 0.1.20261104`。安装目录需要加入 PATH，也可使用 `moon install ./cmd/moonpkgconfig --bin <目录>`。
 
 维护者使用 `python scripts/package-cli.py` 生成并验证独立包；CI 加 `--require-clean` 拒绝未提交源码。验证从实际 ZIP 解压到仓库之外的带空格目录，检查内容与哈希，清除 MoonBit 环境和 PATH 后执行命令、诊断及读取错误场景。源码安装仍需要工具链；已解压的命令行运行不调用 MoonBit 编译器。

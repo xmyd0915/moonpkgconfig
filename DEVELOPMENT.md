@@ -4,7 +4,7 @@
 
 代码以 `moon fmt` 格式化；提交前运行 `moon check --target all --deny-warn`、`moon build --target all --deny-warn`、`moon test --target all --deny-warn` 和 `moon run cmd/demo`。四目标为 wasm、wasm-gc、js、native。验证证据写入 `docs/verification.md`，失败不能记为通过。
 
-CI 固定使用 `0.10.16+b1a0e846e` 工具链，避免滚动下载改变格式和语言语法。升级工具链时应单独完成迁移和全套验证，再调整固定版本。
+复现使用固定的 `0.10.20+65efd5b93` 工具链，避免滚动下载改变格式和语言语法。升级工具链时应单独完成迁移和全套验证，再调整固定版本。
 
 Ubuntu 与 Windows CI 分别显示工具链版本、四目标检查、构建和测试；另从 MoonCakes 安装已发布的0.3.1，验证其公开接口。注册表报告与归档报告一起保存在各平台的 `package-install` 附件中，便于区分主分支归档与正式发布包。
 
