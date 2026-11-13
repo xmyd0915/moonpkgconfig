@@ -82,6 +82,19 @@ assert_equal "private dependency order" \
   "$("$reference" --static --libs root)" \
   "$(moon run --target native cmd/query examples/order root --libs --static)"
 
+export PKG_CONFIG_PATH="$project_root/examples/field-case"
+export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
+for option in --cflags --libs --modversion; do
+  assert_equal "mixed-case fields $option" \
+    "$("$reference" "$option" root)" \
+    "$(moon run --target native cmd/query examples/field-case root "$option")"
+done
+for option in --cflags --libs; do
+  assert_equal "mixed-case static fields $option" \
+    "$("$reference" --static "$option" root)" \
+    "$(moon run --target native cmd/query examples/field-case root "$option" --static)"
+done
+
 export PKG_CONFIG_PATH="$project_root/examples/order-shared"
 export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"
 for package in triangle cross deep private-triangle; do

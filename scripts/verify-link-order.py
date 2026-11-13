@@ -66,6 +66,8 @@ def main():
         graphs = [
             ("triangle", {"app": ["base", "mid"], "mid": ["base"], "base": []},
              {"app": ["mid"], "mid": ["base"], "base": []}, ["app", "mid", "base"], ["app", "base", "mid"]),
+            ("private-triangle", {"app": ["base", "mid"], "mid": ["base"], "base": []},
+             {"app": ["mid"], "mid": ["base"], "base": []}, ["app", "mid", "base"], ["app", "base", "mid"]),
             ("cross-layer", {"app": ["left", "right"], "left": ["base"], "right": ["bridge"], "bridge": ["base"], "base": []},
              {"app": ["left", "right"], "left": [], "right": ["bridge"], "bridge": ["base"], "base": []},
              ["app", "left", "right", "bridge", "base"], ["app", "left", "right", "base", "bridge"]),
@@ -76,7 +78,12 @@ def main():
             env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("PKG_CONFIG_", "PKGCONF_"))}
             env.update(PKG_CONFIG_LIBDIR=str(directory), PKG_CONFIG_PATH="", PKG_CONFIG_SYSTEM_LIBRARY_PATH="")
             for name, required in dependencies.items():
-                fields = "Requires: " + ", ".join(required) + "\n" if required else ""
+                hidden = [dep for dep in required if label == "private-triangle"
+                          and (name, dep) in (("app", "mid"), ("mid", "base"))]
+                public = [dep for dep in required if dep not in hidden]
+                fields = "Requires: " + ", ".join(public) + "\n" if public else ""
+                if hidden:
+                    fields += "Requires.private: " + ", ".join(hidden) + "\n"
                 (directory / (name + ".pc")).write_text(
                     f"Name: {name}\nDescription: static link regression\nVersion: 1\n{fields}Libs: -l{name}\n", encoding="utf-8")
                 source = "".join(f"int {dep}_value(void);\n" for dep in calls[name])

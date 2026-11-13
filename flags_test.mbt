@@ -32,6 +32,137 @@ fn flag_package(
 }
 
 ///|
+priv struct FlagGraphRandom {
+  mut state : Int32
+}
+
+///|
+fn FlagGraphRandom::next(self : FlagGraphRandom, bound : Int32) -> Int32 {
+  self.state = (self.state * 25173 + 13849) % 65536
+  self.state % bound
+}
+
+///|
+fn FlagGraphRandom::shuffle(
+  self : FlagGraphRandom,
+  values : Array[Int32],
+) -> Unit {
+  for i = values.length() - 1; i > 0; i = i - 1 {
+    let other = self.next(i + 1)
+    let value = values[i]
+    values[i] = values[other]
+    values[other] = value
+  }
+}
+
+///|
+test "seeded dependency graphs preserve reachability multiplicity and link order" {
+  let random = { state: 24301, }
+  let mut repeated_edges = 0
+  let mut private_edges = 0
+  for _graph = 0; _graph < 600; _graph = _graph + 1 {
+    let count = 3 + random.next(12)
+    let public : Array[Array[Int32]] = []
+    let private : Array[Array[Int32]] = []
+    let packages = @moonpkgconfig.PackageSet::new()
+    for node = 0; node < count; node = node + 1 {
+      let ordinary : Array[Int32] = []
+      let hidden : Array[Int32] = []
+      for dependency = node + 1; dependency < count; dependency = dependency + 1 {
+        if random.next(100) < 18 {
+          ordinary.push(dependency)
+        }
+        if random.next(100) < 12 {
+          hidden.push(dependency)
+          private_edges = private_edges + 1
+        }
+      }
+      if !ordinary.is_empty() && random.next(100) < 15 {
+        ordinary.push(ordinary[random.next(ordinary.length())])
+        repeated_edges = repeated_edges + 1
+      }
+      random.shuffle(ordinary)
+      random.shuffle(hidden)
+      public.push(ordinary)
+      private.push(hidden)
+      let id = "p" + node.to_string()
+      @debug.assert_eq(
+        packages.add(
+          id,
+          flag_package(
+            id,
+            ordinary.map(n => "p" + n.to_string()).join(", "),
+            "",
+            "-l" + id,
+            private_requires=hidden.map(n => "p" + n.to_string()).join(", "),
+            private_libs="-lq" + node.to_string(),
+          ),
+        ),
+        [],
+      )
+    }
+    for static_linking in [false, true] {
+      // Derive reachability from the generated adjacency lists, independently
+      // of PackageSet traversal and the order returned by the implementation.
+      let reached : Map[Int32, Bool] = Map([])
+      let pending = [0]
+      for cursor = 0; cursor < pending.length(); cursor = cursor + 1 {
+        let node = pending[cursor]
+        if reached.contains(node) {
+          continue
+        }
+        reached[node] = true
+        for dependency in public[node] {
+          pending.push(dependency)
+        }
+        if static_linking {
+          for dependency in private[node] {
+            pending.push(dependency)
+          }
+        }
+      }
+      let result = packages.collect_libs("p0", static_linking~)
+      @debug.assert_eq(result.diagnostics, [])
+      @debug.assert_eq(
+        result.flags.length(),
+        reached.length() * (if static_linking { 2 } else { 1 }),
+      )
+      let positions : Map[String, Int32] = Map([])
+      let arguments : Map[String, Bool] = Map([])
+      for index, flag in result.flags {
+        @debug.assert_eq(arguments.contains(flag.value), false)
+        arguments[flag.value] = true
+        if flag.field == "Libs" {
+          positions[flag.package_id] = index
+        }
+      }
+      @debug.assert_eq(positions.length(), reached.length())
+      for node, _ in reached {
+        let id = "p" + node.to_string()
+        @debug.assert_eq(arguments.contains("-l" + id), true)
+        @debug.assert_eq(
+          arguments.contains("-lq" + node.to_string()),
+          static_linking,
+        )
+        let edges = public[node].copy()
+        if static_linking {
+          for dependency in private[node] {
+            edges.push(dependency)
+          }
+        }
+        for dependency in edges {
+          @debug.assert_eq(
+            positions[id] < positions["p" + dependency.to_string()],
+            true,
+          )
+        }
+      }
+    }
+  }
+  @debug.assert_eq(repeated_edges > 0 && private_edges > 0, true)
+}
+
+///|
 test "compiler flags put dependants before dependencies" {
   let packages = @moonpkgconfig.PackageSet::new()
   packages.add("codec", flag_package("codec", "", "-I/codec", "-lcodec"))

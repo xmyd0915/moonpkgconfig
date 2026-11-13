@@ -1,0 +1,5 @@
+Name: mixed-case hidden
+Description: Private dependency
+Version: 1
+cflags: -DHIDDEN=1
+libs: -lcase-hidden

@@ -65,6 +65,15 @@ try {
     Assert-Equal 'diamond Cflags order' (Invoke-Text $Reference @('--cflags', 'root')) (Invoke-MoonQuery 'examples/order' @('--cflags'))
     Assert-Equal 'private dependency order' (Invoke-Text $Reference @('--static', '--libs', 'root')) (Invoke-MoonQuery 'examples/order' @('--libs', '--static'))
 
+    $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'examples/field-case'
+    $env:PKG_CONFIG_LIBDIR = $env:PKG_CONFIG_PATH
+    foreach ($option in @('--cflags', '--libs', '--modversion')) {
+        Assert-Equal "mixed-case fields $option" (Invoke-Text $Reference @($option, 'root')) (Invoke-MoonQuery 'examples/field-case' @($option))
+    }
+    foreach ($option in @('--cflags', '--libs')) {
+        Assert-Equal "mixed-case static fields $option" (Invoke-Text $Reference @('--static', $option, 'root')) (Invoke-MoonQuery 'examples/field-case' @($option, '--static'))
+    }
+
     $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'examples/order-shared'
     $env:PKG_CONFIG_LIBDIR = $env:PKG_CONFIG_PATH
     foreach ($package in @('triangle', 'cross', 'deep', 'private-triangle')) {

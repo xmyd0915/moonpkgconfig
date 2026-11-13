@@ -81,17 +81,23 @@ def main():
         return data
 
     try:
-        app = pc(first, "app", "Requires: helper\nLibs: -lapp\nCflags: -I/app\n")
+        app = pc(first, "app", "Requires: helper\nLibs: -lapp\nCflags: -I/app\nprefix=/app\n")
         helper = pc(first, "helper", prefix="prefix=${missing}\n")
         for mode in ("--libs", "--cflags", "--libs-only-l"):
             ask("malformed dependency " + mode, options=(mode,), code="PC004",
                 source=helper, line=1, column=8)
         ask("malformed root", name="helper", code="PC004", source=helper, line=1, column=8)
         for mode in ("--exists", "--modversion", "--variable=prefix"):
-            text = run([query, str(first), "app", mode], 1, diagnostics=True)
+            text = run([query, str(first), "helper", mode], 1, diagnostics=True)
             if "PC004" not in text or "PC015" in text or str(helper) not in text:
                 raise AssertionError(f"Metadata mode lost original diagnostics: {text}")
-            report["cases"].append({"case": mode, "text": text})
+            report["cases"].append({"case": "malformed root " + mode, "text": text})
+        ask("exists validates malformed dependency", options=("--exists",), code="PC004", source=helper)
+        for mode, expected in (("--modversion", "1"), ("--variable=prefix", "/app")):
+            text = run([query, str(first), "app", mode])
+            if text != expected:
+                raise AssertionError(f"Root metadata lookup lost its value: {text}")
+            report["cases"].append({"case": "root metadata ignores malformed dependency " + mode, "text": text})
         text = run([query, str(first), "app", "--cflags", "--explain"], 1, diagnostics=True)
         if "PC004" not in text or "PC015" in text:
             raise AssertionError("Explanation lost the original diagnostic")
@@ -122,7 +128,7 @@ def main():
 
         pc(first, "helper", prefix="prefix=${missing}\n")
         pc(first, "app", "Requires.private: helper\nLibs: -lapp\n")
-        ask("dynamic libs ignore private failure", values=["-lapp"])
+        ask("dynamic libs validate private failure", code="PC004", source=helper)
         ask("static libs include private failure", options=("--libs", "--static"), code="PC004", source=helper)
         ask("cflags include private failure", options=("--cflags",), code="PC004", source=helper)
         pc(first, "app", "Requires: middle >= 2\n")

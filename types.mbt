@@ -1,6 +1,6 @@
 ///|
 /// A source location. Columns count Unicode scalar values, starting at one.
-#derive(Eq, @debug.Debug)
+#derive(Eq, Hash, @debug.Debug)
 pub(all) struct Location {
   source : String
   line : Int32
@@ -8,13 +8,19 @@ pub(all) struct Location {
 }
 
 ///|
+pub extend Location with Hash::{hash, hash_combine}
+
+///|
 /// Diagnostics are errors in the supported subset, not pkgconf exit codes.
-#derive(Eq, @debug.Debug)
+#derive(Eq, Hash, @debug.Debug)
 pub(all) struct Diagnostic {
   code : String
   message : String
   location : Location
 }
+
+///|
+pub extend Diagnostic with Hash::{hash, hash_combine}
 
 ///|
 #derive(Eq, @debug.Debug)
@@ -56,7 +62,7 @@ pub(all) enum VersionOp {
 }
 
 ///|
-/// Version comparison and transitive dependency resolution are later milestones.
+/// A named dependency with an optional version constraint.
 #derive(Eq, @debug.Debug)
 pub(all) struct Requirement {
   name : String
@@ -66,12 +72,29 @@ pub(all) struct Requirement {
 
 ///|
 pub fn Document::field(self : Document, name : String) -> Entry? {
+  let key = field_key(name)
   for e in self.entries {
-    if e.kind == Field && e.name == name {
+    if e.kind == Field && field_key(e.name) == key {
       return Some(e)
     }
   }
   None
+}
+
+///|
+// Only standard fields ignore ASCII case. Extension fields and variables keep
+// their spelling, and entries retain the source's original field name.
+fn field_key(name : String) -> String {
+  for
+    known in [
+      "Name", "Description", "Version", "URL", "Requires", "Requires.private", "Conflicts",
+      "Provides", "Cflags", "Cflags.private", "Libs", "Libs.private",
+    ] {
+    if name.equal_ignore_ascii_case(known) {
+      return known
+    }
+  }
+  name
 }
 
 ///|

@@ -27,7 +27,7 @@ extern "C" fn write_new(path : Bytes, content : Bytes) -> Int = "moonpkg_write_n
 
 ///|
 fn fail(message : String) -> Unit {
-  println(message)
+  eprintln(message)
   @sys.exit(1)
 }
 

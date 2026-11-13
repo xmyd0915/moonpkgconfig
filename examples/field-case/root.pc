@@ -1,0 +1,11 @@
+prefix=/case
+nAmE: mixed-case root
+DESCRIPTION: Known field names accept ASCII case variants
+vErSiOn: 2.3
+uRL: https://example.invalid/field-case
+rEqUiReS: base >= 1
+REQUIRES.PRIVATE: hidden
+CFlags: -I${prefix}/include -DROOT=1
+CFLAGS.PRIVATE: -DROOT_PRIVATE=1
+LIBS: -L${prefix}/lib -lcase-root
+lIbS.pRiVaTe: -lcase-private

@@ -8,7 +8,7 @@ pub fn expand(
   location~ : Location,
 ) -> Result[String, Diagnostic] {
   expand_limited(
-    value, variables, location, 1048576, "Expanded value exceeds 1 MiB",
+    value, variables, location, 1048576, "Expanded value exceeds 1 Mi UTF-16 code units",
   )
 }
 
@@ -102,7 +102,7 @@ pub fn parse(
 ) -> Document {
   let entries : Array[Entry] = []
   let diagnostics : Array[Diagnostic] = []
-  let budget = { remaining: 16777216, exhausted: false, }
+  let budget = { remaining: 1048576, exhausted: false, }
   let variables : Map[String, String] = { "pcfiledir": pcfiledir }
   for name, value in overrides {
     if name != "pcfiledir" {
@@ -155,6 +155,7 @@ pub fn parse(
         diagnostics,
         budget,
       )
+      limit_document_diagnostics(diagnostics, budget)
       if budget.exhausted {
         break
       }
@@ -178,7 +179,26 @@ pub fn parse(
     diagnostics,
     budget,
   )
+  limit_document_diagnostics(diagnostics, budget)
   { entries, diagnostics, }
+}
+
+///|
+fn limit_document_diagnostics(
+  diagnostics : Array[Diagnostic],
+  budget : ExpansionBudget,
+) -> Unit {
+  if diagnostics.length() > 100 && diagnostics[100].code != "PC021" {
+    let omitted = diagnostics.pop().unwrap()
+    diagnostics.push(
+      diag(
+        "PC021",
+        "Diagnostic limit of 100 reached; parsing stopped before further diagnostics",
+        omitted.location,
+      ),
+    )
+    budget.exhausted = true
+  }
 }
 
 ///|
@@ -219,11 +239,12 @@ fn parse_line(
     return
   }
   let kind = if chars[split] == '=' { Variable } else { Field }
+  let field_name = field_key(name)
   if (
       kind == Variable &&
       (name == "pcfiledir" || defined_variables.contains(name))
     ) ||
-    (kind == Field && fields.contains(name)) {
+    (kind == Field && fields.contains(field_name)) {
     diagnostics.push(
       diag("PC005", "Duplicate or reserved definition: " + name, location),
     )
@@ -238,14 +259,14 @@ fn parse_line(
   let document_limited = budget.remaining < 1048576
   let limit = if document_limited { budget.remaining } else { 1048576 }
   let limit_message = if document_limited {
-    "Document expansion exceeds 16 Mi UTF-16 code units"
+    "Document expansion exceeds 1 Mi UTF-16 code units"
   } else {
-    "Expanded value exceeds 1 MiB"
+    "Expanded value exceeds 1 Mi UTF-16 code units"
   }
   match expand_limited(raw, variables, value_location, limit, limit_message) {
     Err(d) => {
       diagnostics.push(d)
-      if document_limited && d.code == "PC009" {
+      if d.code == "PC009" {
         budget.exhausted = true
       }
     }
@@ -263,9 +284,7 @@ fn parse_line(
       }
       if size > limit {
         diagnostics.push(diag("PC009", limit_message, value_location))
-        if document_limited {
-          budget.exhausted = true
-        }
+        budget.exhausted = true
         return
       }
       budget.remaining = budget.remaining - size
@@ -275,7 +294,7 @@ fn parse_line(
           variables[name] = value
           defined_variables[name] = true
         }
-        Field => fields[name] = true
+        Field => fields[field_name] = true
       }
     }
   }

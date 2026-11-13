@@ -31,7 +31,11 @@ fn print_summary(document : @pc.Document) -> Unit {
 
 ///|
 fn checked_document(document : @pc.Document, source : String) -> @pc.Document {
-  if document.diagnostics.any(problem => problem.code == "PC020") {
+  if document.diagnostics.any(problem => {
+      problem.code == "PC009" ||
+      problem.code == "PC020" ||
+      problem.code == "PC021"
+    }) {
     return document
   }
   let diagnostics : Array[@pc.Diagnostic] = []

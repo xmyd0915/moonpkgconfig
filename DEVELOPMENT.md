@@ -34,11 +34,15 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 
 查询期间的提供者索引和依赖步骤放在内部 `QueryContext`，不得跨公开调用复用，因为 `PackageSet` 和文档由调用方持有。目录优化仅复用能够证明无诊断且无冲突字段的子图；问题根保持完整遍历。提供者顺序、精确包优先、文档修改可见性和每根冲突范围由回归测试保护。后续测量及剩余边界见 `docs/query-performance.md`。
 
-链接参数单独使用迭代逆后序，把依赖者放在其依赖之前；Cflags 的广度优先声明顺序保持原行为，不能共用链接次序来改写它。回归覆盖三角、跨层共享与深图；实际静态库检查由 `scripts/verify-link-order.py --reference <pkgconf-3.0.7>` 执行，需要 GNU 兼容 `cc`/`ar`，报告为 `_build/verification/link-order.json`。固定 pkgconf 对照由50项基础查询与124项模板/静态顺序查询组成，共174项；158个固定种子输入另行计数。
+链接参数单独使用迭代逆后序，把依赖者放在其依赖之前；Cflags 的广度优先声明顺序保持原行为，不能共用链接次序来改写它。回归覆盖三角、跨层共享与深图；实际静态库检查由 `scripts/verify-link-order.py --reference <pkgconf-3.0.7>` 执行，需要 GNU 兼容 `cc`/`ar`，报告为 `_build/verification/link-order.json`。固定 pkgconf 对照由55项基础查询与124项模板/静态顺序查询组成，共179项；158个固定种子输入另行计数。
 
-Ubuntu GNU 用户空间可用 `scripts/verify-system-packages.py --reference <pkgconf-3.0.7> --directory <目录>` 检查实际安装的系统语料；目录可重复指定，`--package` 限定根，`--cli` 复用已构建程序。报告为 `_build/verification/system-packages.json`，记录文件哈希和环境，比较参数集合、退出码、版本、谓词及依赖者优先顺序，不要求全部重复参数或独立分支顺序一致。新增检查的实际结果以对应提交 CI 为准。
+Ubuntu GNU 用户空间可用 `scripts/verify-system-packages.py --reference <pkgconf-3.0.7> --directory <目录> --remove-package zlib` 检查实际安装语料及删除依赖后的副本；目录可重复指定，`--package` 限定根，`--cli` 复用已构建程序。报告记录文件哈希、展开总量、环境、参数集合、退出码、版本、变量、谓词及依赖者优先顺序。完整 Libs 另要求规范化序列相等；规范化只按 CLI 实际连续来源段构造线性元数据，由固定参考工具处理重复片段，不依据预期顺序重排。编译及分类模式的序列一致率单独记录。副本检查必须产生原本成功、删除后失败的依赖查询，并核对原文件未变；报告为 `_build/verification/system-packages.json`。
 
-展开预算按 UTF-16 code units 计数：单值1 Mi，每文档累计16 Mi；覆盖值及展开工作不能绕过预算，超限返回 `PC009`。这不是进程内存上限。公开文档和包 Map 仍可变，查询不得假设插入时校验永久有效；缺失/无效 Version 与缺失包引用应返回诊断，不能用 `unwrap` 中止进程。字段大小写、未知扩展字段与循环的严格边界见 README。
+`PackageSet::select` 只验证并返回所选根，用于版本和变量读取；它不遍历依赖。CLI 的动态链接模式先验证含私有边的完整图，再调用只收集公开链接参数的核心 API，不能把验证范围等同于参数输出范围。
+
+`python scripts/verify-resource-limits.py` 用真实 CLI 子进程检查重复超限、大量诊断和150文件展开输入。每场景单独测量墙钟时间、峰值工作集及输出规模，默认15秒终止门槛与500 MiB内存门槛用于回归保护；它们不等同于库对任意输入的性能保证。报告为 `_build/verification/resource-limits.json`，双平台 CI 保留该附件。
+
+展开预算按 UTF-16 code units 计数：单值及每文档累计均为1 Mi；覆盖值不能绕过预算，首次 `PC009` 停止该文档。解析器保留前100条诊断，遇下一条时追加 `PC021` 并停止；合并诊断用完整内容作为哈希键，保持首次出现顺序。展开预算不是文件大小或进程内存上限。公开文档和包 Map 仍可变，查询不得假设插入时校验永久有效；缺失/无效 Version 与缺失包引用应返回诊断，不能用 `unwrap` 中止进程。字段大小写、未知扩展字段与循环的严格边界见 README。
 
 真实 zlib 和 libpng 的 MoonBit FFI 示例使用独立模块，在 Linux CI 中构建和运行。zlib 另有 Windows MSVC CI，执行 `python scripts/verify-zlib-windows.py`；本地完整检查可加 `scripts/verify.ps1 -WithWindowsZlib -CMake <路径>`。命令及前置条件见各自示例的 README；它们不加入核心库的四目标依赖。两个运行脚本共用 `scripts/native_ffi.py`，修改共用代码时必须重跑 Linux 的两条集成流程以及 Windows zlib。
 

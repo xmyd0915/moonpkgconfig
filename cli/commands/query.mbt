@@ -433,6 +433,22 @@ pub fn query(
             static_linking~,
             unavailable=loaded.diagnostics_by_package,
           )
+        } else if !static_linking {
+          // pkgconf validates private metadata even when dynamic linking only
+          // emits public linker flags. Keep the library's selected-edge API.
+          let validation = loaded.packages.resolve(
+            root,
+            include_private=true,
+            unavailable=loaded.diagnostics_by_package,
+          )
+          if validation.diagnostics.is_empty() {
+            loaded.packages.collect_libs(
+              root,
+              unavailable=loaded.diagnostics_by_package,
+            )
+          } else {
+            { flags: [], diagnostics: validation.diagnostics, }
+          }
         } else {
           loaded.packages.collect_libs(
             root,
@@ -498,36 +514,46 @@ pub fn query(
       | AtLeastVersion(_)
       | ExactVersion(_)
       | MaxVersion(_) as metadata_query => {
-        let resolution = loaded.packages.resolve(
-          root,
-          include_private=match metadata_query {
-            Exists | AtLeastVersion(_) | ExactVersion(_) | MaxVersion(_) => true
-            _ => false
-          },
-          unavailable=loaded.diagnostics_by_package,
-        )
-        if !resolution.diagnostics.is_empty() {
-          if json {
-            let failed : @pc.FlagResult = {
-              flags: [],
-              diagnostics: resolution.diagnostics,
-            }
-            query_report(
-              directories,
-              package_name,
-              mode,
-              static_linking,
-              failed,
-              status="diagnostics",
+        let selection = match metadata_query {
+          ModVersion | Variable(_) =>
+            loaded.packages.select(
+              root,
+              unavailable=loaded.diagnostics_by_package,
             )
-          } else {
-            print_diagnostics(resolution.diagnostics)
+          _ => {
+            let resolution = loaded.packages.resolve(
+              root,
+              include_private=true,
+              unavailable=loaded.diagnostics_by_package,
+            )
+            if resolution.diagnostics.is_empty() {
+              let selected_id = resolution.order[resolution.order.length() - 1]
+              Ok(loaded.packages.get(selected_id).unwrap())
+            } else {
+              Err(resolution.diagnostics)
+            }
           }
-          @sys.exit(1)
-          return
         }
-        let selected_id = resolution.order[resolution.order.length() - 1]
-        let selected = loaded.packages.get(selected_id).unwrap()
+        let selected = match selection {
+          Ok(selected_package) => selected_package
+          Err(diagnostics) => {
+            if json {
+              let failed : @pc.FlagResult = { flags: [], diagnostics, }
+              query_report(
+                directories,
+                package_name,
+                mode,
+                static_linking,
+                failed,
+                status="diagnostics",
+              )
+            } else {
+              print_diagnostics(diagnostics)
+            }
+            @sys.exit(1)
+            return
+          }
+        }
         let version = selected.document.field("Version").unwrap().value
         match metadata_query {
           ModVersion =>

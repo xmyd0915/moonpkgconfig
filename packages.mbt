@@ -61,6 +61,50 @@ pub fn PackageSet::get(self : PackageSet, id : String) -> Package? {
 }
 
 ///|
+/// Select and validate one exact package or its first matching virtual provider.
+/// Dependency and conflict fields are not traversed. Original document errors
+/// and unavailable-package diagnostics retain their locations in a copied array.
+/// `source` identifies missing roots or metadata with no remaining source entry.
+pub fn PackageSet::select(
+  self : PackageSet,
+  root : String,
+  source~ : String = "query",
+  unavailable~ : Map[String, Array[Diagnostic]] = Map([]),
+) -> Result[Package, Array[Diagnostic]] {
+  let context = QueryContext::new(self, false, unavailable~)
+  let selected = match context.root_id(root) {
+    Some(id) => self.packages.get(id)
+    None => None
+  }
+  guard selected is Some(pkg) else {
+    if context.unavailable_diagnostics(root) is Some(problems) {
+      return Err(problems.copy())
+    }
+    return Err([
+      diag("PC015", "Required package not found: " + root, {
+        source,
+        line: 1,
+        column: 1,
+      }),
+    ])
+  }
+  if !pkg.document.diagnostics.is_empty() {
+    return Err(pkg.document.diagnostics.copy())
+  }
+  let metadata_source = if pkg.document.entries.is_empty() {
+    source
+  } else {
+    pkg.document.entries[0].location.source
+  }
+  let diagnostics = pkg.document.validate_metadata(source=metadata_source)
+  if diagnostics.is_empty() {
+    Ok(pkg)
+  } else {
+    Err(diagnostics)
+  }
+}
+
+///|
 // Documents are caller-owned; validation at insertion cannot justify an unwrap
 // after the caller changes entries or inserts a package directly.
 fn Package::checked_version(self : Package) -> Result[String, Diagnostic] {
@@ -180,7 +224,7 @@ pub fn PackageSet::check_requirements(
   requirements : Array[Requirement],
   source~ : String = "Requires",
 ) -> Array[Diagnostic] {
-  let diagnostics : Array[Diagnostic] = []
+  let diagnostics = DiagnosticCollector::new()
   let context = QueryContext::new(self, false)
   for requirement in requirements {
     match self.packages.get(requirement.name) {
@@ -226,7 +270,7 @@ pub fn PackageSet::check_requirements(
       }
     }
   }
-  diagnostics
+  diagnostics.values
 }
 
 ///|

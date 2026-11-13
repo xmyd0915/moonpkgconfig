@@ -164,3 +164,48 @@ test "directory checking does not mark unavailable edges as clean" {
   let unavailable = { "helper": [unavailable_problem()] }
   @debug.assert_eq(packages.check_all(unavailable~), [unavailable_problem()])
 }
+
+///|
+test "large shared diagnostic arrays retain first occurrence order" {
+  let packages = @moonpkgconfig.PackageSet::new()
+  for
+    (id, requires) in [
+      ("app", "left right"),
+      ("left", "helper"),
+      ("right", "helper"),
+    ] {
+    packages.add(id, graph_package(id, "1", requires)) |> ignore
+  }
+  let problems : Array[@moonpkgconfig.Diagnostic] = []
+  for i = 0; i < 40000; i = i + 1 {
+    problems.push({
+      code: "PC001",
+      message: "Invalid metadata line",
+      location: { source: "many.pc", line: i + 1, column: 1, },
+    })
+  }
+  let unavailable = { "helper": problems }
+  @debug.assert_eq(packages.resolve("app", unavailable~).diagnostics, problems)
+  @debug.assert_eq(packages.check_all(unavailable~), problems)
+}
+
+///|
+test "diagnostic identity includes every string and numeric location field" {
+  let base : @moonpkgconfig.Diagnostic = {
+    code: "a",
+    message: "b|c",
+    location: { source: "d", line: 1, column: 23, },
+  }
+  let problems = [
+    base,
+    { ..base, code: "a|b", message: "c", },
+    { ..base, message: "b", location: { ..base.location, source: "c|d", }, },
+    { ..base, location: { ..base.location, line: 12, column: 3, }, },
+    { ..base, location: { ..base.location, source: "d\u{0}", }, },
+    { ..base, code: "different", },
+    { ..base, message: "different", },
+  ]
+  let packages = @moonpkgconfig.PackageSet::new()
+  let unavailable = { "bad": [..problems, ..problems] }
+  @debug.assert_eq(packages.resolve("bad", unavailable~).diagnostics, problems)
+}

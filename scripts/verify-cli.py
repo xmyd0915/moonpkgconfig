@@ -246,6 +246,32 @@ def main():
                 raise AssertionError(f"Query context changed: {data}")
             return data
 
+        case_dir = external / "field case"
+        shutil.copytree(ROOT / "examples/field-case", case_dir)
+        for mode, extra, expected in (
+            ("--cflags", [], ["-I/case/include", "-DROOT=1", "-DBASE=1", "-DHIDDEN=1"]),
+            ("--cflags", ["--static"], ["-I/case/include", "-DROOT=1", "-DBASE=1", "-DHIDDEN=1", "-DROOT_PRIVATE=1"]),
+            ("--libs", [], ["-L/case/lib", "-lcase-root", "-lcase-base"]),
+            ("--libs", ["--static"], ["-L/case/lib", "-lcase-root", "-lcase-private", "-lcase-base", "-lcase-hidden"]),
+        ):
+            data = query("known field case " + mode + str(extra), "root", mode,
+                         extra=extra, directory=case_dir)
+            if [flag["value"] for flag in data["flags"]] != expected:
+                raise AssertionError(f"Mixed-case fields lost flags or dependencies: {data}")
+        data = query("mixed-case version", "root", "--modversion", directory=case_dir)
+        if data["value"] != "2.3":
+            raise AssertionError(f"Mixed-case Version was ignored: {data}")
+        data = structured("inspect preserves source field spelling", "inspect", [case_dir / "root.pc"])
+        cflags = next(entry for entry in data["entries"] if entry["name"] == "CFlags")
+        if (cflags["raw"] != "-I${prefix}/include -DROOT=1"
+                or cflags["value"] != "-I/case/include -DROOT=1"
+                or cflags["location"]["line"] != 8):
+            raise AssertionError(f"Mixed-case entry lost its original text or source position: {cflags}")
+        duplicate = pc(case_dir, "duplicate", "Cflags: -DFIRST\nCFLAGS: -DSECOND\n")
+        data = structured("mixed-case duplicate field is diagnosed", "inspect", [duplicate], 1, "diagnostics")
+        if [problem["code"] for problem in data["diagnostics"]] != ["PC005"]:
+            raise AssertionError(f"Case variants bypassed duplicate validation: {data}")
+
         plain = query("flag JSON retains origin fields", "root", "--libs")
         if plain["paths"] is not None or plain["value"] is not None or plain["matched"] is not None:
             raise AssertionError(f"Flag query claims metadata or unrequested explanation: {plain}")
@@ -310,6 +336,39 @@ def main():
             raise AssertionError("Private dependency error omitted its diagnostic")
         cli("failed text query explanation excludes partial output",
             ["query", private_dir, "private-app", "--cflags", "--explain"], 1)
+        for mode in ("--libs", "--libs-only-L", "--libs-only-l", "--libs-only-other"):
+            data = query("dynamic linker validates missing private dependency " + mode,
+                         "private-app", mode, 1, "diagnostics", directory=private_dir)
+            if data["flags"] or [item["code"] for item in data["diagnostics"]] != ["PC015"]:
+                raise AssertionError(f"Dynamic query ignored a missing private dependency: {data}")
+        cli("failed dynamic linker query writes only stderr",
+            ["query", private_dir, "private-app", "--libs"], 1)
+        version_root = pc(private_dir, "version-app", "Requires.private: version-leaf >= 3\nLibs: -lversion\n")
+        version_leaf = pc(private_dir, "version-leaf", "Libs: -lprivate\n")
+        data = query("dynamic linker validates private version constraints", "version-app", "--libs",
+                     1, "diagnostics", directory=private_dir)
+        if ([item["code"] for item in data["diagnostics"]] != ["PC016"]
+                or Path(data["diagnostics"][0]["location"]["source"]) != version_root):
+            raise AssertionError(f"Dynamic query lost the private version constraint: {data}")
+        pc(private_dir, "transitive-app", "Requires.private: bridge\nLibs: -ltransitive\n")
+        bridge = pc(private_dir, "bridge", "Requires.private: absent\nLibs: -lbridge\n")
+        data = query("dynamic linker validates transitive private dependencies", "transitive-app", "--libs",
+                     1, "diagnostics", directory=private_dir)
+        if ([item["code"] for item in data["diagnostics"]] != ["PC015"]
+                or Path(data["diagnostics"][0]["location"]["source"]) != bridge):
+            raise AssertionError(f"Dynamic query lost a transitive private failure: {data}")
+        version_leaf.write_text(version_leaf.read_text(encoding="utf-8").replace("Version: 2", "Version: 3"),
+                                encoding="utf-8")
+        data = query("dynamic linker excludes repaired private flags", "version-app", "--libs", directory=private_dir)
+        if [flag["value"] for flag in data["flags"]] != ["-lversion"]:
+            raise AssertionError(f"Private validation added private linker arguments: {data}")
+        pc(private_dir, "metadata-app", "Requires: absent\nProvides: metadata-virtual = 2\nLibs: -lmetadata\n",
+           prefix="prefix=/metadata\n")
+        for name in ("metadata-app", "metadata-virtual"):
+            for mode, expected in (("--modversion", "2"), ("--variable=prefix", "/metadata")):
+                data = query("metadata ignores absent dependencies " + name + mode, name, mode, directory=private_dir)
+                if data["value"] != expected or data["flags"]:
+                    raise AssertionError(f"Metadata lookup traversed the dependency graph: {data}")
         rooted_dir = external / "rooted"
         rooted_dir.mkdir()
         pc(rooted_dir, "rooted", "Cflags: -I${pc_sysrootdir}/usr/include/sr -I/sdk/usr/include/dp\n")
@@ -370,6 +429,15 @@ def main():
         data = structured("inspect invalid UTF8 is a precise diagnostic", "inspect", [invalid_utf8], 1, "diagnostics")
         if [problem["code"] for problem in data["diagnostics"]] != ["PC020"]:
             raise AssertionError(f"Invalid UTF8 produced fabricated missing fields: {data}")
+        for label, content, codes in (
+            ("diagnostic cap", "invalid\n" * 40000, ["PC001"] * 100 + ["PC021"]),
+            ("expansion cap", "large=" + "x" * 1048577 + "\n", ["PC009"]),
+        ):
+            limited = external / (label + ".pc")
+            limited.write_text(content + "Name: present\nDescription: after limit\nVersion: 1\n", encoding="utf-8")
+            data = structured("inspect stops metadata validation after " + label, "inspect", [limited], 1, "diagnostics")
+            if [problem["code"] for problem in data["diagnostics"]] != codes:
+                raise AssertionError(f"Inspection fabricated errors for unparsed fields: {data}")
         structured("inspect missing file is JSON IO error", "inspect", [external / "missing.pc"], 2, "io_error")
         structured("inspect unknown option before JSON", "inspect", [tiny, "--unknown"], 2, "usage_error")
         data = structured("inspect missing file argument is JSON", "inspect", [], 2, "usage_error")

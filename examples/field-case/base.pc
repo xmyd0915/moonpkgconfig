@@ -1,0 +1,5 @@
+NAME: mixed-case base
+description: Public dependency
+VERSION: 1
+cFLAGS: -DBASE=1
+libs: -lcase-base

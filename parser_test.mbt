@@ -142,11 +142,17 @@ test "value punctuation and empty values are preserved" {
 }
 
 ///|
-test "variable and property namespaces are separate and case sensitive" {
-  let doc = @moonpkgconfig.parse("Name=lower\nName: ${Name}\nname: other")
+test "variables and extension fields keep separate case sensitive names" {
+  let doc = @moonpkgconfig.parse(
+    "Name=upper\nname=lower\nName: ${Name}\nX-Mode: ${Name}\nx-mode: ${name}",
+  )
   @debug.assert_eq(doc.diagnostics, [])
-  @debug.assert_eq(doc.field("Name").unwrap().value, "lower")
-  @debug.assert_eq(doc.field("name").unwrap().value, "other")
+  @debug.assert_eq(doc.field("name").unwrap().value, "upper")
+  @debug.assert_eq(doc.variable("Name").unwrap().value, "upper")
+  @debug.assert_eq(doc.variable("name").unwrap().value, "lower")
+  @debug.assert_eq(doc.field("X-Mode").unwrap().value, "upper")
+  @debug.assert_eq(doc.field("x-mode").unwrap().value, "lower")
+  @debug.assert_eq(doc.field("X-MODE"), None)
 }
 
 ///|
@@ -237,39 +243,45 @@ test "expansion enforces output limit before appending oversized variable" {
 
 ///|
 test "document expansion accepts the single value boundary" {
-  let value = "x".repeat(1048576)
-  let doc = @moonpkgconfig.parse("large=${value}\nName: valid", overrides={
+  let value = "\u{1F642}".repeat(524288)
+  let doc = @moonpkgconfig.parse("large=${value}\nempty=", overrides={
     "value": value,
   })
   @debug.assert_eq(doc.diagnostics, [])
   @debug.assert_eq(doc.variable("large").unwrap().value.length(), 1048576)
-  @debug.assert_eq(doc.field("Name").unwrap().value, "valid")
+  @debug.assert_eq(doc.variable("empty").unwrap().value, "")
+  let expanded = @moonpkgconfig.expand("${value}", { "value": value }, location={
+    source: "single.pc",
+    line: 1,
+    column: 1,
+  }).unwrap()
+  @debug.assert_eq(expanded.length(), 1048576)
 }
 
 ///|
 test "document expansion stops at the cumulative UTF-16 budget" {
   let source = StringBuilder()
   source.write_string("seed=" + "x".repeat(65536) + "\n")
-  for i = 0; i < 255; i = i + 1 {
+  for i = 0; i < 15; i = i + 1 {
     source.write_string("value")
     source.write_string(i.to_string())
     source.write_string("=${seed}\n")
   }
   source.write_string("empty=\noverflow=${seed}\nafter=ignored\n")
   let doc = @moonpkgconfig.parse(source.to_string(), source="budget.pc")
-  @debug.assert_eq(doc.entries.length(), 257)
+  @debug.assert_eq(doc.entries.length(), 17)
   @debug.assert_eq(doc.variable("empty").unwrap().value, "")
   @debug.assert_eq(doc.variable("overflow"), None)
   @debug.assert_eq(doc.variable("after"), None)
   @debug.assert_eq(doc.diagnostics.map(d => d.code), ["PC009"])
   @debug.assert_eq(doc.diagnostics[0].location, {
     source: "budget.pc",
-    line: 258,
+    line: 18,
     column: 10,
   })
   @debug.assert_eq(
     doc.diagnostics[0].message,
-    "Document expansion exceeds 16 Mi UTF-16 code units",
+    "Document expansion exceeds 1 Mi UTF-16 code units",
   )
 }
 
@@ -280,5 +292,57 @@ test "document overrides cannot bypass expansion limits" {
   })
   @debug.assert_eq(doc.variable("large"), None)
   @debug.assert_eq(doc.diagnostics.map(d => d.code), ["PC009"])
-  @debug.assert_eq(doc.field("Name").unwrap().value, "valid")
+  @debug.assert_eq(doc.field("Name"), None)
+}
+
+///|
+test "the first failed expansion stops repeated single value failures" {
+  let input = "bad=${huge}x\n".repeat(2000) + "Name: not reached"
+  let doc = @moonpkgconfig.parse(input, source="repeat.pc", overrides={
+    "huge": "x".repeat(1048576),
+  })
+  @debug.assert_eq(doc.entries, [])
+  @debug.assert_eq(doc.diagnostics.map(d => d.code), ["PC009"])
+  @debug.assert_eq(doc.diagnostics[0].location, {
+    source: "repeat.pc",
+    line: 1,
+    column: 5,
+  })
+}
+
+///|
+test "diagnostic cap preserves the first hundred and stops on the next error" {
+  for count in [99, 100, 101] {
+    let doc = @moonpkgconfig.parse("invalid\n".repeat(count) + "Name: after")
+    if count <= 100 {
+      @debug.assert_eq(doc.diagnostics.length(), count)
+      @debug.assert_eq(doc.field("Name").unwrap().value, "after")
+    } else {
+      @debug.assert_eq(doc.diagnostics.length(), 101)
+      @debug.assert_eq(doc.diagnostics[100].code, "PC021")
+      @debug.assert_eq(doc.diagnostics[100].location.line, 101)
+      @debug.assert_eq(doc.field("Name"), None)
+    }
+  }
+}
+
+///|
+test "forty thousand invalid lines return bounded ordered diagnostics" {
+  let doc = @moonpkgconfig.parse(
+    "Name: bad\nDescription: invalid lines\nVersion: 1\n" +
+    "invalid\n".repeat(40000),
+    source="many-errors.pc",
+  )
+  @debug.assert_eq(doc.entries.length(), 3)
+  @debug.assert_eq(doc.diagnostics.length(), 101)
+  for i = 0; i < 100; i = i + 1 {
+    @debug.assert_eq(doc.diagnostics[i].code, "PC001")
+    @debug.assert_eq(doc.diagnostics[i].location, {
+      source: "many-errors.pc",
+      line: i + 4,
+      column: 1,
+    })
+  }
+  @debug.assert_eq(doc.diagnostics[100].code, "PC021")
+  @debug.assert_eq(doc.diagnostics[100].location.line, 104)
 }

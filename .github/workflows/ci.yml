@@ -58,6 +58,17 @@ jobs:
       - name: Verify installed CLI and structured directory checks
         run: python3 scripts/verify-cli.py
 
+      - name: Verify parser and directory resource limits
+        run: python3 scripts/verify-resource-limits.py
+
+      - name: Retain resource limit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-resource-limits
+          path: _build/verification/resource-limits.json
+          if-no-files-found: error
+
       - name: Retain installed CLI evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -286,7 +297,7 @@ jobs:
               arguments+=(--directory "$directory")
             fi
           done
-          python3 scripts/verify-system-packages.py --reference "$PKGCONF" "${arguments[@]}"
+          python3 scripts/verify-system-packages.py --reference "$PKGCONF" --remove-package zlib "${arguments[@]}"
 
       - name: Retain system and static linking evidence
         if: always()
@@ -403,6 +414,17 @@ jobs:
 
       - name: Verify installed CLI and structured directory checks
         run: python scripts/verify-cli.py
+
+      - name: Verify parser and directory resource limits
+        run: python scripts/verify-resource-limits.py
+
+      - name: Retain resource limit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-resource-limits
+          path: _build/verification/resource-limits.json
+          if-no-files-found: error
 
       - name: Retain installed CLI evidence
         if: always()

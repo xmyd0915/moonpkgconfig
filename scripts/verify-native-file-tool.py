@@ -145,6 +145,8 @@ def main():
             if result.returncode != status:
                 raise RuntimeError(f"{label}: expected exit {status}, got {result.returncode}: "
                                    f"{result.stdout}{result.stderr}")
+            if status != 0 and (result.stdout or not result.stderr):
+                raise RuntimeError(f"{label}: failed file operation must report only on stderr")
             return result
 
         for label, content in (
@@ -216,7 +218,7 @@ def main():
                 stream.truncate(size)
             rejected_size = execute(mode + " oversized input rejected",
                                     (mode, oversized, oversized_output), 1)
-            if "Input exceeds the supported size" not in rejected_size.stdout:
+            if "Input exceeds the supported size" not in rejected_size.stderr:
                 raise RuntimeError("Oversized input did not produce a controlled size error")
             if oversized_output.exists():
                 raise RuntimeError("Oversized input created an output file")

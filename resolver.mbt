@@ -34,7 +34,7 @@ fn QueryContext::resolve(
   let states : Map[String, Int32] = Map([])
   let order : Array[String] = []
   let stack : Array[String] = []
-  let diagnostics : Array[Diagnostic] = []
+  let diagnostics = DiagnosticCollector::new()
   let root_id = self.root_id(root)
   match root_id {
     Some(id) =>
@@ -53,7 +53,7 @@ fn QueryContext::resolve(
       }
   }
   append_selected_conflicts(self.packages, order, diagnostics)
-  { order, diagnostics, }
+  { order, diagnostics: diagnostics.values, }
 }
 
 ///|
@@ -69,26 +69,22 @@ pub fn PackageSet::check_all(
 ) -> Array[Diagnostic] {
   let context = QueryContext::new(self, include_private, unavailable~)
   let clean = context.clean_subgraphs()
-  let diagnostics : Array[Diagnostic] = []
+  let diagnostics = DiagnosticCollector::new()
   for id in self.package_ids {
     if clean.get(id) == Some(2) {
       continue
     }
     let result = context.resolve(id, id)
-    for problem in result.diagnostics {
-      if !diagnostics.any(existing => existing == problem) {
-        diagnostics.push(problem)
-      }
-    }
+    append_unavailable(result.diagnostics, diagnostics)
   }
-  diagnostics
+  diagnostics.values
 }
 
 ///|
 fn append_selected_conflicts(
   packages : PackageSet,
   order : Array[String],
-  diagnostics : Array[Diagnostic],
+  diagnostics : DiagnosticCollector,
 ) -> Unit {
   let selected : Map[String, Bool] = Map([])
   for id in order {
@@ -147,18 +143,6 @@ priv enum ResolveStep {
 }
 
 ///|
-fn append_unavailable(
-  problems : Array[Diagnostic],
-  diagnostics : Array[Diagnostic],
-) -> Unit {
-  for problem in problems {
-    if !diagnostics.any(existing => existing == problem) {
-      diagnostics.push(problem)
-    }
-  }
-}
-
-///|
 priv struct ResolveFrame {
   id : String
   steps : Array[ResolveStep]
@@ -173,7 +157,7 @@ fn resolve_graph(
   states : Map[String, Int32],
   order : Array[String],
   stack : Array[String],
-  diagnostics : Array[Diagnostic],
+  diagnostics : DiagnosticCollector,
 ) -> Unit {
   let frames : Array[ResolveFrame] = [
     { id, steps: context.resolve_steps(id), next: 0, },

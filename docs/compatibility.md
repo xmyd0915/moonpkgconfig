@@ -10,7 +10,7 @@
 
 全部查询同时与固定的 pkgconf 3.0.7 比较参数数组或文本及退出码。参考工具的 `PKG_CONFIG_*`、`PKGCONF_*` 环境先清除，搜索目录和系统路径过滤显式指定，避免宿主安装和环境选项影响结果。参数对照使用 Python `shlex` 解析展示文本，保留顺序和参数内容，不把引号写法不同误报为参数不同。
 
-另外4项自编两包图验证普通/静态编译查询和分类顺序。静态查询先聚合所有包的 `Cflags`，再按同一包顺序追加 `Cflags.private`；公开和私有依赖都参与。该规则由固定 pkgconf 命令和其 `libpkgconf/pkg.c` 核对。主分支的基础差分由38项扩展为50项，加入共享依赖顺序、私有谓词和 sysroot 场景；连同120项模板查询及4项静态顺序，共覆盖174项参考工具对照。实际通过数由脚本与对应提交 CI 记录。
+另外4项自编两包图验证普通/静态编译查询和分类顺序。静态查询先聚合所有包的 `Cflags`，再按同一包顺序追加 `Cflags.private`；公开和私有依赖都参与。该规则由固定 pkgconf 命令和其 `libpkgconf/pkg.c` 核对。主分支的基础差分由38项扩展为55项，加入共享依赖顺序、私有谓词、sysroot 和字段大小写场景；连同120项模板查询及4项静态顺序，共覆盖179项参考工具对照。实际通过数由脚本与对应提交 CI 记录。
 
 ## 固定种子的输入检查
 
@@ -38,15 +38,17 @@ Windows 完整验证与 Ubuntu CI 均执行此检查。CI 上传 `ubuntu-compati
 
 ## 实际安装语料与静态链接
 
-`scripts/verify-system-packages.py` 扫描调用方明确指定的实际安装目录，以固定 pkgconf 3.0.7 比较参数集合、退出码、版本和谓词，并检查链接参数的依赖者优先顺序。支持范围是 Ubuntu GNU 用户空间；报告记录真实 `.pc` 文件 SHA-256、目录、系统及参考工具版本。它不要求所有重复参数或无依赖关系的并列包顺序完全一致。
+`scripts/verify-system-packages.py` 扫描调用方明确指定的实际安装目录，以固定 pkgconf 3.0.7 比较参数集合、退出码、版本、实际变量和谓词，并检查链接参数的依赖者优先顺序。覆盖普通/静态编译和链接、五种分类模式；完整 Libs 额外比较规范化后的参数序列。支持范围是 Ubuntu GNU 用户空间；报告记录真实 `.pc` 文件 SHA-256、目录、系统、参考工具版本和各文档展开总量。
+
+规范化使用 CLI 返回的连续来源段，按原顺序构造独立线性元数据，由 pkgconf 3.0.7 处理普通/私有重复片段和链接分组；不会根据参考图或预期序列重排输入。固定正负探针覆盖公开重复、私有重复、分组及参数交换。Cflags 和分类模式的序列一致率单独记录，集合比较仍严格；差分中双方显式保留系统路径，默认系统目录过滤由固定样例另外验证。
 
 ```sh
 python scripts/verify-system-packages.py --reference /path/to/pkgconf --directory /path/to/pkgconfig --directory /path/to/extra/pkgconfig
 ```
 
-`--package` 可限定查询根；`--cli` 可传入已构建的 CLI，否则脚本构建当前源码。默认报告为 `_build/verification/system-packages.json`。语料来自运行环境，数量不能替代固定模板对照，也不能推广为全部系统包兼容。
+`--package` 可限定查询根；`--cli` 可传入已构建的 CLI，否则脚本构建当前源码。增加 `--remove-package zlib` 会复制所有目录并删除副本中同名文件，再检查所有剩余根；该模式要求出现原本成功、删除后因缺依赖失败的参数查询，并核对原始语料未变。默认报告为 `_build/verification/system-packages.json`，副本结果存于 `mutation`。语料来自运行环境，数量不能替代固定模板对照，也不能推广为全部系统包兼容。
 
-`python scripts/verify-link-order.py --reference /path/to/pkgconf` 用实际静态库检查三角与跨层共享依赖的链接顺序，需要 pkgconf 3.0.7、GNU 兼容的 C 编译器和 `ar`，用于 Ubuntu 或 Windows MinGW 环境；报告为 `_build/verification/link-order.json`。这些检查补充元数据层断言，实际结果以报告及对应提交的 CI 为准。
+`python scripts/verify-link-order.py --reference /path/to/pkgconf` 用实际静态库检查公开三角、私有三角与跨层共享依赖的链接顺序，需要 pkgconf 3.0.7、GNU 兼容的 C 编译器和 `ar`，用于 Ubuntu 或 Windows MinGW 环境；报告为 `_build/verification/link-order.json`。核心测试另以固定种子生成600个无环图，分别验证动态/静态查询的可达集合、参数次数及每条依赖边顺序。这些检查补充元数据层断言，实际结果以报告及对应提交的 CI 为准。
 
 ## 本次修复及边界
 
@@ -54,6 +56,6 @@ Expat 模板中的 `Cflags.private: -DXML_STATIC` 暴露了静态编译查询缺
 
 `Cflags.private` 是 pkgconf 扩展。当前仍不处理 `Cflags.shared`、完整片段去重、Windows 自动重定位或全部 pkgconf 扩展。模板配置不覆盖每个操作系统、构建开关与可选依赖；库的真实 ABI 和链接正确性需要集成测试验证。
 
-主分支的链接聚合使用迭代逆后序，使依赖者位于被依赖库之前；Cflags 保持原有广度优先顺序。四种谓词检查私有依赖，`--modversion` 不检查私有依赖。加载层默认 `pc_sysrootdir` 为空，CLI 的显式 sysroot 提供展开值，已有 sysroot 前缀不重复添加。这些修复尚未随 MoonCakes 0.3.1 发布。
+主分支的链接聚合使用迭代逆后序，使依赖者位于被依赖库之前；Cflags 保持原有广度优先顺序。CLI 的四种谓词和全部参数模式检查私有依赖，动态链接只输出公开参数；版本和变量读取只验证所选根，不遍历依赖。加载层默认 `pc_sysrootdir` 为空，CLI 的显式 sysroot 提供展开值，已有 sysroot 前缀不重复添加。这些修复尚未随 MoonCakes 0.3.1 发布。
 
-字段名称仍区分大小写，未知扩展字段不会单独触发诊断；依赖环严格返回 `PC017`，根查询只接受一个包标识符。单值展开上限为1 Mi UTF-16 code units、每文档累计上限为16 Mi，超限返回 `PC009`；该预算不承诺整个进程的内存上限。单个文件读取/解码失败分别为 `PC019`/`PC020`，搜索目录失败仍是 IO 错误，范围见 [CLI JSON 接口](cli-json.md)。
+已知字段名称不区分 ASCII 大小写，变量和未知扩展字段仍区分大小写；原始字段拼写保留，未知扩展字段不会单独触发诊断。依赖环严格返回 `PC017`，根查询只接受一个包标识符。单值和每文档累计展开上限均为1 Mi UTF-16 code units，首次超限返回 `PC009` 并停止该文档；解析诊断超过100条时追加 `PC021` 并停止。展开预算不限制输入文件大小或整个进程内存。单个文件读取/解码失败分别为 `PC019`/`PC020`，搜索目录失败仍是 IO 错误，范围见 [CLI JSON 接口](cli-json.md)。

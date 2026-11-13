@@ -111,12 +111,17 @@ pub fn check(
   try {
     let loaded = @loader.load_directories(directories)
     let diagnostics = loaded.diagnostics.copy()
+    let seen : Map[@pc.Diagnostic, Bool] = Map([])
+    for problem in diagnostics {
+      seen[problem] = true
+    }
     for
       problem in loaded.packages.check_all(
         unavailable=loaded.diagnostics_by_package,
       ) {
-      if !diagnostics.any(existing => existing == problem) {
+      if !seen.contains(problem) {
         diagnostics.push(problem)
+        seen[problem] = true
       }
     }
     if json {
