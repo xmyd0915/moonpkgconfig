@@ -1,15 +1,19 @@
 # 独立命令行下载与校验
 
-主分支 CI 提供不需要安装 MoonBit 工具链的命令行试用包。它与 MoonCakes 中已发布的0.3.1核心模块分开：使用源码提交号标识构建，不把主分支新增功能称为0.3.1发行内容。
+独立命令行包解压后即可运行，不需要安装 MoonBit 工具链。模块版本、源码提交号、平台和工具链都记录在包内的 `build-info.json` 中。
 
 ## 下载
+
+正式版本从 [GitHub Releases](https://github.com/xmyd0915/moonpkgconfig/releases) 下载对应系统的 ZIP 和同名 `.sha256` 文件，再按下文校验。发行附件保留原始构建提交号，可与标签和 CI 核对。核心库则通过 `moon add xmyd0915/moonpkgconfig@0.4.0` 安装。
+
+主分支的最新开发构建仍可从 Actions 获取：
 
 1. 打开 [CI 工作流](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml)，选择目标提交且整体成功的运行。
 2. 在 Artifacts 中下载 `ubuntu-cli-package` 或 `windows-cli-package`。
 3. 解开 GitHub 附件的外层归档，找到命令行 ZIP、对应的 `.sha256` 文件和 `cli-package.json` 验证报告。
 4. 核对报告的 `passed` 及构建信息的源码提交号，再校验并解压命令行 ZIP。
 
-下载 Actions 附件需要登录有仓库读取权限的 GitHub 账户，具体操作见 [GitHub 官方说明](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)。本工作流将试用包保留30天；过期后可使用源码构建方式。这些附件不是永久发行下载，也不是 MoonCakes 新版本。
+下载 Actions 附件需要登录有仓库读取权限的 GitHub 账户，具体操作见 [GitHub 官方说明](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)。本工作流将开发构建保留30天；正式发行附件在 Releases 中单独保留。Actions 构建本身不代表发布了新的 MoonCakes 版本。
 
 Ubuntu 包仅在对应 CI Ubuntu 环境与架构验证，不承诺兼容任意 Linux 发行版、旧版 glibc、macOS 或其他架构。Windows 包同样以构建信息记录的平台和架构为准。
 
@@ -22,6 +26,7 @@ sha256sum -c moonpkgconfig-*.zip.sha256
 unzip moonpkgconfig-*.zip -d moonpkgconfig-cli
 chmod +x moonpkgconfig-cli/moonpkgconfig
 ./moonpkgconfig-cli/moonpkgconfig --help
+./moonpkgconfig-cli/moonpkgconfig --version
 ```
 
 Windows PowerShell 中选择下载得到的实际 ZIP；若目录有多份，请先移走无关文件或直接指定文件名：

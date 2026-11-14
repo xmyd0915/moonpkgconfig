@@ -351,11 +351,11 @@ test "triangle links defer shared dependencies and retain flag origins" {
       "-lroot", "-lroot-private", "-lmid", "-lmid-private", "-lbase", "-lbase-private",
     ],
   )
-  // Compiler paths remain breadth-first, with all private fields last.
+  // Header search precedence follows the same graph order; private fields stay last.
   @debug.assert_eq(
     packages.collect_cflags("root", static_linking=true).flags.map(f => f.value),
     [
-      "-I/root", "-I/base", "-I/mid", "-Droot_PRIVATE", "-Dbase_PRIVATE", "-Dmid_PRIVATE",
+      "-I/root", "-I/mid", "-I/base", "-Droot_PRIVATE", "-Dmid_PRIVATE", "-Dbase_PRIVATE",
     ],
   )
 }
@@ -380,7 +380,7 @@ test "cross-level shared libraries follow every dependant" {
     "-lroot", "-lleft", "-lright", "-lbridge", "-lshared",
   ])
   @debug.assert_eq(packages.collect_cflags("root").flags.map(f => f.value), [
-    "-I/root", "-I/left", "-I/right", "-I/shared", "-I/bridge",
+    "-I/root", "-I/left", "-I/right", "-I/bridge", "-I/shared",
   ])
 }
 
@@ -431,14 +431,17 @@ test "private shared edges affect only static link order" {
 }
 
 ///|
-test "deep shared link graphs use an iterative dependency order" {
+test "deep shared compiler and link graphs use an iterative dependency order" {
   let packages = @moonpkgconfig.PackageSet::new()
   let size = 5000
-  packages.add("root", flag_package("root", "p4999, p0", "", "-lroot"))
+  packages.add("root", flag_package("root", "p4999, p0", "-I/root", "-lroot"))
   |> ignore
   for i = 0; i < size; i = i + 1 {
     let requires = if i + 1 < size { "p\{i + 1}" } else { "" }
-    packages.add("p\{i}", flag_package("p\{i}", requires, "", "-lp\{i}"))
+    packages.add(
+      "p\{i}",
+      flag_package("p\{i}", requires, "-I/p\{i}", "-lp\{i}"),
+    )
     |> ignore
   }
   let result = packages.collect_libs("root")
@@ -447,6 +450,13 @@ test "deep shared link graphs use an iterative dependency order" {
   assert_eq(result.flags[0].value, "-lroot")
   for i = 0; i < size; i = i + 1 {
     assert_eq(result.flags[i + 1].value, "-lp\{i}")
+  }
+  let compiler = packages.collect_cflags("root")
+  @debug.assert_eq(compiler.diagnostics, [])
+  assert_eq(compiler.flags.length(), size + 1)
+  assert_eq(compiler.flags[0].value, "-I/root")
+  for i = 0; i < size; i = i + 1 {
+    assert_eq(compiler.flags[i + 1].value, "-I/p\{i}")
   }
 }
 

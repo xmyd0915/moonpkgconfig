@@ -4,13 +4,14 @@ No packages are silently skipped. The report describes only the supplied
 directories, not every package installed on the machine. --self-test exercises
 the Python harness without MoonBit, pkgconf, or a system package installation.
 
-Successful full Libs queries also require exact normalized sequences. The
+Successful flag queries require exact normalized sequences in every mode. The
 normalizer is the fixed reference executable itself: a temporary linear .pc
 chain contains ONLY the CLI's consecutive source-field segments in their
 original order. No reference graph or expected sequence is used to reorder
 them. This retains private repetitions and linker groups while applying the
-reference's public-fragment merging rules. Cflags sequence agreement is
-reported without an additional sequence assertion. --remove-package repeats
+reference's public-fragment merging rules. Directory checks are compared with
+the aggregate of reference existence checks for every selected package.
+--remove-package repeats
 the corpus checks on byte-identical .pc copies with every copy of that id
 removed, and requires a previously successful dependency query to fail.
 """
@@ -89,9 +90,9 @@ class FragmentNormalizer:
 
 
 def normalizer_probes(normalizer):
-    def flags(public, private=()):
+    def flags(public, private=(), field="Libs"):
         return [{"package": "p", "field": field, "value": value}
-                for field, values in (("Libs", public), ("Libs.private", private)) for value in values]
+                for field, values in ((field, public), (field + ".private", private)) for value in values]
     cases = [
         ("public search paths first and libraries last", flags(["-L/a", "-lx", "-ly", "-lx", "-L/a"]),
          ["-L/a", "-ly", "-lx"]),
@@ -118,6 +119,41 @@ def normalizer_probes(normalizer):
         if normalizer.normalize(first, "--libs", True) == normalizer.normalize(changed, "--libs", True):
             raise AssertionError(f"Normalization concealed {label}")
         results.append({"case": label, "changed_sequence_rejected": True, "passed": True})
+    additional = [
+        ("compiler search paths retain first occurrence", "--cflags",
+         flags(["-I/a", "-DORDER=1", "-I/b", "-DORDER=2", "-I/a"], field="Cflags"),
+         ["-I/a", "-DORDER=1", "-I/b", "-DORDER=2"]),
+        ("private compiler repetition survives", "--cflags",
+         flags([], ["-DPRIVATE=1", "-DPRIVATE=1"], "Cflags"), ["-DPRIVATE=1", "-DPRIVATE=1"]),
+    ]
+    for label, mode, source, expected in additional:
+        actual = normalizer.normalize(source, mode, True)
+        if actual != expected:
+            raise AssertionError(f"Reference normalization probe {label}: {actual} != {expected}")
+        results.append({"case": label, "mode": mode, "expected": expected, "actual": actual, "passed": True})
+    # Distinct argv elements are deliberately reordered in every classification.
+    # Equal sets cannot hide a regression in include, search or option order.
+    classified = [
+        ("--cflags", "Cflags", ["-I/first", "-I/second"]),
+        ("--cflags-only-I", "Cflags", ["-I/first", "-I/second"]),
+        ("--cflags-only-other", "Cflags", ["-DFIRST", "-DSECOND"]),
+        ("--libs-only-L", "Libs", ["-L/first", "-L/second"]),
+        ("--libs-only-l", "Libs", ["-lfirst", "-lsecond"]),
+        ("--libs-only-other", "Libs", ["-Wl,--whole-archive", "-Wl,--no-whole-archive"]),
+    ]
+    for mode, field, values in classified:
+        original = normalizer.normalize(flags(values, field=field), mode, True)
+        changed = normalizer.normalize(flags(list(reversed(values)), field=field), mode, True)
+        if original == changed:
+            raise AssertionError(f"Normalization concealed swapped arguments for {mode}")
+        results.append({"case": "swapped distinct classified arguments", "mode": mode,
+                        "changed_sequence_rejected": True, "passed": True})
+    private = normalizer.normalize(flags([], ["-DPRIVATE=1", "-DPRIVATE=1"], "Cflags"), "--cflags", True)
+    shortened = normalizer.normalize(flags([], ["-DPRIVATE=1"], "Cflags"), "--cflags", True)
+    if private == shortened:
+        raise AssertionError("Normalization concealed a removed private compiler argument")
+    results.append({"case": "removed private compiler repetition", "mode": "--cflags",
+                    "changed_sequence_rejected": True, "passed": True})
     return results
 
 
@@ -333,6 +369,37 @@ def measure_expansions(selected, cli, env, timeout):
                 for limit in (65536, 262144, 1048576, 16777216)}}
 
 
+def directory_check(selected, files, cli, directories, reference_query, env, timeout):
+    record = {"passed": False}
+    try:
+        failures = []
+        for name in sorted(selected):
+            if reference_query(["--exists", name]).returncode != 0:
+                failures.append(name)
+        extra = [item for directory in directories[1:] for item in ("--path", directory)]
+        actual = execute([cli, "check", directories[0], *extra, "--json"], ROOT, env, timeout, (0, 1))
+        data = json.loads(actual.stdout)
+        expected_exit = int(bool(failures))
+        record.update(reference_failed_packages=failures, reference_aggregate_exit=expected_exit,
+                      cli_exit=actual.returncode, report=data)
+        if (data.get("schema_version") != 1 or data.get("command") != "check"
+                or data.get("error") is not None or actual.stderr):
+            raise ValueError("Directory check did not return a clean structured report")
+        if (data.get("package_count") != len(selected) or data.get("file_count") != len(files)
+                or sorted(data.get("package_ids", [])) != sorted(selected)):
+            raise AssertionError("Directory check omitted or added corpus packages/files")
+        if (actual.returncode != expected_exit
+                or data.get("status") != ("diagnostics" if expected_exit else "ok")
+                or bool(data.get("diagnostics")) != bool(expected_exit)):
+            raise AssertionError("Directory check differs from aggregate reference existence checks")
+        record["passed"] = True
+    except (OSError, ValueError, KeyError, TypeError, AssertionError, RuntimeError, subprocess.SubprocessError) as error:
+        record["error"] = {"kind": type(error).__name__, "message": str(error)}
+        if isinstance(error, subprocess.TimeoutExpired):
+            raise
+    return record
+
+
 def copy_without_packages(directories, destination, removed):
     selected, original = inventory(directories)
     if not removed or set(removed) - set(selected):
@@ -481,12 +548,12 @@ def verify(args, report, checkpoint=None):
                     record.update(reference_flags=expected, flags=sorted({flag["value"] for flag in data["flags"]}),
                                   normalized_sequence=normalized, reference_sequence=reference_sequence,
                                   sequence_equal=normalized == reference_sequence,
-                                  sequence_asserted=mode == "--libs", arguments_compared=True)
+                                  sequence_asserted=True, arguments_compared=True)
                     if expected != returned:
                         raise AssertionError(f"Argument sets differ: missing={sorted(set(expected)-set(returned))}, extra={sorted(set(returned)-set(expected))}")
+                    if normalized != reference_sequence:
+                        raise AssertionError(f"Normalized {mode} sequence differs: {normalized} != {reference_sequence}")
                     if mode == "--libs":
-                        if normalized != reference_sequence:
-                            raise AssertionError(f"Normalized Libs sequence differs: {normalized} != {reference_sequence}")
                         graph = corpus.closure(name, static)
                         record["dependency_graph"] = graph
                         record["order"] = check_order(data["flags"], graph, name)
@@ -551,6 +618,7 @@ def verify(args, report, checkpoint=None):
             report["completed_roots"] = index
             if checkpoint:
                 checkpoint()
+    report["directory_check"] = directory_check(selected, files, cli, directories, reference_query, env, args.timeout)
     report["provider_mappings"] = corpus.providers
     report["reference_metadata_queries"] = len(metadata_cache)
     report["normalized_fragment_queries"] = len(normalizer.cache)
@@ -572,7 +640,8 @@ def verify(args, report, checkpoint=None):
     if not report["cli_unchanged"]:
         raise AssertionError("The CLI executable changed while verification was running")
     report["failed_cases"] = sum(not item["passed"] for item in report["cases"])
-    report["passed"] = report["failed_cases"] == 0 and report["expansion_measurements"]["passed"]
+    report["passed"] = (report["failed_cases"] == 0 and report["expansion_measurements"]["passed"]
+                        and report["directory_check"]["passed"])
 
 
 def self_test():
@@ -675,6 +744,29 @@ def self_test():
                 with self.assertRaises(AssertionError):
                     mutation_effect(before, {"cases": [changed]}, ["zlib"])
 
+        def test_directory_check_rejects_missing_ids_and_false_success(self):
+            from unittest.mock import patch
+            selected = {name: Path(name + ".pc") for name in ("healthy", "broken")}
+            data = {"schema_version": 1, "command": "check", "status": "diagnostics", "error": None,
+                    "diagnostics": [{"code": "PC015"}], "package_count": 2, "file_count": 3,
+                    "package_ids": ["healthy", "broken"]}
+            queried = []
+            def reference(arguments):
+                queried.append(arguments[-1])
+                return subprocess.CompletedProcess(arguments, int(arguments[-1] == "broken"), "", "")
+            def actual(*args):
+                return subprocess.CompletedProcess(args[0], 1, json.dumps(data), "")
+            with patch.dict(globals(), {"execute": actual}):
+                record = directory_check(selected, [{}, {}, {}], "cli", [Path("first"), Path("second")], reference, {}, 5)
+                self.assertTrue(record["passed"])
+                self.assertEqual(record["reference_failed_packages"], ["broken"])
+                self.assertEqual(queried, ["broken", "healthy"])
+                data["package_ids"] = ["healthy", "healthy"]
+                self.assertFalse(directory_check(selected, [{}, {}, {}], "cli", [Path("first")], reference, {}, 5)["passed"])
+                data["package_ids"] = ["healthy", "broken"]
+                data["status"], data["diagnostics"] = "ok", []
+                self.assertFalse(directory_check(selected, [{}, {}, {}], "cli", [Path("first")], reference, {}, 5)["passed"])
+
         def test_normalizer_keeps_actual_segment_order_and_private_membership(self):
             from unittest.mock import patch
             flags = [
@@ -714,11 +806,12 @@ def self_test():
                 calls = []
                 wrong_flags = False
                 failed_flags = False
-                reordered_flags = False
+                reordered_mode = None
+                wrong_check = False
                 values = {"--cflags": ["-I/include", "-DAPP"], "--libs": ["-L/lib", "-lapp", "-lbase"],
-                          "--cflags-only-I": ["-I/include"], "--cflags-only-other": ["-DAPP"],
-                          "--libs-only-L": ["-L/lib"], "--libs-only-l": ["-lapp", "-lbase"],
-                          "--libs-only-other": []}
+                          "--cflags-only-I": ["-I/include", "-I/other"], "--cflags-only-other": ["-DAPP", "-DBASE"],
+                          "--libs-only-L": ["-L/lib", "-L/other"], "--libs-only-l": ["-lapp", "-lbase"],
+                          "--libs-only-other": ["-pthread", "-Wl,--as-needed"]}
                 class IdentityNormalizer:
                     def __init__(self, *arguments):
                         self.cache = {}
@@ -736,6 +829,11 @@ def self_test():
                             return subprocess.CompletedProcess(arguments, 0, "", "")
                         mode = arguments[len(REFERENCE_OPTIONS) + 1]
                     else:
+                        if arguments[1] == "check":
+                            return subprocess.CompletedProcess(arguments, int(wrong_check), json.dumps({
+                                "schema_version": 1, "command": "check", "status": "diagnostics" if wrong_check else "ok",
+                                "error": None, "diagnostics": [{"code": "PC015"}] if wrong_check else [],
+                                "package_count": 1, "file_count": 1, "package_ids": ["app"]}), "")
                         if arguments[1] == "inspect":
                             return subprocess.CompletedProcess(arguments, 0, json.dumps({
                                 "schema_version": 1, "command": "inspect", "status": "ok",
@@ -751,7 +849,7 @@ def self_test():
                         output = "" if predicate or diagnostic else "2\n" if mode == "--modversion" else shlex.join(values[mode]) + "\n"
                     else:
                         returned = ["-lwrong"] if wrong_flags and mode in FLAG_MODES else list(values.get(mode, []))
-                        if reordered_flags and mode == "--libs":
+                        if mode == reordered_mode:
                             returned.reverse()
                         flags = [{"value": value, "package": "app",
                                   "field": "Cflags" if mode.startswith("--cflags") else "Libs"} for value in returned]
@@ -766,6 +864,7 @@ def self_test():
                     report = {"cases": []}
                     verify(args, report)
                     self.assertTrue(report["passed"])
+                    self.assertTrue(report["directory_check"]["passed"])
                     self.assertEqual(len(report["cases"]), 23)
                     self.assertEqual(sum("--print-requires" in call for call in calls), 1)
                     wrong_flags = True
@@ -773,12 +872,21 @@ def self_test():
                     verify(args, failed)
                     self.assertFalse(failed["passed"])
                     self.assertEqual(failed["failed_cases"], 14)
-                    wrong_flags, reordered_flags = False, True
-                    wrong_order = {"cases": []}
-                    verify(args, wrong_order)
-                    self.assertFalse(wrong_order["passed"])
-                    self.assertEqual(wrong_order["failed_cases"], 2)
-                    reordered_flags = False
+                    wrong_flags = False
+                    for reordered_mode in FLAG_MODES:
+                        with self.subTest(mode=reordered_mode):
+                            wrong_order = {"cases": []}
+                            verify(args, wrong_order)
+                            self.assertFalse(wrong_order["passed"])
+                            self.assertEqual(wrong_order["failed_cases"], 2)
+                    reordered_mode = None
+                    wrong_check = True
+                    wrong_directory = {"cases": []}
+                    verify(args, wrong_directory)
+                    self.assertFalse(wrong_directory["passed"])
+                    self.assertFalse(wrong_directory["directory_check"]["passed"])
+                    self.assertEqual(wrong_directory["failed_cases"], 0)
+                    wrong_check = False
                     wrong_flags, failed_flags = False, True
                     incomplete = {"cases": []}
                     verify(args, incomplete)
@@ -810,10 +918,11 @@ def main():
         parser.error("At least one --directory and a positive --timeout are required")
     report = {"schema_version": 1, "passed": False, "cases": [],
               "platform": {"system": platform.system(), "release": platform.release(), "machine": platform.machine()},
-              "comparison": {"flags": "successful queries: normalized argument sets for all flag modes and exact normalized sequences for full --libs; Cflags/classified sequence agreement is recorded, not asserted; failed queries preserve diagnostics/partial flags without treating them as evaluated arguments",
+              "comparison": {"flags": "successful queries: exact normalized sequences for all seven flag modes, dynamic and static; failed queries preserve diagnostics/partial flags without treating them as evaluated arguments",
                              "normalization": "pkgconf 3.0.7 evaluates a linear .pc chain of the CLI's actual consecutive source-field segments, in exactly their original order; no reference graph or expected sequence is used to reorder input; private repetitions and group contents retain reference semantics",
                              "system_filter": "disabled explicitly for both tools; reference keeps system Cflags and Libs",
                              "unsupported_inputs": "failures, never skipped",
+                             "directory_check": "all selected corpus ids, file counts and diagnostic status; exit compared with aggregate reference --exists queries",
                              "order": "reference dependency closure; all transitive relations with CLI flag origins; virtual providers resolved by reference --path"}}
     started = time.monotonic()
     args.report = args.report.resolve()

@@ -104,6 +104,12 @@ for package in triangle cross deep private-triangle; do
   assert_equal "$package static link order" \
     "$("$reference" --static --libs "$package")" \
     "$(moon run --target native cmd/query examples/order-shared "$package" --libs --static)"
+  assert_equal "$package compiler search order" \
+    "$("$reference" --cflags "$package")" \
+    "$(moon run --target native cmd/query examples/order-shared "$package" --cflags)"
+  assert_equal "$package static compiler search order" \
+    "$("$reference" --static --cflags "$package")" \
+    "$(moon run --target native cmd/query examples/order-shared "$package" --cflags --static)"
 done
 
 export PKG_CONFIG_PATH="$project_root/testdata/real-world"

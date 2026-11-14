@@ -125,6 +125,69 @@ test "installed excluded exact ids block providers and refresh paths" {
 '''
 
 
+MAINTENANCE_SMOKE = r'''
+///|
+test "installed linker orders public dependencies using valid private edges" {
+  let packages = @pc.PackageSet::new()
+  packages.add("app", fixture_document("app", "base, mid", "-lapp", "")) |> ignore
+  packages.add("base", fixture_document("base", "", "-lbase", "")) |> ignore
+  packages.add("mid", fixture_document("mid", "", "-lmid", "Requires.private: base")) |> ignore
+  for static_linking in [false, true] {
+    let result = packages.collect_libs("app", static_linking~)
+    @debug.assert_eq(result.diagnostics, [])
+    @debug.assert_eq(result.flags.map(f => f.value), ["-lapp", "-lmid", "-lbase"])
+    @debug.assert_eq(result.flags.map(f => f.package_id), ["app", "mid", "base"])
+  }
+}
+
+///|
+test "installed metadata selection is independent of missing dependencies" {
+  let packages = @pc.PackageSet::new()
+  packages.add("app", fixture_document("app", "absent", "", "Provides: virtual = 1")) |> ignore
+  @debug.assert_eq(packages.resolve("app").diagnostics.map(d => d.code), ["PC015"])
+  match packages.select("virtual") {
+    Ok(selected) => assert_eq(selected.id, "app")
+    Err(_) => fail("metadata selection unexpectedly traversed dependencies")
+  }
+  let problems = excluded_diagnostics()
+  match packages.select("virtual", unavailable={ "virtual": problems }) {
+    Ok(_) => fail("unavailable exact metadata must block provider fallback")
+    Err(actual) => @debug.assert_eq(actual, problems)
+  }
+}
+
+///|
+test "installed known field lookup preserves original source spelling" {
+  let doc = @pc.parse("Name: sample\nDescription: mixed case\nVersion: 1\nCFlags: -I/sdk\n", source="case.pc")
+  @debug.assert_eq(doc.diagnostics, [])
+  match doc.field("Cflags") {
+    Some(entry) => {
+      assert_eq(entry.name, "CFlags")
+      assert_eq(entry.value, "-I/sdk")
+      assert_eq(entry.location.line, 4)
+    }
+    None => fail("known field lookup is case insensitive")
+  }
+  let repeated = @pc.parse("Cflags: -I/first\nCFlags: -I/second\n")
+  assert_true(repeated.diagnostics.length() > 0)
+}
+
+///|
+test "installed parser bounds diagnostics without parsing the tail" {
+  let input = StringBuilder()
+  for _ in 0..<1000 {
+    input.write_string("invalid line\n")
+  }
+  input.write_string("Name: unreachable\n")
+  let doc = @pc.parse(input.to_string(), source="bounded.pc")
+  assert_eq(doc.diagnostics.length(), 101)
+  assert_eq(doc.diagnostics[100].code, "PC021")
+  assert_eq(doc.diagnostics[100].location.line, 101)
+  @debug.assert_eq(doc.field("Name"), None)
+}
+'''
+
+
 def version_from(directory):
     text = (directory / "moon.mod").read_text(encoding="utf-8")
     name = re.search(r'^name\s*=\s*"([^"]+)"', text, re.MULTILINE)
@@ -222,8 +285,11 @@ def main():
     release = tuple(int(part) for part in args.version.split("-")[0].split("+")[0].split("."))
     has_static = release >= (0, 3, 0)
     has_load_diagnostics = release >= (0, 3, 1)
-    smoke = SMOKE + (STATIC_SMOKE if has_static else "") + (LOAD_DIAGNOSTICS_SMOKE if has_load_diagnostics else "")
-    count = 3 + int(has_static) + 2 * int(has_load_diagnostics)
+    has_maintenance = release >= (0, 4, 0)
+    smoke = (SMOKE + (STATIC_SMOKE if has_static else "")
+             + (LOAD_DIAGNOSTICS_SMOKE if has_load_diagnostics else "")
+             + (MAINTENANCE_SMOKE if has_maintenance else ""))
+    count = 3 + int(has_static) + 2 * int(has_load_diagnostics) + 4 * int(has_maintenance)
     report.update({"consumer_tests_per_target": count, "targets": ["wasm", "wasm-gc", "js", "native"]})
     save_report()
     (consumer / "consumer_test.mbt").write_text(smoke, encoding="utf-8")

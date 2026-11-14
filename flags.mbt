@@ -250,7 +250,8 @@ fn same_flag_origin(left : ResolvedFlag, right : ResolvedFlag) -> Bool {
 }
 
 ///|
-/// Collect compiler flags in dependant-first order. Static queries also
+/// Collect compiler flags in dependency order, with each dependant before its
+/// dependencies and independent branches in declaration order. Static queries also
 /// include each package's `Cflags.private` field.
 /// `unavailable` retains original diagnostics for excluded dependencies, as
 /// in `resolve`. Private dependency failures affect compiler queries too.
@@ -266,7 +267,7 @@ pub fn PackageSet::collect_cflags(
   let resolution = context.resolve(root, "query")
   let flags : Array[ResolvedFlag] = []
   let diagnostics = resolution.diagnostics.copy()
-  let order = context.flag_order(root)
+  let order = context.link_order(root)
   for id in order {
     append_flag_field(self, id, "Cflags", flags, diagnostics)
   }
@@ -339,32 +340,6 @@ pub fn PackageSet::dependency_path(
   self
   .build_dependency_paths(root, include_private, Some(target), unavailable)
   .path_to(target)
-}
-
-///|
-// Compiler search paths keep the existing breadth-first declaration order.
-fn QueryContext::flag_order(
-  self : QueryContext,
-  root : String,
-) -> Array[String] {
-  let order : Array[String] = []
-  let seen : Map[String, Bool] = Map([])
-  let root_id = self.root_id(root)
-  if root_id is Some(id) {
-    seen[id] = true
-    order.push(id)
-    let mut index = 0
-    while index < order.length() {
-      for step in self.resolve_steps(order[index]) {
-        if step is Visit(next) && !seen.contains(next) {
-          seen[next] = true
-          order.push(next)
-        }
-      }
-      index = index + 1
-    }
-  }
-  order
 }
 
 ///|

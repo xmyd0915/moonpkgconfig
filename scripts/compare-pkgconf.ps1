@@ -80,6 +80,8 @@ try {
         $script:Package = $package
         Assert-Equal "$package dynamic link order" (Invoke-Text $Reference @('--libs', $package)) (Invoke-MoonQuery 'examples/order-shared' @('--libs'))
         Assert-Equal "$package static link order" (Invoke-Text $Reference @('--static', '--libs', $package)) (Invoke-MoonQuery 'examples/order-shared' @('--libs', '--static'))
+        Assert-Equal "$package compiler search order" (Invoke-Text $Reference @('--cflags', $package)) (Invoke-MoonQuery 'examples/order-shared' @('--cflags'))
+        Assert-Equal "$package static compiler search order" (Invoke-Text $Reference @('--static', '--cflags', $package)) (Invoke-MoonQuery 'examples/order-shared' @('--cflags', '--static'))
     }
 
     $env:PKG_CONFIG_PATH = Join-Path $projectRoot 'testdata/real-world'

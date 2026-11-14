@@ -1,4 +1,4 @@
-"""Package and exercise the checkout CLI without publishing a release."""
+"""Build a standalone CLI archive and verify its extracted executable."""
 
 import argparse
 import hashlib
@@ -121,12 +121,11 @@ def usage(binary, system, architecture):
     command = ".\\" + binary if system == "windows" else "./" + binary
     scope = ("Windows native build; use the matching architecture."
              if system == "windows" else
-             "Linux trial build: verified on the CI Ubuntu runner of the same\n"
+             "Linux native build: verified on the CI Ubuntu runner of the same\n"
              "architecture only. Other distributions, libc versions and systems\n"
              "are not promised to work. The binary is not claimed to be static.")
-    return ("MoonPkgConfig checkout CLI trial package\n\n"
-            "This is a CI/local build, not a GitHub Release or a new MoonCakes\n"
-            "release. The exact source commit, dirty state and build tool versions\n"
+    return ("MoonPkgConfig standalone CLI\n\n"
+            "The module version, exact source commit, dirty state and build tool versions\n"
             "are recorded in build-info.json. No MoonBit installation is needed\n"
             "for the verified commands after extraction.\n\n"
             "Platform: " + system + "; architecture: " + architecture + "\n" + scope + "\n\n"
@@ -135,6 +134,7 @@ def usage(binary, system, architecture):
             "Linux: extract with a tool that preserves executable permissions,\n"
             "or run chmod +x moonpkgconfig after extraction. Python's standard\n"
             "ZIP extractor does not restore these permissions automatically.\n\n"
+            + command + " --version\n"
             + command + " --help\n"
             + command + " inspect path/to/example.pc --json\n"
             + command + " query path/to/pkgconfig package-name --libs --json\n"
@@ -210,6 +210,9 @@ def verify_extracted(directory, binary, cases):
     help_text = execute("help without MoonBit environment", ["--help"], as_json=False)
     if any(command not in help_text for command in ("inspect", "query", "check")):
         raise AssertionError("Global help omits an entry point")
+    version = execute("version matches module manifest", ["--version"], as_json=False)
+    if version.strip() != "moonpkgconfig " + module_version(ROOT / "moon.mod"):
+        raise AssertionError("Executable and module versions differ")
     inspected = execute("inspect valid metadata", ["inspect", "metadata files/app.pc", "--json"])
     if inspected["diagnostics"] or not any(entry["name"] == "Version" and entry["value"] == "2.0" for entry in inspected["entries"]):
         raise AssertionError("Inspection result differs")
@@ -264,7 +267,7 @@ def main():
     parser.add_argument("--require-clean", action="store_true", help="reject tracked or untracked source changes (CI)")
     args = parser.parse_args()
     REPORT.parent.mkdir(parents=True, exist_ok=True)
-    report = {"schema_version": 1, "passed": False, "distribution": "checkout trial", "cases": []}
+    report = {"schema_version": 1, "passed": False, "distribution": "standalone CLI", "cases": []}
     started = time.monotonic()
     REPORT.write_text(json.dumps(report) + "\n", encoding="utf-8")
     try:
@@ -283,7 +286,8 @@ def main():
         build_env["MOON_HOME"] = str(toolchain)
         build_env["PATH"] = str(moon.parent) + os.pathsep + build_env.get("PATH", "")
         before = compiler_sources()
-        info = {"schema_version": 1, "distribution": "checkout trial", "source_commit": commit,
+        info = {"schema_version": 1, "distribution": "standalone CLI", "source_commit": commit,
+                "module_version": module_version(ROOT / "moon.mod"),
                 "dirty": dirty, "source_sha256": before, "platform": system, "arch": architecture,
                 "moon_version": version_line([moon, "version"], build_env),
                 "moonc_version": version_line([moonc, "-v"], build_env)}
@@ -341,7 +345,7 @@ def main():
     finally:
         report["elapsed_seconds"] = round(time.monotonic() - started, 3)
         REPORT.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
-    print("CLI trial package verified: " + report["archive"])
+    print("Standalone CLI package verified: " + report["archive"])
 
 
 if __name__ == "__main__":

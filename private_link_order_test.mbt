@@ -45,7 +45,7 @@ test "dynamic link order includes private constraints between public libraries" 
   )
   @debug.assert_eq(
     packages.collect_cflags("root").flags.map(flag => flag.value),
-    ["-I/root", "-I/base", "-I/mid"],
+    ["-I/root", "-I/mid", "-I/base"],
   )
 }
 

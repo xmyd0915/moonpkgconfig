@@ -1,6 +1,6 @@
 # CLI JSON 接口
 
-本页描述当前主分支统一 `moonpkgconfig` 和三个旧命令入口的机器输出。它是命令行报告协议，不改变核心库的 `Document.as_json()`、`FlagResult.as_json()`，也不表示注册表0.3.1已包含新增 CLI。
+本页描述0.4.0的统一 `moonpkgconfig` 和三个旧命令入口的机器输出。它是命令行报告协议，不改变核心库的 `Document.as_json()`、`FlagResult.as_json()`。`moonpkgconfig --version` 输出模块版本。
 
 ## 调用与退出码
 
@@ -60,7 +60,7 @@ moonpkgconfig query ./pkgconfig example --atleast-version=1.2 --json
 
 例如 `paths` 可包含 `{"codec": ["imagekit", "codec"]}`。它解释当前返回的参数，按参数项的 `package` 关联；保留既有 `flags` 元素结构。编译参数路径包含私有依赖，动态链接只包含公开依赖，静态链接包含私有依赖。
 
-根参数只接受一个包标识符。`--exists`、`--atleast-version`、`--exact-version`、`--max-version` 都检查私有依赖；私有依赖损坏时返回诊断且 `matched=null`。CLI 的动态链接及其分类查询也检查完整依赖，但只输出公开链接参数。`--modversion` 和变量读取只验证所选根自身的元数据，不遍历依赖；虚拟根沿用同一提供者选择规则。参数数组沿用核心结果：链接参数采用依赖者在前的顺序，编译参数保留广度优先顺序。
+根参数只接受一个包标识符。`--exists`、`--atleast-version`、`--exact-version`、`--max-version` 都检查私有依赖；私有依赖损坏时返回诊断且 `matched=null`。CLI 的动态链接及其分类查询也检查完整依赖，但只输出公开链接参数。`--modversion` 和变量读取只验证所选根自身的元数据，不遍历依赖；虚拟根沿用同一提供者选择规则。编译和链接参数采用依赖者在前的稳定顺序；静态编译查询在普通字段之后追加全部 `Cflags.private`。
 
 不存在的变量返回 `not_found`、`error.kind = "variable"`、`value = null` 与退出码1。已定义的空变量是成功的空字符串。版本不符返回 `nonmatch`、`matched = false` 与退出码1；查询失败尚未完成比较时，`matched` 为 `null`，不能解释成版本不符。
 

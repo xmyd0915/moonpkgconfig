@@ -4,6 +4,7 @@ fn usage(error~ : Bool = false) -> Unit {
   command_line("  inspect <file.pc> [--json]", error~)
   command_line("  query <directory> <package> <mode> [options]", error~)
   command_line("  check <directory> [--path <directory>]... [--json]", error~)
+  command_line("  --version", error~)
   command_line(
     "Use moonpkgconfig <command> --help for command options.",
     error~,
@@ -20,6 +21,10 @@ pub fn run(args : Array[String]) -> Unit {
   }
   if args[1] == "--help" || args[1] == "-h" {
     usage()
+    return
+  }
+  if args[1] == "--version" && args.length() == 2 {
+    println("moonpkgconfig 0.4.0")
     return
   }
   let command_args = [args[1]]

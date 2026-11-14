@@ -29,4 +29,4 @@ provides_status=$?
 set -e
 test "$provides_status" -eq 1
 
-printf '%s\n' 'Reviewer walkthrough: passed'
+printf '%s\n' 'Usage walkthrough: passed'

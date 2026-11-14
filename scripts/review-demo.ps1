@@ -40,7 +40,7 @@ try {
     & $moon run --target native cmd/query examples/provides bar-old --path testdata/pkgconf-3.0.7 --exists *> $null
     if ($LASTEXITCODE -ne 1) { throw 'Incompatible virtual dependency was accepted.' }
 
-    Write-Output 'Reviewer walkthrough: passed'
+    Write-Output 'Usage walkthrough: passed'
     $global:LASTEXITCODE = 0
 } finally {
     Pop-Location

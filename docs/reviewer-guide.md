@@ -24,11 +24,11 @@ Windows PowerShell：
 3. 对编译参数应用显式 sysroot，展示可复现的交叉编译路径处理；
 4. 使用官方 pkgconf 3.0.7 样本，分别接受和拒绝两个带范围的虚拟依赖。
 
-成功时最后显示 `Reviewer walkthrough: passed`。该脚本也在 GitHub Actions 中运行，演示步骤不会只在维护者电脑上成立。
+成功时最后显示 `Usage walkthrough: passed`。GitHub Actions 也执行这组步骤并检查退出码和输出。
 
 ## 在仓库外使用命令行工具
 
-在当前 checkout 运行 `moon install ./cmd/moonpkgconfig`，即可使用统一的 `moonpkgconfig inspect/query/check` 命令。安装目录需要在 `PATH` 中，也可通过 `--bin <目录>` 显式指定。新入口尚未包含在注册表0.3.1中；详细安装命令见 [README](../README.md#安装命令行工具)。
+在 checkout 运行 `moon install ./cmd/moonpkgconfig`，即可使用统一的 `moonpkgconfig inspect/query/check` 命令。安装目录需要在 `PATH` 中，也可通过 `--bin <目录>` 显式指定。详细安装命令见 [README](../README.md#安装与快速体验)，无需 MoonBit 的可执行文件见 [下载指南](cli-download.md)。
 
 目录检查可用 `moonpkgconfig check <目录> --path <另一个目录> --json` 接入 CI。报告保留目录优先级、选中包名和原始错误位置；正常、诊断失败、用法或 IO 错误分别返回0、1、2。扫描未完成时计数为 `null`，不能把读取失败当成空目录通过。`python scripts/verify-cli.py` 实际安装并在仓库外验证这个流程。
 
@@ -40,7 +40,7 @@ Windows PowerShell：
 python scripts/review-native.py
 ```
 
-需要 Python 3.9+、CMake 3.15+ 和原生构建环境：Linux 使用 C 编译器和 `make`，Windows 使用 Visual Studio C++ 工具及 Windows SDK。脚本检查工具、准备固定版本的静态库，再在仓库之外使用已发布的 MoonCakes 0.3.1。它串联缺失、版本错误、损坏文件定位、修复与实际执行，并核对三个应用使用相同的规划器和适配器。
+需要 Python 3.9+、CMake 3.15+ 和原生构建环境：Linux 使用 C 编译器和 `make`，Windows 使用 Visual Studio C++ 工具及 Windows SDK。脚本检查工具、准备固定版本的静态库，再在仓库之外安装模板声明的 MoonCakes 依赖。它串联缺失、版本错误、损坏文件定位、修复与实际执行，并核对三个应用使用相同的规划器和适配器。
 
 生成的文件工具支持 `compress <输入> <输出.zlib>` 和 `decompress <输入.zlib> <输出>`，验证涵盖空文件、文本、二进制和 Python zlib 双向互操作。程序一次处理整个文件，压缩输入及解压输出上限为 64 MiB，拒绝覆盖已有输出。应用均由本项目维护，不代表第三方采用。
 
@@ -48,7 +48,7 @@ python scripts/review-native.py
 
 ## 保留已有多包工程的构建配置
 
-`python scripts/verify-project-integration.py` 准备固定原生库，用已发布0.3.1规划参数，经 MoonBit 实验性 pre-build 配置钩子驱动普通 `moon build/run/test`。案例将 zlib 与 Expat 放在独立库包中，由多个入口使用，并保留各包原有构建设置。配置和实验性限制见 [多包接入说明](../examples/project-integration/README.md)。
+`python scripts/verify-project-integration.py` 准备固定原生库，用 MoonCakes 依赖规划参数，经 MoonBit 实验性 pre-build 配置钩子驱动普通 `moon build/run/test`。案例将 zlib 与 Expat 放在独立库包中，由多个入口使用，并保留各包原有构建设置。配置和实验性限制见 [多包接入说明](../examples/project-integration/README.md)。
 
 已有完整原生流程报告时，可传入 `--prepared-report _build/verification/native-walkthrough.json` 复用安装。验证报告为 `_build/verification/project-integration.json`，两个 CI 平台保留独立附件。
 
@@ -56,8 +56,8 @@ python scripts/review-native.py
 
 | 关注点 | 仓库证据 |
 | --- | --- |
-| MoonBit 实现与多目标可用性 | 主分支89个逻辑测试分别在 wasm、wasm-gc、JavaScript、native 运行，含5,000包长链及目录检查；0.3.0发行源码为81项 |
-| 与既有工具的行为关系 | 原38项加六项目模板120项、静态字段顺序4项，共162项固定 pkgconf 3.0.7 差分 |
+| MoonBit 实现与多目标可用性 | wasm、wasm-gc、JavaScript、native 四目标检查、构建和测试，含5,000包长链及目录检查；每次执行结果见对应提交的 CI |
+| 与既有工具的行为关系 | 63项基础查询、六项目模板120项、静态字段顺序4项，共187项固定 pkgconf 3.0.7 差分；另检查系统安装语料及移除依赖后的失败路径 |
 | 真实输入 | zlib、libffi、libuv、libpng、PCRE2、Expat 六项目模板及11个官方 pkgconf 测试文件；默认种子另验证158个生成输入 |
 | 原生使用闭环 | 查询参数后编译 C 静态库、链接并运行 C++ 调用程序 |
 | MoonBit 接入真实 C 库 | `examples/zlib-ffi` 从已安装的 zlib 元数据取得构建参数，由 MoonBit 调用 CRC-32、压缩和解压；CI 从固定版本源码安装并验证 |
@@ -65,8 +65,8 @@ python scripts/review-native.py
 | 静态编译要求 | `examples/expat-ffi` 从真实安装的 `Cflags.private` 取得 `XML_STATIC`，验证 XML 分块解析、错误与 Python 独立安装对照；MSVC 移除/恢复该字段验证实际链接影响 |
 | 已发布库的独立使用 | `examples/zlib-consumer` 直接依赖 MoonCakes 0.2.0，读取真实 zlib 安装，重现缺失依赖和版本错误，再构建文件压缩程序并进行双向互操作检查；验证副本放在仓库之外 |
 | 来源与许可证 | `ORIGINS.md`、MIT许可证以及随样本保存的上游许可证 |
-| 复用同一接入代码 | `examples/native-consumer` 固定依赖 MoonCakes 0.3.1，在仓库外通过配置和应用源码构建 zlib、Expat、文件压缩工具；验证依赖故障、修复、真实运行和来源，总入口比较规划器与适配器摘要 |
-| 损坏依赖定位 | 0.3.1包含22个文件加载 CLI 场景，保留依赖的原始文件错误 |
+| 复用同一接入代码 | `examples/native-consumer` 使用 MoonCakes 依赖，在仓库外通过配置和应用源码构建 zlib、Expat、文件压缩工具；验证依赖故障、修复、真实运行和来源，总入口比较规划器与适配器摘要 |
+| 损坏依赖定位 | 文件加载 CLI 场景覆盖读取、UTF-8、解析错误、同名优先级、无关坏文件、私有依赖及修复后重新查询 |
 | 独立环境复现 | `.github/workflows/ci.yml` 与 `docs/verification.md` 中的公开运行记录 |
 
 真实原生库示例的前置条件和命令见 [zlib](../examples/zlib-ffi)、[libpng](../examples/libpng-ffi)、[Expat](../examples/expat-ffi) 与 [发布包消费者](../examples/zlib-consumer)。四个场景均在 Ubuntu CI 验证，zlib、Expat 与发布包消费者另有 Windows MSVC CI；示例使用独立原生模块，不增加核心库的外部依赖。
@@ -75,6 +75,6 @@ python scripts/review-native.py
 
 ## 边界
 
-原有通用模板适用于单个根目录可执行包，支持通过应用配置声明导入和原生接口文件；已有自定义 `moon.pkg` 或 `moon.pkg.json` 会被拒绝。多包工程另可使用固定工具链的实验性 pre-build 接入路径，或直接消费规划器 JSON。两条路径的损坏依赖诊断均使用已发布0.3.1的接口。
+通用模板适用于单个根目录可执行包，支持通过应用配置声明导入和原生接口文件；已有自定义 `moon.pkg` 或 `moon.pkg.json` 会被拒绝。多包工程另可使用固定工具链的实验性 pre-build 接入路径，或直接消费规划器 JSON。两条路径都保留损坏依赖的原始诊断。
 
-项目当前是面向常用 `.pc` 解析、检查和参数查询的0.3.1实现，不宣称完整替代 pkg-config/pkgconf。目录、系统路径和 sysroot 由调用方显式提供；尚不自动读取系统搜索路径，不实现 Windows 自动重定位及全部 pkgconf 扩展。
+项目面向常用 `.pc` 解析、检查和参数查询，不宣称完整替代 pkg-config/pkgconf。目录、系统路径和 sysroot 由调用方显式提供；不自动读取系统搜索路径，不实现 Windows 自动重定位及全部 pkgconf 扩展。资源限制与完整范围见 [README](../README.md#兼容范围)。

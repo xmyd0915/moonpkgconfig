@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -161,6 +162,10 @@ def main():
         for directory in (first, second, third, empty):
             directory.mkdir()
         cli("global help", ["--help"])
+        module_version = re.search(r'^version\s*=\s*"([^"]+)"', (ROOT / "moon.mod").read_text(encoding="utf-8"), re.MULTILINE).group(1)
+        if cli("version matches module manifest", ["--version"]).strip() != "moonpkgconfig " + module_version:
+            raise AssertionError("CLI and module versions differ")
+        cli("version rejects extra arguments", ["--version", "extra"], 2)
         cli("missing subcommand", [], 2)
         cli("unknown subcommand", ["unknown"], 2)
         for command in ("inspect", "query", "check"):
