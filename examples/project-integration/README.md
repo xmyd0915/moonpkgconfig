@@ -63,7 +63,7 @@ the existing `stub-cc-flags`. The example's `${build.PC_RUNTIME}` adds Windows
 Run `configure.py --project /path/to/application --pc-dir ...` before building.
 For this layout, the application must be a sibling of `planner/`, as in the
 example, so its hook can import the adapter from its parent. The planner itself
-is an independent module fixed to published MoonCakes MoonPkgConfig 0.3.1.
+is an independent module fixed to published MoonCakes MoonPkgConfig 0.4.0.
 It has no prebuild hook. Only configuration builds it; application hooks invoke
 the compiled planner directly, never `moon build`, so they cannot recursively
 build their own module. Registry access is needed during bootstrap. This example

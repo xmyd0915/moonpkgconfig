@@ -44,8 +44,8 @@ def main():
     run([moon, "update"], planner)
     run([moon, "build", "--target", "native", "--deny-warn", "."], planner)
     installed = planner / ".mooncakes/xmyd0915/moonpkgconfig/moon.mod"
-    if not re.search(r'^version\s*=\s*"0\.3\.1"', installed.read_text(encoding="utf-8"), re.MULTILINE):
-        raise RuntimeError("The planner must use published MoonPkgConfig 0.3.1")
+    if not re.search(r'^version\s*=\s*"0\.4\.0"', installed.read_text(encoding="utf-8"), re.MULTILINE):
+        raise RuntimeError("The planner must use published MoonPkgConfig 0.4.0")
     binaries = [planner / "_build/native/debug/build" / name for name in ("native-planner.exe", "native-planner")]
     binaries = [path for path in binaries if path.is_file()]
     if len(binaries) != 1:

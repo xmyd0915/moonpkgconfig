@@ -1,4 +1,4 @@
-"""Replay dependency failures and build an unmodified 0.3.1 template outside the checkout."""
+"""Replay dependency failures and build an unmodified 0.4.0 template outside the checkout."""
 
 import argparse
 import hashlib
@@ -86,8 +86,8 @@ def main():
         if len(reports) != 1:
             raise RuntimeError("Expected one report for each template invocation")
         result = json.loads(reports.pop().read_text(encoding="utf-8"))
-        if result["dependency"] != "xmyd0915/moonpkgconfig@0.3.1":
-            raise RuntimeError("Expected the published 0.3.1 dependency")
+        if result["dependency"] != "xmyd0915/moonpkgconfig@0.4.0":
+            raise RuntimeError("Expected the published 0.4.0 dependency")
         evidence["cases"].append({"case": label, "exit": status, **result})
         return result
 
@@ -186,7 +186,7 @@ def main():
         destination.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         if not evidence["installed_metadata_unchanged"]:
             raise RuntimeError("The installed upstream metadata changed")
-    print(f"Published 0.3.1 generic template ({args.library}): failures, repair and native execution passed; {destination}")
+    print(f"Published 0.4.0 generic template ({args.library}): failures, repair and native execution passed; {destination}")
 
 
 if __name__ == "__main__":

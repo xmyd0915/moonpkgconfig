@@ -9,7 +9,7 @@ import shlex
 import subprocess
 
 ROOT = Path(__file__).resolve().parent
-DEPENDENCY = "xmyd0915/moonpkgconfig@0.3.1"
+DEPENDENCY = "xmyd0915/moonpkgconfig@0.4.0"
 NAME = r"[A-Za-z0-9_+][A-Za-z0-9_+.-]*"
 
 

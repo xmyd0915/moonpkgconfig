@@ -40,7 +40,7 @@ Windows PowerShell：
 python scripts/review-native.py
 ```
 
-需要 Python 3.9+、CMake 3.15+ 和原生构建环境：Linux 使用 C 编译器和 `make`，Windows 使用 Visual Studio C++ 工具及 Windows SDK。脚本检查工具、准备固定版本的静态库，再在仓库之外安装模板声明的 MoonCakes 依赖。它串联缺失、版本错误、损坏文件定位、修复与实际执行，并核对三个应用使用相同的规划器和适配器。
+需要 Python 3.9+、CMake 3.15+ 和原生构建环境：Linux 使用 C 编译器和 `make`，Windows 使用 Visual Studio C++ 工具及 Windows SDK。脚本检查工具、准备固定版本的静态库，再在仓库之外安装 MoonCakes 0.4.0。它串联缺失、版本错误、损坏文件定位、修复与实际执行，并核对三个应用使用相同的规划器和适配器。
 
 生成的文件工具支持 `compress <输入> <输出.zlib>` 和 `decompress <输入.zlib> <输出>`，验证涵盖空文件、文本、二进制和 Python zlib 双向互操作。程序一次处理整个文件，压缩输入及解压输出上限为 64 MiB，拒绝覆盖已有输出。应用均由本项目维护，不代表第三方采用。
 
@@ -48,7 +48,7 @@ python scripts/review-native.py
 
 ## 保留已有多包工程的构建配置
 
-`python scripts/verify-project-integration.py` 准备固定原生库，用 MoonCakes 依赖规划参数，经 MoonBit 实验性 pre-build 配置钩子驱动普通 `moon build/run/test`。案例将 zlib 与 Expat 放在独立库包中，由多个入口使用，并保留各包原有构建设置。配置和实验性限制见 [多包接入说明](../examples/project-integration/README.md)。
+`python scripts/verify-project-integration.py` 准备固定原生库，用 MoonCakes 0.4.0 规划参数，经 MoonBit 实验性 pre-build 配置钩子驱动普通 `moon build/run/test`。案例将 zlib 与 Expat 放在独立库包中，由多个入口使用，并保留各包原有构建设置。配置和实验性限制见 [多包接入说明](../examples/project-integration/README.md)。
 
 已有完整原生流程报告时，可传入 `--prepared-report _build/verification/native-walkthrough.json` 复用安装。验证报告为 `_build/verification/project-integration.json`，两个 CI 平台保留独立附件。
 

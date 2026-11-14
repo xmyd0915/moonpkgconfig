@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plan and build a root-package native application with MoonCakes 0.3.1."""
+"""Plan and build a root-package native application with MoonCakes 0.4.0."""
 
 import argparse
 import json
@@ -14,7 +14,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parent
 MODULE = "xmyd0915/moonpkgconfig"
-VERSION = "0.3.1"
+VERSION = "0.4.0"
 NAME = r"[A-Za-z0-9_+][A-Za-z0-9_+.-]*"
 
 

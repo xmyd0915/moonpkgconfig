@@ -1,6 +1,6 @@
 # MoonPkgConfig
 
-[中文](README.md) · [CI](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml) · [MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) · [Release notes](docs/release-notes-0.4.0.md)
+[中文](README.md) · [CI](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml) · [MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) · [Downloads](https://github.com/xmyd0915/moonpkgconfig/releases/tag/v0.4.0) · [Release notes](docs/release-notes-0.4.0.md)
 
 A `pkg-config` metadata engine written in MoonBit for native FFI, build tools and CI. It parses `.pc` files, resolves dependencies, computes compiler/linker arguments, and explains each argument's package, field, source location and dependency path.
 

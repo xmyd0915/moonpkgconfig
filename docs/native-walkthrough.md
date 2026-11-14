@@ -1,6 +1,6 @@
 # 从依赖错误到可运行的文件工具
 
-这条流程使用已发布的 `xmyd0915/moonpkgconfig@0.3.1`，从原生依赖的 `.pc` 元数据计算构建参数，定位损坏文件，修复后构建并运行应用。同一个规划器和构建适配器支持 zlib 检查程序、Expat XML 程序，以及可压缩、解压实际文件的命令行工具。
+这条流程使用已发布的 `xmyd0915/moonpkgconfig@0.4.0`，从原生依赖的 `.pc` 元数据计算构建参数，定位损坏文件，修复后构建并运行应用。同一个规划器和构建适配器支持 zlib 检查程序、Expat XML 程序，以及可压缩、解压实际文件的命令行工具。
 
 这些应用均由本项目维护，用于展示发布包的集成方式，不代表第三方采用。
 
@@ -36,7 +36,7 @@ Windows 的上游 CMake zlib 静态安装另加 `--zlib-msvc-lib z=zlibstatic.li
 
 ## 流程与结果
 
-1. 将通用模板复制到仓库外，直接安装 MoonCakes 0.3.1，不使用本地模块覆盖。
+1. 将通用模板复制到仓库外，直接安装 MoonCakes 0.4.0，不使用本地模块覆盖。
 2. 分别查询 zlib、Expat 应用，验证缺失依赖、版本不满足及损坏依赖。损坏文件中的 `broken=${missing}` 应返回 `PC004`，定位到依赖文件第 1 行第 8 列。
 3. 恢复依赖副本后，使用查询得到的参数构建并执行应用。zlib 检查 CRC-32、压缩/解压和错误返回；Expat 使用 `Cflags.private` 中的 `-DXML_STATIC`，分块解析 XML，并与 Python 独立安装核对结果及错误位置。
 4. 再用相同规划器和适配器构建文件工具。移除损坏的临时 zlib 覆盖文件后，直接使用真实安装；验证空文件、UTF-8 文本、二进制文件往返，以及与 Python zlib 的双向互操作。
@@ -81,7 +81,7 @@ tool=$(python3 -c 'import json; print(json.load(open("_build/verification/native
 
 复制 [通用模板](../examples/native-consumer/README.md)，按其中说明修改 `consumer.json`、应用 `.pc` 与 C/C++ 包装接口。模板适用于单个根目录可执行包，生成副本的构建配置；已有自定义 `moon.pkg` 或 `moon.pkg.json` 会明确报错。较大的构建系统可直接消费规划器 JSON。
 
-使用 0.3.1 API 的适配层应把文件加载器的失败映射传入查询：
+适配层应把文件加载器的失败映射传入查询，使用从 0.3.1 起提供的可选诊断接口：
 
 ```moonbit
 let loaded = @loader.load_directories(directories)

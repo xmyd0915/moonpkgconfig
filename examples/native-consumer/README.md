@@ -1,7 +1,7 @@
-# Published 0.3.1 native consumer template
+# Published 0.4.0 native consumer template
 
 Copy this entire directory outside the checkout to use MoonCakes
-`xmyd0915/moonpkgconfig@0.3.1`. The MoonBit planner loads explicit `.pc`
+`xmyd0915/moonpkgconfig@0.4.0`. The MoonBit planner loads explicit `.pc`
 directories and returns compiler/linker arguments, source locations, versions
 and dependency routes. The Python adapter turns that data into a native
 `moon.pkg` for a copy of your application. It uses only the standard library.
@@ -113,7 +113,7 @@ Run without `--pc-dir` to see `PC015` at the sample's dependency declaration on
 line 4. Change its required version to `>= 999.0`, supply the installed
 directory, and `PC016` identifies the same declaration. A dependency containing
 `broken=${missing}` on its first line produces `PC004` at that file's line 1,
-column 8. The 0.3.1 planner passes the loader's `diagnostics_by_package` map to
+column 8. The planner passes the loader's `diagnostics_by_package` map to
 flag and dependency-path queries, preserving the original error location.
 
 Restore the requirement and valid dependency metadata to build/run

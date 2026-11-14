@@ -88,7 +88,7 @@ def main():
     report = args.report.resolve()
     report.parent.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
-    evidence = {"dependency": "xmyd0915/moonpkgconfig@0.3.1", "platform": sys.platform,
+    evidence = {"dependency": "xmyd0915/moonpkgconfig@0.4.0", "platform": sys.platform,
                 "passed": False, "cases": []}
 
     def save():

@@ -39,7 +39,7 @@ def main():
     report = ROOT / "_build/verification/native-walkthrough.json"
     report.parent.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
-    evidence = {"dependency": "xmyd0915/moonpkgconfig@0.3.1", "passed": False,
+    evidence = {"dependency": "xmyd0915/moonpkgconfig@0.4.0", "passed": False,
                 "workspace": str(working), "consumers": []}
     # Clear a previous success before running any preparation or consumer process.
     report.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")

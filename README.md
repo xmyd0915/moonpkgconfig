@@ -1,6 +1,6 @@
 # MoonPkgConfig
 
-[English](README.en.md) · [MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) · [发行说明](docs/release-notes-0.4.0.md)
+[English](README.en.md) · [MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) · [下载](https://github.com/xmyd0915/moonpkgconfig/releases/tag/v0.4.0) · [发行说明](docs/release-notes-0.4.0.md)
 
 [![CI](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml/badge.svg)](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml)
 

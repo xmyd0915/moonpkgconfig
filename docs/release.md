@@ -2,11 +2,18 @@
 
 主分支的接入示例会继续更新。以下完成记录描述对应标签和上传归档中的内容；运行方式见 [原生接入指南](native-walkthrough.md)。
 
-## 0.4.0 发行内容
+## 0.4.0 完成记录（2026-11-14）
 
-0.4.0提供统一命令行、版本化JSON、编译与链接顺序修复、文件诊断和解析资源边界。完整接口及升级行为见 [发行说明](release-notes-0.4.0.md)。源码归档通过四目标各127项核心测试和10项独立消费者测试；归档内文件加载验证及CLI安装检查见 [验证记录](verification.md)。
+`xmyd0915/moonpkgconfig@0.4.0` 已正式发布，上传器退出码0、服务端返回 `200 OK`；公开索引包含该版本且未撤回。本版提供统一命令行、版本化JSON、编译与链接顺序修复、文件诊断和解析资源边界，完整接口及升级行为见 [发行说明](release-notes-0.4.0.md)。
 
-上传、标签及新项目安装的完成信息按实际结果记录；历史版本的归档和校验值保持原内容。
+- [源码标签 v0.4.0](https://github.com/xmyd0915/moonpkgconfig/tree/v0.4.0) 固定到 `79bf25ac3f0883b7a6b65e8db521e3fbb87c3c00`；[发行 CI](https://github.com/xmyd0915/moonpkgconfig/actions/runs/43605812243) 的 Ubuntu 与 Windows 全部成功。
+- 实际上传 ZIP 包含245个文件，与 Windows CI 验证的源码归档字节相同；在独立工作区通过四目标各127项源码测试及10项消费者测试，合计每目标137项。两个平台的CLI安装验证各119项，独立CLI ZIP解压验证各12项。
+- 发布后通过 `python scripts/verify-install.py --version 0.4.0 --report _build/verification/registry-install-0.4.0.json`，新项目从 MoonCakes 实际下载，无本地源码覆盖，四目标检查及每目标10项消费者测试全部通过。
+- 上传 ZIP、注册表索引与 GitHub 源码附件的 SHA-256 一致：`dc851661dd6e569bfdc03bb87789c643c2d20591af472c51a197cf6e1c32a4c7`。
+- [GitHub Release](https://github.com/xmyd0915/moonpkgconfig/releases/tag/v0.4.0) 提供 Linux x86_64、Windows x86_64 命令行包、同一源码 ZIP、校验文件及 `verification.json`。每个平台的构建环境和许可证保存在包内，使用限制见 [下载指南](cli-download.md)。
+- 系统完整/缺依赖语料共6,452项查询通过，全部参数模式的规范化序列一致；187项固定工具差分、158个固定种子输入、真实静态链接及资源边界检查通过，详见 [验证记录](verification.md)。
+
+正式归档保存在 `_build/releases/xmyd0915-moonpkgconfig-0.4.0.zip`。主分支推荐模板使用0.4.0，既有标签中的模板依赖保持原版本；旧注册表0.3.1与文件消费者0.2.0继续作为兼容基线。历史发行归档和标签不覆盖。
 
 ## 0.3.1 完成记录（2026-10-18）
 

@@ -15,7 +15,7 @@ import zlib
 
 
 ROOT = Path(__file__).resolve().parent.parent
-DEPENDENCY = "xmyd0915/moonpkgconfig@0.3.1"
+DEPENDENCY = "xmyd0915/moonpkgconfig@0.4.0"
 
 
 def digest(path):
@@ -99,7 +99,7 @@ def main():
             if result.returncode != expected_status:
                 raise RuntimeError(f"Expected exit {expected_status}, got {result.returncode}")
             if data["dependency"] != DEPENDENCY:
-                raise RuntimeError("The generic adapter did not use the published 0.3.1 package")
+                raise RuntimeError("The generic adapter did not use the published 0.4.0 package")
             return data
 
         broken = build("malformed transitive dependency", 1)
@@ -307,7 +307,7 @@ def main():
         raise
     finally:
         save()
-    print(f"Published 0.3.1 file tool: diagnostic repair, 4 interoperable file round trips "
+    print(f"Published 0.4.0 file tool: diagnostic repair, 4 interoperable file round trips "
           f"and file safety checks passed; {destination}", flush=True)
 
 
