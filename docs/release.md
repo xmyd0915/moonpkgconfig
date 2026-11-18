@@ -2,6 +2,15 @@
 
 主分支的接入示例会继续更新。以下完成记录描述对应标签和上传归档中的内容；运行方式见 [原生接入指南](native-walkthrough.md)。
 
+## 0.4.1（2026-11-18）
+
+0.4.1 修复直接读取加载器和调用方变量的行为，并在多包工程配置阶段报告缺失或版本不匹配的绑定。[发行说明](release-notes-0.4.1.md)
+
+- 标签 `v0.4.1` 指向 `830aa4751a6991e86bba2fc6a3f9c153824802f9`。Ubuntu 与 Windows 使用 `moonc 0.10.21+06da1ed44` 完成检查、构建、测试及原生集成。[发行 CI](https://github.com/xmyd0915/moonpkgconfig/actions/runs/44273043123)
+- MoonCakes 正式上传返回 `200 OK`。在新建项目中从注册表安装后，四目标各通过 10 项公开 API 测试。通过 `moon install xmyd0915/moonpkgconfig/cmd/moonpkgconfig@0.4.1` 安装的可执行文件通过版本与变量查询检查。[MoonCakes 模块](https://mooncakes.io/docs/xmyd0915/moonpkgconfig)
+- 正式源码 ZIP 共 247 个文件。上传包、Windows CI 归档、注册表索引和 GitHub 源码附件使用相同的 SHA-256，值为 `486e3bb645af22d26c3aaaea51da4b706ed9b0948075d4a2ac9bb95ca343a051`。
+- Linux x86_64 和 Windows x86_64 的独立 CLI 分别提供按版本命名的 ZIP。发行页包含两个可执行程序包、源码归档、校验文件和机器可读测试结果。[GitHub Release](https://github.com/xmyd0915/moonpkgconfig/releases/tag/v0.4.1)
+
 ## 0.4.0 完成记录（2026-11-14）
 
 `xmyd0915/moonpkgconfig@0.4.0` 已正式发布，上传器退出码0、服务端返回 `200 OK`；公开索引包含该版本且未撤回。本版提供统一命令行、版本化JSON、编译与链接顺序修复、文件诊断和解析资源边界，完整接口及升级行为见 [发行说明](release-notes-0.4.0.md)。
@@ -13,7 +22,7 @@
 - [GitHub Release](https://github.com/xmyd0915/moonpkgconfig/releases/tag/v0.4.0) 提供 Linux x86_64、Windows x86_64 命令行包、同一源码 ZIP、校验文件及 `verification.json`。每个平台的构建环境和许可证保存在包内，使用限制见 [下载指南](cli-download.md)。
 - 系统完整/缺依赖语料共6,452项查询通过，全部参数模式的规范化序列一致；187项固定工具差分、158个固定种子输入、真实静态链接及资源边界检查通过，详见 [验证记录](verification.md)。
 
-正式归档保存在 `_build/releases/xmyd0915-moonpkgconfig-0.4.0.zip`。主分支推荐模板使用0.4.0，既有标签中的模板依赖保持原版本；旧注册表0.3.1与文件消费者0.2.0继续作为兼容基线。历史发行归档和标签不覆盖。
+正式归档保存在 `_build/releases/xmyd0915-moonpkgconfig-0.4.0.zip`。0.4.0 发布后，主分支推荐模板切换至该版本，旧注册表 0.3.1 与文件消费者 0.2.0 用于兼容检查。
 
 ## 0.3.1 完成记录（2026-10-18）
 

@@ -1,7 +1,7 @@
-# Published 0.4.0 native consumer template
+# Published 0.4.1 native consumer template
 
 Copy this entire directory outside the checkout to use MoonCakes
-`xmyd0915/moonpkgconfig@0.4.0`. The MoonBit planner loads explicit `.pc`
+`xmyd0915/moonpkgconfig@0.4.1`. The MoonBit planner loads explicit `.pc`
 directories and returns compiler/linker arguments, source locations, versions
 and dependency routes. The Python adapter turns that data into a native
 `moon.pkg` for a copy of your application. It uses only the standard library.
