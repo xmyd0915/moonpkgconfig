@@ -23,13 +23,13 @@ fn round_trip(source : Bytes) -> Unit {
   if bound <= 0 {
     abort("zlib did not return a valid compression bound")
   }
-  let compressed = Bytes::new(bound)
+  let compressed = Bytes::make(bound, b'\x00')
   let length = compress(source, compressed)
   if length <= 0 || length > bound {
     abort("zlib compression failed")
   }
   // A nonempty destination also permits checking the empty-input case.
-  let restored = Bytes::new(source.length() + 1)
+  let restored = Bytes::make(source.length() + 1, b'\x00')
   if decompress(compressed, length, restored) != source.length() {
     abort("zlib decompression length differs")
   }
@@ -49,19 +49,19 @@ fn main {
   round_trip(b"MoonBit calls zlib through flags from MoonPkgConfig.")
   round_trip(Bytes::makei(4096, i => (i % 251).to_byte()))
   let invalid = b"not a zlib stream"
-  if decompress(invalid, invalid.length(), Bytes::new(64)) != -3 {
+  if decompress(invalid, invalid.length(), Bytes::make(64, b'\x00')) != -3 {
     abort("corrupt input should return Z_DATA_ERROR")
   }
   let source = b"destination buffer is too small"
-  let compressed = Bytes::new(compress_bound(source.length()))
+  let compressed = Bytes::make(compress_bound(source.length()), b'\x00')
   let length = compress(source, compressed)
   if length <= 0 {
     abort("compression for buffer-size check failed")
   }
-  if decompress(compressed, length, Bytes::new(1)) != -5 {
+  if decompress(compressed, length, Bytes::make(1, b'\x00')) != -5 {
     abort("small destination should return Z_BUF_ERROR")
   }
-  if decompress(compressed, -1, Bytes::new(64)) != -2 {
+  if decompress(compressed, -1, Bytes::make(64, b'\x00')) != -2 {
     abort("negative source length should return Z_STREAM_ERROR")
   }
   println("MoonBit zlib FFI: CRC-32, 3 round trips and 3 error cases passed")

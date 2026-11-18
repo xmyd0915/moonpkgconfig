@@ -20,20 +20,20 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Toolchain version check failed.' }
     & "$MoonHome\bin\moon.exe" fmt
     if ($LASTEXITCODE -ne 0) { throw 'Formatting failed.' }
-    foreach ($ffiModule in @('examples/zlib-ffi', 'examples/libpng-ffi')) {
-        & "$MoonHome\bin\moon.exe" -C $ffiModule fmt
-        if ($LASTEXITCODE -ne 0) { throw 'FFI example formatting failed.' }
+    # These nested modules are outside the root module's four-target check.
+    # Type-checking their MoonBit sources does not require installed C libraries.
+    foreach ($nativeExample in @('examples/zlib-ffi', 'examples/libpng-ffi', 'examples/expat-ffi',
+        'examples/zlib-consumer/app', 'examples/native-consumer/apps/zlib',
+        'examples/native-consumer/apps/expat', 'examples/native-consumer/apps/zlib-files')) {
+        & "$MoonHome\bin\moon.exe" -C $nativeExample fmt
+        if ($LASTEXITCODE -ne 0) { throw "Formatting failed in $nativeExample" }
+        & "$MoonHome\bin\moon.exe" -C $nativeExample check --target native --deny-warn
+        if ($LASTEXITCODE -ne 0) { throw "Native example type-check failed in $nativeExample" }
     }
     & "$MoonHome\bin\moon.exe" -C examples/zlib-consumer fmt
     if ($LASTEXITCODE -ne 0) { throw 'Consumer formatting failed.' }
-    & "$MoonHome\bin\moon.exe" -C examples/zlib-consumer/app fmt
-    if ($LASTEXITCODE -ne 0) { throw 'Compressor formatting failed.' }
-    & "$MoonHome\bin\moon.exe" -C examples/expat-ffi fmt
-    if ($LASTEXITCODE -ne 0) { throw 'Expat formatting failed.' }
-    foreach ($templateModule in @('examples/native-consumer', 'examples/native-consumer/apps/zlib', 'examples/native-consumer/apps/expat', 'examples/native-consumer/apps/zlib-files')) {
-        & "$MoonHome\bin\moon.exe" -C $templateModule fmt
-        if ($LASTEXITCODE -ne 0) { throw 'Native consumer template formatting failed.' }
-    }
+    & "$MoonHome\bin\moon.exe" -C examples/native-consumer fmt
+    if ($LASTEXITCODE -ne 0) { throw 'Native consumer template formatting failed.' }
     foreach ($projectModule in @('examples/project-integration/planner', 'examples/project-integration/app')) {
         & "$MoonHome\bin\moon.exe" -C $projectModule fmt
         if ($LASTEXITCODE -ne 0) { throw 'Project integration formatting failed.' }

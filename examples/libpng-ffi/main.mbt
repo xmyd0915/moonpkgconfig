@@ -31,7 +31,7 @@ fn encode(width : Int32, height : Int32, pixels : Bytes) -> (Bytes, Int32) {
   if capacity <= 0 {
     abort("libpng could not measure the encoded image")
   }
-  let encoded = Bytes::new(capacity)
+  let encoded = Bytes::make(capacity, b'\x00')
   let length = encode_rgba(width, height, pixels, encoded)
   if length <= 0 || length > capacity {
     abort("libpng encoding failed")
@@ -54,7 +54,7 @@ fn pixels(width : Int32, height : Int32) -> Bytes {
 fn round_trip(width : Int32, height : Int32) -> Unit {
   let original = pixels(width, height)
   let (encoded, length) = encode(width, height, original)
-  let restored = Bytes::new(original.length())
+  let restored = Bytes::make(original.length(), b'\x00')
   if decode_rgba(encoded, length, width, height, restored) != original.length() {
     abort("libpng decoded size differs")
   }
@@ -71,16 +71,17 @@ fn main {
   round_trip(8, 8)
   round_trip(17, 9)
   let (encoded, length) = encode(8, 8, pixels(8, 8))
-  if decode_rgba(b"not a PNG", 9, 8, 8, Bytes::new(256)) != -2 {
+  if decode_rgba(b"not a PNG", 9, 8, 8, Bytes::make(256, b'\x00')) != -2 {
     abort("corrupt PNG should fail decoding")
   }
-  if decode_rgba(encoded, length, 7, 8, Bytes::new(256)) != -3 {
+  if decode_rgba(encoded, length, 7, 8, Bytes::make(256, b'\x00')) != -3 {
     abort("unexpected PNG dimensions should be rejected")
   }
-  if decode_rgba(encoded, length, 8, 8, Bytes::new(1)) != -4 {
+  if decode_rgba(encoded, length, 8, 8, Bytes::make(1, b'\x00')) != -4 {
     abort("small output buffer should be rejected")
   }
-  if decode_rgba(encoded, encoded.length() + 1, 8, 8, Bytes::new(256)) != -1 {
+  if decode_rgba(encoded, encoded.length() + 1, 8, 8, Bytes::make(256, b'\x00')) !=
+    -1 {
     abort("out-of-bounds input length should be rejected")
   }
   println("MoonBit libpng FFI: 3 RGBA round trips and 4 error cases passed")

@@ -17,7 +17,7 @@ fn read_u32(bytes : Bytes, offset : Int32) -> Int32 {
 
 ///|
 fn check_document(input : Bytes, chunk_size : Int32, valid : Bool) -> Json {
-  let summary = Bytes::new(24)
+  let summary = Bytes::make(24, b'\x00')
   let status = parse_xml(input, input.length(), chunk_size, summary)
   if status != (if valid { 1 } else { 0 }) {
     abort("Expat returned an unexpected parse status")
@@ -55,7 +55,7 @@ fn main {
   for input in [b"", b"<root>", b"<root>\n<item></root>", b"<root>\xff</root>"] {
     cases.push(check_document(input, 3, false))
   }
-  let summary = Bytes::new(24)
+  let summary = Bytes::make(24, b'\x00')
   let input = b"<root/>"
   for
     (length, chunk_size) in [
@@ -67,7 +67,7 @@ fn main {
       abort("Invalid FFI input bounds were not rejected")
     }
   }
-  if parse_xml(input, input.length(), 1, Bytes::new(23)) != -1 {
+  if parse_xml(input, input.length(), 1, Bytes::make(23, b'\x00')) != -1 {
     abort("Short FFI summary buffer was not rejected")
   }
   println(

@@ -37,7 +37,7 @@ fn deflate_file(source : Bytes) -> Bytes {
   if bound <= 0 {
     fail("Could not determine zlib compression bound")
   }
-  let destination = Bytes::new(bound)
+  let destination = Bytes::make(bound, b'\x00')
   let length = compress(source, destination)
   if length <= 0 || length > bound {
     fail("zlib compression failed: \{length}")
@@ -49,7 +49,7 @@ fn deflate_file(source : Bytes) -> Bytes {
 fn inflate_file(source : Bytes) -> Bytes {
   let mut capacity = 65536
   while capacity <= 67108864 {
-    let destination = Bytes::new(capacity)
+    let destination = Bytes::make(capacity, b'\x00')
     let length = decompress(source, source.length(), destination)
     if length >= 0 && length <= capacity {
       return Bytes::makei(length, i => destination[i])
