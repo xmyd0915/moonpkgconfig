@@ -307,6 +307,10 @@ def main():
             ("--modversion", "2", []), ("--variable=prefix", "/sdk one", []),
             ("--variable=empty", "", []),
             ("--variable=prefix", "/overridden", ["--define-variable=prefix=/overridden"]),
+            ("--variable=overlay", "caller value", ["--define-variable=overlay=caller value"]),
+            ("--variable=overlay", "", ["--define-variable=overlay="]),
+            ("--variable=pc_sysrootdir", "", []),
+            ("--variable=pc_sysrootdir", "/cross", ["--define-variable=pc_sysrootdir=/cross"]),
         ):
             data = query("metadata value " + mode + str(extra), "root", mode, extra=extra)
             if data["value"] != expected or data["matched"] is not None or data["flags"]:
@@ -388,6 +392,25 @@ def main():
         data = query("metadata selects the real virtual provider", "virtual-dep", "--variable=prefix")
         if data["value"] != "/provider":
             raise AssertionError(f"Virtual metadata query did not select the provider: {data}")
+        other_dir = external / "provider-only path"
+        other_dir.mkdir()
+        pc(other_dir, "located", "Provides: located-alias = 1\nRequires: absent\n",
+           prefix="pc_sysrootdir=/file-value\nlocation=${pcfiledir}\n")
+        extra = ["--path", other_dir]
+        for mode in ("--variable=location", "--variable=pcfiledir"):
+            data = query("virtual provider file directory " + mode, "located-alias", mode, extra=extra)
+            if data["value"] != str(other_dir):
+                raise AssertionError(f"Effective directory differs from provider location: {data}")
+        for options, expected in ((extra, ""), ([*extra, "--define-variable=pc_sysrootdir=/cross"], "/cross")):
+            data = query("effective sysroot over file definition " + expected, "located", "--variable=pc_sysrootdir", extra=options)
+            if data["value"] != expected:
+                raise AssertionError(f"Sysroot lookup disagrees with loader precedence: {data}")
+        text = cli("text metadata locates provider in a relative search directory",
+                   ["query", query_dir, "located-alias", "--path", "./provider-only path", "--variable=pcfiledir"])
+        if text.rstrip("\r\n") != "./provider-only path":
+            raise AssertionError(f"Relative search directory changed: {text!r}")
+        query("reject caller override of file directory", "root", "--variable=pcfiledir", 2, "usage_error",
+              extra=["--define-variable=pcfiledir=/other"])
         data = query("virtual dependency explanation names its real provider", "virtual-app", "--libs", extra=["--explain"])
         if data["paths"] != {"virtual-app": ["virtual-app"], "provider": ["virtual-app", "provider"]}:
             raise AssertionError(f"Virtual provider route changed: {data}")

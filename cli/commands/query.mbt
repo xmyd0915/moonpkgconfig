@@ -113,6 +113,38 @@ fn query_mode_text(mode : QueryMode) -> String {
 }
 
 ///|
+fn query_variable(
+  name : String,
+  selected : @pc.Package,
+  source : String,
+  directories : Array[String],
+  overrides : Map[String, String],
+) -> String? {
+  if name == "pcfiledir" {
+    // Return the same directory string that the loader used for expansion,
+    // including relative paths and the actual filename of a virtual provider.
+    let file = @path.Path(selected.id + ".pc")
+    for directory in directories {
+      if @path.Path(directory).join(file).to_string() == source {
+        return Some(directory)
+      }
+    }
+    return None
+  }
+  if overrides.get(name) is Some(value) {
+    return Some(value)
+  }
+  if selected.document.variable(name) is Some(entry) {
+    return Some(entry.value)
+  }
+  if name == "pc_sysrootdir" {
+    Some("")
+  } else {
+    None
+  }
+}
+
+///|
 fn query_report(
   directories : Array[String],
   package_name : String?,
@@ -554,7 +586,8 @@ pub fn query(
             return
           }
         }
-        let version = selected.document.field("Version").unwrap().value
+        let version_entry = selected.document.field("Version").unwrap()
+        let version = version_entry.value
         match metadata_query {
           ModVersion =>
             if json {
@@ -570,8 +603,15 @@ pub fn query(
               println(version)
             }
           Variable(name) =>
-            match selected.document.variable(name) {
-              Some(entry) =>
+            match
+              query_variable(
+                name,
+                selected,
+                version_entry.location.source,
+                directories,
+                overrides,
+              ) {
+              Some(value) =>
                 if json {
                   query_report(
                     directories,
@@ -579,10 +619,10 @@ pub fn query(
                     mode,
                     static_linking,
                     empty_flags,
-                    value=Json(entry.value),
+                    value=Json(value),
                   )
                 } else {
-                  println(entry.value)
+                  println(value)
                 }
               None => {
                 let message = "Variable not found: \{name}"

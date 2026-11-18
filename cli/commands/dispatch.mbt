@@ -24,7 +24,7 @@ pub fn run(args : Array[String]) -> Unit {
     return
   }
   if args[1] == "--version" && args.length() == 2 {
-    println("moonpkgconfig 0.4.0")
+    println("moonpkgconfig 0.4.1")
     return
   }
   let command_args = [args[1]]

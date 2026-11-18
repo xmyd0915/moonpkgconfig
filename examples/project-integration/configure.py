@@ -7,8 +7,22 @@ import os
 from pathlib import Path
 import re
 import shutil
+import tempfile
 
-from adapter import DEPENDENCY, NAME, ROOT, digest, planner_sources, read_bindings, run
+from adapter import DEPENDENCY, NAME, ROOT, digest, plan, planner_sources, read_bindings, run
+
+
+def write_config(destination, data):
+    # Builds may read the setup while configure is validating the planner.
+    temporary = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=destination.parent, delete=False)
+    path = Path(temporary.name)
+    try:
+        with temporary:
+            json.dump(data, temporary, indent=2)
+            temporary.write("\n")
+        path.replace(destination)
+    finally:
+        path.unlink(missing_ok=True)
 
 
 def main():
@@ -19,7 +33,7 @@ def main():
     parser.add_argument("--msvc-lib", action="append", default=[])
     args = parser.parse_args()
     project = args.project.resolve()
-    read_bindings(project)
+    bindings = read_bindings(project)
     directories = [str(path.resolve()) for path in args.pc_dir]
     if not all(Path(path).is_dir() for path in directories):
         parser.error("Every metadata search directory must exist")
@@ -39,7 +53,7 @@ def main():
     destination = project / "_build/native-config.json"
     destination.parent.mkdir(exist_ok=True)
     # Once bootstrap starts, its failure cannot retain a successful old setup.
-    destination.write_text('{"configured": false}\n', encoding="utf-8")
+    write_config(destination, {"configured": False})
     planner = ROOT / "planner"
     run([moon, "update"], planner)
     run([moon, "build", "--target", "native", "--deny-warn", "."], planner)
@@ -53,7 +67,8 @@ def main():
     data = {"configured": True, "dependency": DEPENDENCY, "planner": str(binaries[0]),
             "planner_sha256": digest(binaries[0]), "planner_sources": planner_sources(),
             "pc_directories": directories, "msvc_libraries": mappings}
-    destination.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    plan(project, data, bindings)
+    write_config(destination, data)
     print(f"Configured {project}; use ordinary moon build/run/test --target native")
 
 

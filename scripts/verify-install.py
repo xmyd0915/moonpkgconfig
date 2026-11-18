@@ -301,6 +301,22 @@ def main():
         if version_from(installed) != args.version:
             raise RuntimeError("Installed version differs from requested release")
     run([moon, "test", "--target", "all", "--deny-warn"], consumer)
+    if not archive and release >= (0, 4, 1):
+        binary_dir = working / "installed bin"
+        run([moon, "install", MODULE + "/cmd/moonpkgconfig@" + args.version, "--bin", binary_dir], consumer)
+        executable = binary_dir / ("moonpkgconfig.exe" if sys.platform == "win32" else "moonpkgconfig")
+        actual_version = subprocess.check_output([executable, "--version"], cwd=consumer, text=True).strip()
+        if actual_version != "moonpkgconfig " + args.version:
+            raise RuntimeError("Installed CLI version differs from requested release")
+        fixture = working / "metadata"
+        fixture.mkdir()
+        (fixture / "app.pc").write_text("Name: app\nDescription: Registry example\nVersion: 1\n", encoding="utf-8")
+        query = subprocess.check_output([executable, "query", fixture, "app", "--variable=SDK",
+                                         "--define-variable=SDK=/sdk", "--json"], cwd=consumer)
+        data = json.loads(query)
+        if data["status"] != "ok" or data["value"] != "/sdk":
+            raise RuntimeError("Installed registry command lost the caller's variable")
+        report["installed_cli_version"] = actual_version
     if archive and has_load_diagnostics:
         # Exercise the archived adapter, rather than the checkout that produced it.
         run([sys.executable, str(source / "scripts/verify-load-diagnostics.py")], source)

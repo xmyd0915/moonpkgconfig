@@ -1,6 +1,6 @@
 # MoonPkgConfig
 
-[中文](README.md) · [CI](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml) · [MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) · [Downloads](https://github.com/xmyd0915/moonpkgconfig/releases/tag/v0.4.0) · [Release notes](docs/release-notes-0.4.0.md)
+[中文](README.md) · [CI](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml) · [MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) · [Downloads](https://github.com/xmyd0915/moonpkgconfig/releases/tag/v0.4.1) · [Release notes](docs/release-notes-0.4.1.md)
 
 A `pkg-config` metadata engine written in MoonBit for native FFI, build tools and CI. It parses `.pc` files, resolves dependencies, computes compiler/linker arguments, and explains each argument's package, field, source location and dependency path.
 
@@ -8,28 +8,33 @@ The pure MoonBit core supports wasm, wasm-gc, JavaScript and native. Parsing and
 
 | Task | Entry point |
 | --- | --- |
-| Parse metadata or calculate arguments in MoonBit | `moon add xmyd0915/moonpkgconfig@0.4.0` |
+| Parse metadata or calculate arguments in MoonBit | `moon add xmyd0915/moonpkgconfig@0.4.1` |
 | Inspect files or integrate an external build tool | `moonpkgconfig inspect / query / check`, with JSON output |
 | Build a native application | [zlib, Expat and file-compression template](examples/native-consumer/README.md) |
 | Integrate an existing multi-package project | [Experimental pre-build integration](examples/project-integration/README.md) |
 
-Version 0.4.0 adds the unified CLI and versioned JSON, fixes shared-dependency linker ordering, and improves file diagnostics, private-dependency validation and parser resource limits. See the [upgrade notes](docs/release-notes-0.4.0.md) and [release records](docs/release.md).
+Version 0.4.1 fixes CLI variable queries and checks each native binding when configuring the multi-package example. See the [release notes](docs/release-notes-0.4.1.md).
 
 ## Install and try the CLI
 
-Source builds use `moonc 0.10.20+65efd5b93`, `moon 0.1.20261104`, and a native C toolchain. After installing [MoonBit](https://www.moonbitlang.com/download/):
+With MoonBit and a native C toolchain installed, run `moon install xmyd0915/moonpkgconfig/cmd/moonpkgconfig@0.4.1` to install the command directly from the registry. Check it with `moonpkgconfig --version`. The following examples use the metadata in this repository.
+
+If the CLI is already installed, start with the query below. To build it from `main`, install a native C toolchain and [MoonBit](https://www.moonbitlang.com/download/). The main branch uses `moonc 0.10.21+06da1ed44` and `moon 0.1.20261117`.
 
 ```sh
 git clone https://github.com/xmyd0915/moonpkgconfig.git
 cd moonpkgconfig
 moon update
 moon install ./cmd/moonpkgconfig
-moonpkgconfig query examples/valid imagekit --libs --static --json --explain
-moonpkgconfig inspect examples/valid/imagekit.pc --json
-moonpkgconfig check examples/invalid --json
 ```
 
-The last command checks deliberately invalid inputs and exits with code 1. Add the installation directory to PATH, or specify it with `moon install ./cmd/moonpkgconfig --bin <directory>`. The installed command works outside the repository; each subcommand supports `--help`.
+Add the installation directory to `PATH`. From the repository root, list the libraries needed to link the sample package statically.
+
+```sh
+moonpkgconfig query examples/valid imagekit --libs-only-l --static
+```
+
+The output is `-limagekit -lm -lcodec -lcompression -lz`. Append `--explain` to see that `-lz` comes from `Libs.private` on line 9 of `compression.pc`. Append `--json --explain` to read arguments, source locations and dependency paths as structured data.
 
 To run without installing MoonBit, use a packaged Linux or Windows executable. Download locations, supported platforms, licenses and checksum instructions are in the [CLI download guide](docs/cli-download.md).
 
@@ -46,7 +51,7 @@ Directories are searched in command-line order; the first file with a given name
 
 ## Use the library
 
-Run `moon add xmyd0915/moonpkgconfig@0.4.0` in an existing module and add this test import to `moon.pkg` for the example below:
+Run `moon add xmyd0915/moonpkgconfig@0.4.1` in an existing module and add this test import to `moon.pkg` for the example below:
 
 ```moonbit
 import {
@@ -82,12 +87,14 @@ The core accepts in-memory documents and does not access the filesystem. See the
 
 ## Call from a build tool
 
+Run this Python example from the repository root to get the full linker argument list for the same package.
+
 ```python
 import json
 import subprocess
 
 result = subprocess.run(
-    ["moonpkgconfig", "query", "./pkgconfig", "example", "--libs", "--json"],
+    ["moonpkgconfig", "query", "examples/valid", "imagekit", "--libs", "--static", "--json"],
     capture_output=True, text=True, encoding="utf-8", check=False,
 )
 report = json.loads(result.stdout)
@@ -117,6 +124,8 @@ python scripts/review-native.py
 This prepares fixed static library versions, runs consumers outside the repository, checks file interoperability with Python zlib, and prints the executable path. Requirements: Python 3.9+, CMake 3.15+, a C compiler and `make` on Linux, or Visual Studio C++ tools and the Windows SDK on Windows. See the [native walkthrough](docs/native-walkthrough.md) for dependency versions, existing-installation options and platform limits.
 
 The [multi-package example](examples/project-integration/README.md) preserves existing package configuration and connects native libraries to ordinary `moon build/run/test` through an experimental pre-build hook. Run `python scripts/verify-project-integration.py` to reproduce it. The hook is tied to the pinned toolchain. The [libpng → zlib example](examples/libpng-ffi/README.md) separately exercises private dependencies and PNG pixel round trips on Ubuntu.
+
+On Ubuntu, this project also checks compatibility with the published `tonyfettes/cairo@0.2.0` binding. The test runs its original build script with MoonPkgConfig supplying Cairo compiler and linker arguments, then runs the binding's native tests. See the [Cairo compatibility script](scripts/verify-cairo-binding.sh).
 
 ## Verify and develop
 

@@ -179,9 +179,29 @@ def main():
         for mapping in mappings:
             configure += ["--msvc-lib", mapping]
         execute("bootstrap independent registry planner", configure, directory=consumer)
-        configured = json.loads((application / "_build/native-config.json").read_text(encoding="utf-8"))
-        planner_hash = configured["planner_sha256"]
+        config_path = application / "_build/native-config.json"
         command = [moon, "build", "--target", "native", "--deny-warn"]
+        # Fail both a metadata query and an argument conversion during a
+        # reconfiguration, before any application hook has had a chance to run.
+        pc_files["zlib"].write_text("broken=${missing}\n" + originals["zlib"], encoding="utf-8")
+        pc_files["expat"].write_text(originals["expat"].replace("Cflags:", "Cflags: -funsupported-preflight", 1),
+                                     encoding="utf-8")
+        failure = execute("diagnose both bindings during configuration", configure, 1, directory=consumer)
+        for expected in ("examples/project-integration/zlib (zlib.pc): PC004", str(pc_files["zlib"]) + ":1:8",
+                         "examples/project-integration/expat (expat.pc): Unsupported native option '-funsupported-preflight'",
+                         str(pc_files["expat"]) + ":"):
+            if expected not in failure.stderr:
+                raise RuntimeError(f"Missing configuration diagnostic: {expected}")
+        if json.loads(config_path.read_text(encoding="utf-8")) != {"configured": False}:
+            raise RuntimeError("A failed reconfiguration left a usable native setup")
+        for name, path in pc_files.items():
+            path.write_text(originals[name], encoding="utf-8")
+        blocked = execute("reject stale setup after failed configuration", command, 1)
+        if "Run configure.py before building" not in blocked.stdout + blocked.stderr:
+            raise RuntimeError("Build did not reject the invalidated setup")
+        execute("configure repaired bindings", configure, directory=consumer)
+        configured = json.loads(config_path.read_text(encoding="utf-8"))
+        planner_hash = configured["planner_sha256"]
         execute("build unchanged multi-package project", command)
         execute("test library packages with inherited links", [moon, "test", "--target", "native", "--deny-warn"])
         expected_outputs = {"checksum": "crc=3421780262 custom=7", "combined": "crc=3421780262 xml=true custom=7,11"}

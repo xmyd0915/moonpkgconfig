@@ -2,6 +2,8 @@
 
 项目使用 MIT 许可证，著作权声明为 MoonPkgConfig contributors。
 
+Ubuntu 的 Cairo 兼容性检查在临时目录下载 [tonyfettes/cairo 0.2.0](https://mooncakes.io/docs/tonyfettes/cairo)，其模块清单声明 Apache-2.0。下载内容以 MoonCakes 的 SHA-256 `8bbd90e19b485c9c5a084d3afa80a882c5c496793ef7cada1aff781939ec7fad` 固定。仓库中的脚本连接上游构建入口与 MoonPkgConfig，并运行上游测试；绑定源码仍由 MoonCakes 提供。
+
 ## 参考资料
 
 1. pkgconf 项目 `.pc` 格式文档：<https://github.com/pkgconf/pkgconf/blob/main/man/pc.5>。

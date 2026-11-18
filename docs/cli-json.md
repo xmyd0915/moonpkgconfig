@@ -41,7 +41,7 @@ moonpkgconfig query ./pkgconfig example --atleast-version=1.2 --json
 
 额外返回 `file`（请求文件名，未提供时为 `null`）和原有 `entries` 数组。成功或元数据诊断时，条目仍包含 `kind`、`name`、`raw`、`value`、`location`、`value_location`；用法或 IO 失败时 `entries`、`diagnostics` 为空，必须根据状态识别失败。
 
-非 UTF-8 文件返回 `PC020`、空条目和退出码1，不把解码失败当成缺少必填字段。单文件读取失败仍是 `io_error` 和退出码2。加载器提供的默认 `pc_sysrootdir` 仅用于变量展开，不是原始条目，不增加虚构的来源位置。
+非 UTF-8 文件返回 `PC020`、空条目和退出码1，不把解码失败当成缺少必填字段。单文件读取失败仍是 `io_error` 和退出码2。`entries` 只列出文件中的定义。加载器提供的内建值没有源码条目。
 
 `PC009` 展开超限或 `PC021` 诊断超限会停止解析该文档。inspect 保留已解析条目和终止诊断，不再把尚未读取的必填字段报告为缺失。
 
@@ -63,6 +63,8 @@ moonpkgconfig query ./pkgconfig example --atleast-version=1.2 --json
 根参数只接受一个包标识符。`--exists`、`--atleast-version`、`--exact-version`、`--max-version` 都检查私有依赖；私有依赖损坏时返回诊断且 `matched=null`。CLI 的动态链接及其分类查询也检查完整依赖，但只输出公开链接参数。`--modversion` 和变量读取只验证所选根自身的元数据，不遍历依赖；虚拟根沿用同一提供者选择规则。编译和链接参数采用依赖者在前的稳定顺序；静态编译查询在普通字段之后追加全部 `Cflags.private`。
 
 不存在的变量返回 `not_found`、`error.kind = "variable"`、`value = null` 与退出码1。已定义的空变量是成功的空字符串。版本不符返回 `nonmatch`、`matched = false` 与退出码1；查询失败尚未完成比较时，`matched` 为 `null`，不能解释成版本不符。
+
+从0.4.1起，`--variable` 返回加载时的有效值。`--define-variable=name=value` 对文件未声明的变量同样生效，值可以为空。`pcfiledir` 是实际所选 `.pc` 文件的搜索目录，虚拟包返回提供者所在目录，保留相对路径和空格，禁止覆盖。`pc_sysrootdir` 默认返回空字符串，`--define-variable=pc_sysrootdir=/sdk` 可显式覆盖。加载器对同名文件声明也采用这个有效值，和变量展开保持一致。pkgconf 3.0.7 对文件内重新声明的 `pc_sysrootdir` 有不同的直接查询语义。
 
 JSON 可用于全部查询模式。`--static`、路径过滤、去重和 `--explain` 仍只适用于参数模式；一次只能选择一个查询模式。JSON 与文本查询遵循相同的搜索优先级、变量覆盖、版本和虚拟提供者规则。
 

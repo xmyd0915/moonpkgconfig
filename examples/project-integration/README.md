@@ -8,7 +8,7 @@ The applications are maintained here; they are not third-party adoption claims.
 
 The adapter uses MoonBit's [experimental prebuild configuration hook](https://docs.moonbitlang.com/en/stable/toolchain/moon/module.html#experimental-pre-build-config-script).
 Its interface may change. Reproduce this integration with the pinned MoonBit
-`0.10.20+65efd5b93` and the accompanying `moon 0.1.20261104`.
+`0.10.21+06da1ed44` and the accompanying `moon 0.1.20261117`.
 It requires Python 3.9+, installed static zlib and Expat with their `.pc` files,
 and the platform's native compiler. Windows uses x64 MSVC with the static CRT.
 
@@ -75,8 +75,13 @@ affect diagnostics and compiler arguments. The hook's latest success or failure
 is saved in `app/_build/native-plan.json`; it does not serialize the environment
 provided by MoonBit. Reconfigure after changing planner sources, moving the
 copy, changing toolchains or running `moon clean` (which removes local setup).
-Invalid configuration arguments leave the previous setup intact; once planner
-bootstrap begins, a failed bootstrap invalidates the previous setup.
+Configuration runs the same metadata queries and translates the same compiler
+and linker flags as the build hook for every binding. If several bindings fail,
+the command reports each MoonBit package and its metadata identifier together
+with the planner or adapter diagnostic. Repair the reported inputs and rerun
+`configure.py` before building. Argument validation precedes bootstrap. Once
+bootstrap starts, the build hook can use the new setup only after every binding
+passes. The native compiler and linker run during the application build.
 
 Only `-I`, `-D`, `-U`, `-L` and `-l` are accepted by this adapter. Ordered link
 arguments are kept together, with explicit Windows library filename mappings.

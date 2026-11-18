@@ -4,11 +4,11 @@
 
 代码以 `moon fmt` 格式化；提交前运行 `moon check --target all --deny-warn`、`moon build --target all --deny-warn`、`moon test --target all --deny-warn` 和 `moon run cmd/demo`。四目标为 wasm、wasm-gc、js、native。验证证据写入 `docs/verification.md`，失败不能记为通过。
 
-复现使用固定的 `0.10.20+65efd5b93` 工具链，避免滚动下载改变格式和语言语法。升级工具链时应单独完成迁移和全套验证，再调整固定版本。
+复现使用固定的 `0.10.21+06da1ed44` 工具链，避免滚动下载改变格式和语言语法。升级工具链时应单独完成迁移和全套验证，再调整固定版本。
 
-Ubuntu 与 Windows CI 分别显示工具链版本、四目标检查、构建和测试；另从 MoonCakes 安装已发布的0.3.1，验证其公开接口。注册表报告与归档报告一起保存在各平台的 `package-install` 附件中，便于区分主分支归档与正式发布包。
+Ubuntu 与 Windows CI 分别显示工具链版本、四目标检查、构建和测试；另从 MoonCakes 安装固定发行版本，验证其公开接口。注册表报告与归档报告一起保存在各平台的 `package-install` 附件中，便于区分主分支归档与正式发布包。
 
-命令行实现集中在 `cli/commands`，`cmd/inspect`、`cmd/query`、`cmd/check` 与统一 `cmd/moonpkgconfig` 只负责传入参数。`python scripts/verify-cli.py` 从当前源码安装到隔离目录，在仓库外、清除 MoonBit 环境的进程中执行实际命令，验证目录 JSON、路径顺序、错误退出码和旧入口兼容性；报告为 `_build/verification/cli.json`。新增 CLI 尚未包含在注册表0.3.1中。
+命令行实现集中在 `cli/commands`，`cmd/inspect`、`cmd/query`、`cmd/check` 与统一 `cmd/moonpkgconfig` 只负责传入参数。`python scripts/verify-cli.py` 从当前源码安装到隔离目录，在仓库外、清除 MoonBit 环境的进程中执行实际命令，验证目录 JSON、路径顺序、错误退出码和旧入口兼容性；报告为 `_build/verification/cli.json`。统一 CLI 自0.4.0起提供。
 
 CLI 层的版本化 JSON 外层报告与核心库序列化分开维护；原有 `flags/diagnostics`、`entries/diagnostics` 内容保留。非帮助模式指定 `--json` 后，读取和用法错误也必须可解析；新增状态不能伪装成无诊断成功。元数据、条件与 `--explain` 的协议见 [CLI JSON 接口](docs/cli-json.md)。
 
@@ -22,7 +22,7 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 
 发行验证使用 `python scripts/verify-install.py --package`：提取实际 ZIP，以独立 `moon.work` 连接归档源码和消费者，执行公开接口测试。默认不传参数时从 MoonCakes 安装当前模块版本，不设置本地依赖覆盖；此模式仅在版本已发布后运行。消费者目录保留在忽略的 `.tmp` 中，便于核对下载内容。
 
-`moon.mod` 当前版本为0.3.1，主分支后续修复仍属未发布变更。发行前运行归档模式，上传成功后运行注册表模式；正式状态见 `docs/release.md`。复验旧版本需显式指定 `--version 0.3.0` 或 `--version 0.2.0`。0.3.1消费者新增2项诊断映射验证，四目标各运行6项；0.3.0运行原4项，0.2.0运行原3项。归档模式另从提取源码运行文件加载场景，实际数量与平台跳过项记录在报告中。可加 `--report <路径>` 保存版本、归档哈希和命令结果；失败报告不会标记为通过。
+归档模式读取根 `moon.mod` 的版本号。发行前运行归档模式，上传成功后运行注册表模式；正式状态见 `docs/release.md`。复验旧版本需显式指定 `--version 0.3.0` 或 `--version 0.2.0`。0.3.1消费者新增2项诊断映射验证，四目标各运行6项；0.3.0运行原4项，0.2.0运行原3项。归档模式另从提取源码运行文件加载场景，实际数量与平台跳过项记录在报告中。可加 `--report <路径>` 保存版本、归档哈希和命令结果；失败报告不会标记为通过。
 
 参数分类的端到端检查为 `python scripts/verify-flag-selection.py`，需要 Python 3；Windows 验证脚本和 Ubuntu CI 均会执行。它检查 JSON 与文本参数边界、来源解释、静态参数及诊断退出码，独立工具对照由 `scripts/compare-pkgconf.*` 执行。
 
@@ -34,9 +34,9 @@ Windows 可运行 `scripts/verify.ps1`，接受可选的 `-MoonHome`；默认使
 
 查询期间的提供者索引和依赖步骤放在内部 `QueryContext`，不得跨公开调用复用，因为 `PackageSet` 和文档由调用方持有。目录优化仅复用能够证明无诊断且无冲突字段的子图；问题根保持完整遍历。提供者顺序、精确包优先、文档修改可见性和每根冲突范围由回归测试保护。后续测量及剩余边界见 `docs/query-performance.md`。
 
-链接参数单独使用迭代逆后序，把依赖者放在其依赖之前；Cflags 的广度优先声明顺序保持原行为，不能共用链接次序来改写它。回归覆盖三角、跨层共享与深图；实际静态库检查由 `scripts/verify-link-order.py --reference <pkgconf-3.0.7>` 执行，需要 GNU 兼容 `cc`/`ar`，报告为 `_build/verification/link-order.json`。固定 pkgconf 对照由55项基础查询与124项模板/静态顺序查询组成，共179项；158个固定种子输入另行计数。
+编译和链接参数使用迭代逆后序，把依赖者放在其依赖之前。静态编译查询在所有普通字段之后追加私有字段。回归覆盖三角、跨层共享与深图；实际静态库检查由 `scripts/verify-link-order.py --reference <pkgconf-3.0.7>` 执行，需要 GNU 兼容 `cc`/`ar`，报告为 `_build/verification/link-order.json`。固定 pkgconf 对照由63项基础查询与124项模板/静态顺序查询组成，共187项；158个固定种子输入另行计数。
 
-Ubuntu GNU 用户空间可用 `scripts/verify-system-packages.py --reference <pkgconf-3.0.7> --directory <目录> --remove-package zlib` 检查实际安装语料及删除依赖后的副本；目录可重复指定，`--package` 限定根，`--cli` 复用已构建程序。报告记录文件哈希、展开总量、环境、参数集合、退出码、版本、变量、谓词及依赖者优先顺序。完整 Libs 另要求规范化序列相等；规范化只按 CLI 实际连续来源段构造线性元数据，由固定参考工具处理重复片段，不依据预期顺序重排。编译及分类模式的序列一致率单独记录。副本检查必须产生原本成功、删除后失败的依赖查询，并核对原文件未变；报告为 `_build/verification/system-packages.json`。
+Ubuntu GNU 用户空间可用 `scripts/verify-system-packages.py --reference <pkgconf-3.0.7> --directory <目录> --remove-package zlib` 检查实际安装语料及删除依赖后的副本；目录可重复指定，`--package` 限定根，`--cli` 复用已构建程序。报告记录文件哈希、展开总量、环境、参数集合、退出码、版本、变量、谓词及依赖者优先顺序。七种参数模式的动态和静态查询均要求规范化序列相等；规范化只按 CLI 实际连续来源段构造线性元数据，由固定参考工具处理重复片段，不依据预期顺序重排。目录检查另与各个包的参考存在性查询核对。副本检查必须产生原本成功、删除后失败的依赖查询，并核对原文件未变；报告为 `_build/verification/system-packages.json`。
 
 `PackageSet::select` 只验证并返回所选根，用于版本和变量读取；它不遍历依赖。CLI 的动态链接模式先验证含私有边的完整图，再调用只收集公开链接参数的核心 API，不能把验证范围等同于参数输出范围。
 
@@ -54,11 +54,11 @@ Ubuntu GNU 用户空间可用 `scripts/verify-system-packages.py --reference <pk
 
 仓库只保留与 MoonPkgConfig 有关的源码、测试和开发记录。提交应说明实际改动，不为数量拆分无意义修改。
 
-`examples/native-consumer` 固定使用 MoonCakes 0.3.1，规划器将加载诊断映射传入参数和依赖路径查询。`python scripts/verify-native-consumer.py --library zlib --pc-dir <目录>` 与 `--library expat` 分别在仓库外验证同一模板的缺包、版本错误、损坏依赖定位、修复与真实运行；Windows zlib 另传库名映射。`python scripts/verify-native-file-tool.py --pc-dir <目录>` 复用同一适配器构建实际文件工具，并与 Python zlib 双向对照。
+`examples/native-consumer` 固定使用 MoonCakes 0.4.0，规划器将加载诊断映射传入参数和依赖路径查询。`python scripts/verify-native-consumer.py --library zlib --pc-dir <目录>` 与 `--library expat` 分别在仓库外验证同一模板的缺包、版本错误、损坏依赖定位、修复与真实运行；Windows zlib 另传库名映射。`python scripts/verify-native-file-tool.py --pc-dir <目录>` 复用同一适配器构建实际文件工具，并与 Python zlib 双向对照。
 
 `python scripts/review-native.py` 自动准备固定的静态 zlib、Expat，再运行三个消费者；提供两个安装目录时可跳过准备。总报告要求三个消费者使用相同的规划器和适配代码。已有自定义应用构建设置会被拒绝，避免生成配置时丢失设置。完整运行方式见 `docs/native-walkthrough.md`。
 
-`examples/project-integration` 提供保留现有多包构建配置的另一条接入路径。它使用固定工具链的实验性 pre-build 钩子：配置阶段先构建独立的0.3.1规划器，钩子只运行规划器并输出构建 JSON。`python scripts/verify-project-integration.py` 验证真实库包链接、配置保留、失败修复及元数据更新；CI 传入 `--prepared-report _build/verification/native-walkthrough.json` 复用已准备的安装。Windows 完整验证可加 `-WithProjectIntegration`。报告为 `_build/verification/project-integration.json`；不能把该实验性适配路径表述为任意工具链都稳定支持。
+`examples/project-integration` 提供保留现有多包构建配置的另一条接入路径。它使用固定工具链的实验性 pre-build 钩子：配置阶段先构建使用 MoonCakes 0.4.0 的独立规划器并检查所有绑定，钩子只运行规划器并输出构建 JSON。`python scripts/verify-project-integration.py` 验证真实库包链接、配置保留、失败修复及元数据更新；CI 传入 `--prepared-report _build/verification/native-walkthrough.json` 复用已准备的安装。Windows 完整验证可加 `-WithProjectIntegration`。报告为 `_build/verification/project-integration.json`；不能把该实验性适配路径表述为任意工具链都稳定支持。
 
 真实 Expat 验证为 `python scripts/verify-expat.py`，构建固定2.6.2静态库后调用 `verify-expat-ffi.py`；Linux 与 Windows CI 均执行。本地可加 `scripts/verify.ps1 -WithExpat -CMake <路径>`，既有 `-WithWindowsZlib` 可同时指定。Windows MSVC 环境发现已放入共用 `native_ffi.py`，修改时必须重跑两种 Windows 库及 Linux 的既有 FFI 集成。Expat 的私有宏必须来自查询结果，不得在 C 包装或构建脚本中补写；负对照要求真实导入符号链接失败。
 

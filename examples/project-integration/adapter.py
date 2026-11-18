@@ -62,7 +62,9 @@ def arguments(flags, compiling, mappings):
         value = flag["value"]
         prefix = value[:2]
         if prefix not in prefixes:
-            raise ValueError(f"Unsupported native option {value!r} from {flag['package']}:{flag['field']}")
+            at = flag["location"]
+            raise ValueError(f"Unsupported native option {value!r} from {flag['package']}:{flag['field']} "
+                             f"at {at['source']}:{at['line']}:{at['column']}")
         operand = value[2:]
         if not operand:
             i += 1
@@ -84,32 +86,44 @@ def arguments(flags, compiling, mappings):
     return values
 
 
-def plan(project, configured):
+def plan_binding(project, configured, binding):
+    result = run([configured["planner"], binding["pc"], "static" if binding["static"] else "dynamic",
+                  *configured["pc_directories"]], project, (0, 1))
+    data = json.loads(result.stdout)
+    problems = []
+    for section in ("cflags", "libs"):
+        for problem in data[section]["diagnostics"]:
+            if problem not in problems:
+                problems.append(problem)
+    if problems or result.returncode:
+        lines = []
+        for problem in problems:
+            at = problem["location"]
+            lines.append(f"{problem['code']} {at['source']}:{at['line']}:{at['column']} {problem['message']}")
+        raise ValueError("\n".join(lines) or "Planner failed without diagnostics")
+    return {"binding": binding, "plan": data,
+            "compile_arguments": arguments(data["cflags"]["flags"], True, configured["msvc_libraries"]),
+            "link_arguments": arguments(data["libs"]["flags"], False, configured["msvc_libraries"])}
+
+
+def plan(project, configured, bindings):
     executable = Path(configured["planner"])
     if configured["dependency"] != DEPENDENCY or configured["planner_sources"] != planner_sources() or digest(executable) != configured["planner_sha256"]:
         raise ValueError("Planner changed; run configure.py again")
     output = {"vars": {"PC_RUNTIME": "/utf-8 /MT" if os.name == "nt" else ""}, "link_configs": []}
     evidence = []
-    for binding in read_bindings(project):
-        result = run([str(executable), binding["pc"], "static" if binding["static"] else "dynamic",
-                      *configured["pc_directories"]], project, (0, 1))
-        data = json.loads(result.stdout)
-        problems = []
-        for section in ("cflags", "libs"):
-            for problem in data[section]["diagnostics"]:
-                if problem not in problems:
-                    problems.append(problem)
-        if problems or result.returncode:
-            lines = []
-            for problem in problems:
-                at = problem["location"]
-                lines.append(f"{problem['code']} {at['source']}:{at['line']}:{at['column']} {problem['message']}")
-            raise ValueError("\n".join(lines) or "Planner failed without diagnostics")
-        cflags = arguments(data["cflags"]["flags"], True, configured["msvc_libraries"])
-        libs = arguments(data["libs"]["flags"], False, configured["msvc_libraries"])
-        output["vars"][binding["variable"]] = shlex.join(cflags)
+    errors = []
+    for binding in bindings:
+        try:
+            item = plan_binding(project, configured, binding)
+        except (ValueError, RuntimeError, OSError, subprocess.TimeoutExpired) as error:
+            errors.append(f"{binding['package']} ({binding['pc']}.pc): {error}")
+            continue
+        output["vars"][binding["variable"]] = shlex.join(item["compile_arguments"])
         # One ordered string avoids the reordering caused by splitting -L/-l
         # into separate hook fields. Moon supplies MSVC's /link delimiter.
-        output["link_configs"].append({"package": binding["package"], "link_flags": shlex.join(libs)})
-        evidence.append({"binding": binding, "plan": data, "compile_arguments": cflags, "link_arguments": libs})
+        output["link_configs"].append({"package": binding["package"], "link_flags": shlex.join(item["link_arguments"])})
+        evidence.append(item)
+    if errors:
+        raise ValueError("\n".join(errors))
     return output, evidence

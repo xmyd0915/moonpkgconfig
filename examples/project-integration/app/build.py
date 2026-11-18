@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from adapter import DEPENDENCY, plan
+from adapter import DEPENDENCY, plan, read_bindings
 
 
 def main():
@@ -21,7 +21,7 @@ def main():
         configured = json.loads((project / "_build/native-config.json").read_text(encoding="utf-8"))
         if not configured.get("configured"):
             raise ValueError("Run configure.py before building the application")
-        output, plans = plan(project, configured)
+        output, plans = plan(project, configured, read_bindings(project))
         evidence.update({"passed": True, "plans": plans, "output": output})
         print(json.dumps(output))
     except Exception as error:

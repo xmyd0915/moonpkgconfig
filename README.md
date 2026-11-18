@@ -1,6 +1,6 @@
 # MoonPkgConfig
 
-[English](README.en.md) · [MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) · [下载](https://github.com/xmyd0915/moonpkgconfig/releases/tag/v0.4.0) · [发行说明](docs/release-notes-0.4.0.md)
+[English](README.en.md) · [MoonCakes](https://mooncakes.io/docs/xmyd0915/moonpkgconfig) · [下载](https://github.com/xmyd0915/moonpkgconfig/releases/tag/v0.4.1) · [发行说明](docs/release-notes-0.4.1.md)
 
 [![CI](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml/badge.svg)](https://github.com/xmyd0915/moonpkgconfig/actions/workflows/ci.yml)
 
@@ -10,28 +10,33 @@
 
 | 需要完成的工作 | 使用入口 |
 | --- | --- |
-| 在 MoonBit 中解析元数据、计算参数 | `moon add xmyd0915/moonpkgconfig@0.4.0` |
+| 在 MoonBit 中解析元数据、计算参数 | `moon add xmyd0915/moonpkgconfig@0.4.1` |
 | 检查文件、查询依赖或接入其他语言的构建工具 | `moonpkgconfig inspect / query / check`，支持 JSON |
 | 构建真实原生应用 | [zlib、Expat、文件压缩工具模板](examples/native-consumer/README.md) |
 | 接入已有多包工程 | [实验性 pre-build 集成](examples/project-integration/README.md) |
 
-0.4.0 提供统一 CLI 和版本化 JSON，修复共享依赖的链接顺序，完善文件诊断、私有依赖校验和解析资源限制。升级行为见 [发行说明](docs/release-notes-0.4.0.md)，具体版本的归档、标签与安装结果见 [发布记录](docs/release.md)。
+0.4.1 修正 CLI 变量查询，并在多包工程配置时检查每个原生绑定。具体行为见 [发行说明](docs/release-notes-0.4.1.md)。
 
 ## 安装与快速体验
 
-源码构建使用 `moonc 0.10.20+65efd5b93`、`moon 0.1.20261104`，并需要本机 C 编译工具。安装 [MoonBit](https://www.moonbitlang.com/download/) 后运行：
+只需命令行工具时，安装 MoonBit 和本机 C 编译器后，可直接运行 `moon install xmyd0915/moonpkgconfig/cmd/moonpkgconfig@0.4.1`，再用 `moonpkgconfig --version` 查看版本。以下示例使用仓库自带的元数据。
+
+已有 CLI 可直接跳到下方查询。要从主分支构建，请准备本机 C 编译工具和 [MoonBit](https://www.moonbitlang.com/download/)。主分支使用 `moonc 0.10.21+06da1ed44` 和 `moon 0.1.20261117`。
 
 ```sh
 git clone https://github.com/xmyd0915/moonpkgconfig.git
 cd moonpkgconfig
 moon update
 moon install ./cmd/moonpkgconfig
-moonpkgconfig query examples/valid imagekit --libs --static --json --explain
-moonpkgconfig inspect examples/valid/imagekit.pc --json
-moonpkgconfig check examples/invalid --json
 ```
 
-最后一条命令检查错误样本，显示文件位置并返回退出码 1。安装目录需要在 `PATH` 中；也可用 `moon install ./cmd/moonpkgconfig --bin <目录>` 指定位置。安装后能离开仓库运行，三个子命令均支持 `--help`。
+将安装目录加入 `PATH`，在仓库根目录查询示例包在静态链接时需要的库。
+
+```sh
+moonpkgconfig query examples/valid imagekit --libs-only-l --static
+```
+
+输出为 `-limagekit -lm -lcodec -lcompression -lz`。在同一命令末尾加 `--explain`，可以看到 `-lz` 来自 `compression.pc` 第 9 行的 `Libs.private`。加 `--json --explain` 可获取这些参数、来源位置和依赖路径的结构化数据。
 
 不安装 MoonBit 也可以使用打包的 Linux 或 Windows 可执行文件。下载入口、适用平台、许可证和校验步骤见 [独立命令行下载](docs/cli-download.md)。
 
@@ -48,7 +53,7 @@ moonpkgconfig check /path/to/sdk/lib/pkgconfig --path /path/to/extra/pkgconfig -
 
 ## 在 MoonBit 中使用
 
-在已有模块中执行 `moon add xmyd0915/moonpkgconfig@0.4.0`，为下面的测试在 `moon.pkg` 中添加：
+在已有模块中执行 `moon add xmyd0915/moonpkgconfig@0.4.1`，为下面的测试在 `moon.pkg` 中添加：
 
 ```moonbit
 import {
@@ -84,12 +89,14 @@ test "query a native library" {
 
 ## 从构建工具调用
 
+在仓库根目录运行以下 Python 示例，可以从同一份 `.pc` 元数据取得传给链接器的完整参数数组。
+
 ```python
 import json
 import subprocess
 
 result = subprocess.run(
-    ["moonpkgconfig", "query", "./pkgconfig", "example", "--libs", "--json"],
+    ["moonpkgconfig", "query", "examples/valid", "imagekit", "--libs", "--static", "--json"],
     capture_output=True, text=True, encoding="utf-8", check=False,
 )
 report = json.loads(result.stdout)
@@ -119,6 +126,8 @@ python scripts/review-native.py
 该命令准备固定版本的静态库，在仓库外运行消费者，检查压缩文件与 Python zlib 的双向互操作，并打印可执行文件位置。需要 Python 3.9+、CMake 3.15+；Linux 需要 C 编译器和 `make`，Windows 需要 Visual Studio C++ 工具及 Windows SDK。依赖版本、已有安装的复用方法和平台边界见 [原生接入指南](docs/native-walkthrough.md)。
 
 [多包工程示例](examples/project-integration/README.md) 保留已有的包配置，通过实验性 pre-build 钩子接入正常的 `moon build/run/test`；运行 `python scripts/verify-project-integration.py` 可重现。钩子接口与固定工具链绑定。另有 Ubuntu 上的 [libpng → zlib 示例](examples/libpng-ffi/README.md)，验证真实私有依赖和 PNG 像素往返。
+
+在 Ubuntu 上，本项目还用已发布的 `tonyfettes/cairo@0.2.0` 检查外部绑定的兼容性。测试让该绑定的原始构建脚本通过 MoonPkgConfig 获取 Cairo 的编译和链接参数，再运行绑定自带的原生测试。见 [Cairo 兼容性脚本](scripts/verify-cairo-binding.sh)。
 
 ## 验证与开发
 

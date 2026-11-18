@@ -219,6 +219,10 @@ def verify_extracted(directory, binary, cases):
     queried = execute("query dependency order", ["query", "metadata files", "app", "--libs", "--json"])
     if queried["diagnostics"] or [flag["value"] for flag in queried["flags"]] != ["-lapp", "-lhelper"]:
         raise AssertionError("Dependency link arguments differ")
+    override = execute("query caller-only variable", ["query", "metadata files", "app", "--json",
+                                                     "--define-variable=SDK=/opt/sdk", "--variable=SDK"])
+    if override["status"] != "ok" or override["value"] != "/opt/sdk":
+        raise AssertionError("Variable query lost the caller's override")
     quoted = execute("query preserves argument boundary", ["query", "metadata files", "app", "--cflags", "--json"])
     if quoted["diagnostics"] or [flag["value"] for flag in quoted["flags"]] != ["-I/sdk/include path"]:
         raise AssertionError("Quoted path argument differs")

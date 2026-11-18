@@ -4,7 +4,12 @@
 
 ## 下载
 
-正式版本从 [GitHub Releases](https://github.com/xmyd0915/moonpkgconfig/releases) 下载对应系统的 ZIP 和同名 `.sha256` 文件，再按下文校验。发行附件保留原始构建提交号，可与标签和 CI 核对。核心库则通过 `moon add xmyd0915/moonpkgconfig@0.4.0` 安装。
+在 [0.4.1 发行页](https://github.com/xmyd0915/moonpkgconfig/releases/tag/v0.4.1) 选择下表中适合系统的 CLI ZIP，同时下载同名 `.zip.sha256` 校验文件。0.4.1 的构建工具链为 `moonc 0.10.21+06da1ed44` 和 `moon 0.1.20261117`。MoonBit 项目可通过 `moon add xmyd0915/moonpkgconfig@0.4.1` 安装核心库。
+
+| 平台 | CLI ZIP |
+| --- | --- |
+| Linux x86_64（Ubuntu CI） | `moonpkgconfig-0.4.1-linux-x86_64.zip` |
+| Windows x86_64 | `moonpkgconfig-0.4.1-windows-x86_64.zip` |
 
 主分支的最新开发构建仍可从 Actions 获取：
 
@@ -19,30 +24,29 @@ Ubuntu 包仅在对应 CI Ubuntu 环境与架构验证，不承诺兼容任意 L
 
 ## 校验与运行
 
-Linux 在放有 ZIP 和同名校验文件的目录运行：
+Linux 在放有 ZIP 和校验文件的目录运行以下命令。校验成功后再解压到新目录。
 
 ```sh
-sha256sum -c moonpkgconfig-*.zip.sha256
-unzip moonpkgconfig-*.zip -d moonpkgconfig-cli
-chmod +x moonpkgconfig-cli/moonpkgconfig
-./moonpkgconfig-cli/moonpkgconfig --help
-./moonpkgconfig-cli/moonpkgconfig --version
+archive=moonpkgconfig-0.4.1-linux-x86_64.zip
+sha256sum -c "$archive.sha256" &&
+  unzip "$archive" -d moonpkgconfig-cli &&
+  chmod +x moonpkgconfig-cli/moonpkgconfig &&
+  ./moonpkgconfig-cli/moonpkgconfig --version
 ```
 
-Windows PowerShell 中选择下载得到的实际 ZIP；若目录有多份，请先移走无关文件或直接指定文件名：
+Windows PowerShell 在下载目录运行以下命令。
 
 ```powershell
-$package = Get-Item .\moonpkgconfig-*.zip
-if (@($package).Count -ne 1) { throw 'Select exactly one CLI ZIP.' }
+$package = Get-Item -LiteralPath .\moonpkgconfig-0.4.1-windows-x86_64.zip -ErrorAction Stop
 $expected = ((Get-Content -LiteralPath ($package.FullName + '.sha256')).Trim() -split '\s+')[0]
 if ((Get-FileHash -LiteralPath $package.FullName -Algorithm SHA256).Hash -ne $expected) {
     throw 'CLI archive checksum mismatch.'
 }
-Expand-Archive -LiteralPath $package.FullName -DestinationPath .\moonpkgconfig-cli
-.\moonpkgconfig-cli\moonpkgconfig.exe --help
+Expand-Archive -LiteralPath $package.FullName -DestinationPath .\moonpkgconfig-cli -ErrorAction Stop
+.\moonpkgconfig-cli\moonpkgconfig.exe --version
 ```
 
-包内包含标准名称的 `moonpkgconfig` 或 `moonpkgconfig.exe`、`LICENSE`、`THIRD-PARTY-NOTICES.txt`、`USAGE.txt`、`build-info.json` 和 `SHA256SUMS`。构建信息包括完整源码提交号、是否存在未提交改动、实际工具链版本、系统和架构；CI 要求干净源码。校验和用于发现文件变化，不是数字签名。
+两个平台的 0.4.1 发行包均输出 `moonpkgconfig 0.4.1`。校验开发构建时，将上方文件名替换为所下载的 CLI ZIP 名称。包内包含可执行文件、`LICENSE`、`THIRD-PARTY-NOTICES.txt`、`USAGE.txt`、`build-info.json` 和 `SHA256SUMS`。构建信息记录完整源码提交号、工作区状态、实际工具链版本、系统和架构。
 
 在可执行文件目录中，可使用自己的 `.pc` 文件和目录：
 
@@ -63,6 +67,6 @@ moon update
 moon install ./cmd/moonpkgconfig
 ```
 
-复现构建请使用 `moonc 0.10.20+65efd5b93`、`moon 0.1.20261104`。安装目录需要加入 PATH，也可使用 `moon install ./cmd/moonpkgconfig --bin <目录>`。
+主分支使用 `moonc 0.10.21+06da1ed44` 和 `moon 0.1.20261117`。复现 0.4.1 标签时，在 `moon update` 前执行 `git switch --detach v0.4.1`，使用上文所列的发行工具链。安装目录需要加入 PATH，也可使用 `moon install ./cmd/moonpkgconfig --bin <目录>`。
 
 维护者使用 `python scripts/package-cli.py` 生成并验证独立包；CI 加 `--require-clean` 拒绝未提交源码。验证从实际 ZIP 解压到仓库之外的带空格目录，检查内容与哈希，清除 MoonBit 环境和 PATH 后执行命令、诊断及读取错误场景。源码安装仍需要工具链；已解压的命令行运行不调用 MoonBit 编译器。
